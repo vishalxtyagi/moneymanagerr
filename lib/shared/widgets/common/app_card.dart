@@ -43,7 +43,7 @@ class AppCard extends StatelessWidget {
     );
 
     Widget cardChild = Card(
-      color: color ?? AppColors.cardBackground,
+      color: color ?? AppColors.card,
       elevation: elevation ?? AppConstants.cardElevation,
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius ?? defaultBorderRadius,

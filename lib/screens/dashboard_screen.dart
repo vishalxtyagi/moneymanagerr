@@ -257,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (consumptionPercentage <= 100) {
       text = '${consumptionPercentage.toStringAsFixed(0)}% spent';
-      color = AppColors.primaryLight;
+      color = AppColors.primaryVariant;
     } else {
       final overBudget = consumptionPercentage - 100;
       text = '${overBudget.toStringAsFixed(0)}% over budget!';

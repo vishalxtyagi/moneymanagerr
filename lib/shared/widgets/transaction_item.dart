@@ -90,7 +90,7 @@ class TransactionItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: ResponsiveHelper.getFontSize(context, 16),
                         fontWeight: FontWeight.bold,
-                        color: transaction.type == 'expense' ? AppColors.expense : AppColors.income,
+                        color: transaction.type == 'expense' ? AppColors.error : AppColors.success,
                       ),
                     ),
                     if (transaction.note?.isNotEmpty == true)

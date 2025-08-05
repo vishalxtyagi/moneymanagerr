@@ -9,7 +9,7 @@ class AppThemes {
       primarySwatch: Colors.green,
       primaryColor: AppColors.primary,
       fontFamily: GoogleFonts.inter().fontFamily,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.scaffoldBackground,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -34,7 +34,7 @@ class AppThemes {
         ),
       ),
       cardTheme: CardTheme(
-        color: AppColors.cardBackground,
+        color: AppColors.card,
         elevation: 3.0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),

@@ -132,7 +132,7 @@ class CategoryProvider with ChangeNotifier {
   }
 
   Color getCategoryColor(String category) {
-    const categoryColors = AppColors.categoryColors;
+    const categoryColors = AppColors.colorPalette;
     final allCategories = expenseCategories + incomeCategories;
     final index = allCategories.indexOf(category);
     return categoryColors[index % categoryColors.length];
