@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/constants/constants.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/providers/category_provider.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
+import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
+import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
-import 'package:moneymanager/utils/responsive_helper.dart';
-import 'package:moneymanager/shared/widgets/widgets.dart';
+import 'package:moneymanager/core/utils/responsive_helper.dart';
+import 'package:moneymanager/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -25,8 +25,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId != null) {
-      transactionProvider.fetchTransactions(userId);
-      categoryProvider.loadCategories(userId);
+      transactionProvider.fetch(userId);
+      categoryProvider.load(userId);
     }
   }
 
@@ -37,7 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         child: Consumer2<TransactionProvider, AuthProvider>(
           builder: (context, transactionProvider, authProvider, child) {
-            final recentTransactions = transactionProvider.recentTranactions;
+            final recentTransactions = transactionProvider.all.take(5).toList();
             final balance = transactionProvider.getBalance();
             final income = transactionProvider.getTotalIncome();
             final expense = transactionProvider.getTotalExpense();
@@ -137,19 +137,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatisticsRow(TransactionProvider provider) {
-    final todayTransactions = provider.transactions.where((t) {
+    final todayTransactions = provider.all.where((t) {
       final today = DateTime.now();
       return t.date.year == today.year &&
              t.date.month == today.month &&
              t.date.day == today.day;
     }).length;
 
-    final thisMonthTransactions = provider.transactions.where((t) {
+    final thisMonthTransactions = provider.all.where((t) {
       final today = DateTime.now();
       return t.date.year == today.year && t.date.month == today.month;
     }).length;
 
-    final topCategory = provider.getTopSpendingCategories(limit: 1);
+    final topCategory = provider.getTopCategories(count: 1);
     final topCategoryName = topCategory.isNotEmpty ? topCategory.first.key : 'None';
 
     final stats = [

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/constants/app_constants.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/core/models/category_model.dart';
+import 'package:moneymanager/core/utils/category_util.dart';
 import 'package:provider/provider.dart';
-import 'package:moneymanager/providers/category_provider.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
 
 class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
@@ -23,7 +26,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProvider.user?.uid;
     if (userId != null) {
-      categoryProvider.loadCategories(userId);
+      categoryProvider.load(userId);
     }
   }
 
@@ -56,7 +59,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                   margin: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                    borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                   ),
                   child: Row(
                     children: [
@@ -69,7 +72,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                               color: _selectedTab == 'expense' 
                                   ? const Color(0xFFF44336)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                             ),
                             child: Text(
                               'Expense Categories',
@@ -94,7 +97,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                               color: _selectedTab == 'income' 
                                   ? const Color(0xFF4CAF50)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                             ),
                             child: Text(
                               'Income Categories',
@@ -124,14 +127,14 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: categoryProvider.getCategoryColor(category).withOpacity(0.1),
+                            backgroundColor: CategoryUtil.getColor(category.name).withOpacity(0.1),
                             child: Icon(
-                              categoryProvider.getCategoryIcon(category),
-                              color: categoryProvider.getCategoryColor(category),
+                              Iconsax.category,
+                              color: CategoryUtil.getColor(category.name),
                             ),
                           ),
                           title: Text(
-                            category,
+                            category.name,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -154,7 +157,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     );
   }
 
-  List<String> _getCurrentCategories(CategoryProvider categoryProvider) {
+  List<CategoryModel> _getCurrentCategories(CategoryProvider categoryProvider) {
     return _selectedTab == 'expense' 
         ? categoryProvider.expenseCategories 
         : categoryProvider.incomeCategories;
@@ -203,12 +206,8 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       }
       
       try {
-        if (_selectedTab == 'expense') {
-          await categoryProvider.addExpenseCategory(userId, categoryName);
-        } else {
-          await categoryProvider.addIncomeCategory(userId, categoryName);
-        }
-        
+        await categoryProvider.add(userId, CategoryModel(name: categoryName, iconIndex: 0, isIncome: _selectedTab == 'income'));
+
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Category "$categoryName" added successfully')),
@@ -221,12 +220,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     }
   }
 
-  void _deleteCategory(String category, CategoryProvider categoryProvider) {
+  void _deleteCategory(CategoryModel category, CategoryProvider categoryProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete "$category"?'),
+        content: Text('Are you sure you want to delete "${category.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -247,9 +246,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               
               try {
                 if (_selectedTab == 'expense') {
-                  await categoryProvider.removeExpenseCategory(userId, category);
+                  await categoryProvider.remove(userId, category);
                 } else {
-                  await categoryProvider.removeIncomeCategory(userId, category);
+                  await categoryProvider.remove(userId, category);
                 }
                 
                 Navigator.pop(context);

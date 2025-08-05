@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
-import 'package:moneymanager/utils/currency_helper.dart';
-import 'package:moneymanager/utils/responsive_helper.dart';
+import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/core/utils/currency_util.dart';
+import 'package:moneymanager/core/utils/responsive_helper.dart';
 import 'package:provider/provider.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -83,12 +83,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final balance = transactionProvider.getBalance(dateRange: _selectedDateRange);
-          final income = transactionProvider.getTotalIncome(dateRange: _selectedDateRange);
-          final expense = transactionProvider.getTotalExpense(dateRange: _selectedDateRange);
-          final categoryExpenses = transactionProvider.getCategoryWiseExpenses(dateRange: _selectedDateRange);
+          final balance = transactionProvider.getBalance(range: _selectedDateRange);
+          final income = transactionProvider.getTotalIncome(range: _selectedDateRange);
+          final expense = transactionProvider.getTotalExpense(range: _selectedDateRange);
+          final categoryExpenses = transactionProvider.getExpensesByCategory(range: _selectedDateRange);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
-          final consumptionRate = transactionProvider.getConsumptionRate(dateRange: _selectedDateRange);
+          // final consumptionRate = transactionProvider.getConsumptionRate(range: _selectedDateRange);
 
           return ResponsiveHelper.constrainWidth(
             context,
@@ -97,7 +97,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Column(
                 children: [
                   // Summary Cards Row
-                  _buildSummarySection(balance, income, expense, consumptionRate),
+                  _buildSummarySection(balance, income, expense, 0), //consumptionRate),
                   SizedBox(height: ResponsiveHelper.getSpacing(context, scale: 1.5)),
 
                   // Charts Section
@@ -207,7 +207,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           Text(
             isSavingsRate 
                 ? '${amount.toStringAsFixed(1)}%'
-                : CurrencyHelper.formatCompact(amount),
+                : CurrencyUtil.formatCompact(amount),
             style: TextStyle(
               fontSize: ResponsiveHelper.getFontSize(context, 24),
               fontWeight: FontWeight.bold,
@@ -354,7 +354,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ),
                 Text(
-                  CurrencyHelper.formatCompact(categoryEntry.value),
+                  CurrencyUtil.formatCompact(categoryEntry.value),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: ResponsiveHelper.getFontSize(context, 12),
@@ -480,7 +480,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             reservedSize: 50,
                             getTitlesWidget: (value, meta) {
                               return Text(
-                                CurrencyHelper.formatCompact(value),
+                                CurrencyUtil.formatCompact(value),
                                 style: TextStyle(
                                   fontSize: ResponsiveHelper.getFontSize(context, 10),
                                 ),
@@ -600,7 +600,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Map<String, dynamic>> _getTimeSeriesData(TransactionProvider provider) {
     if (_selectedDateRange == null) return [];
     
-    final transactions = provider.transactions;
+    final transactions = provider.all;
     final startDate = _selectedDateRange!.start;
     final endDate = _selectedDateRange!.end;
     final daysDifference = endDate.difference(startDate).inDays + 1;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/constants/app_constants.dart';
+import 'package:moneymanager/core/constants/styles.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -183,7 +183,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   backgroundColor: const Color(0xFF4CAF50),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                    borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                   ),
                 ),
                 child: const Text(

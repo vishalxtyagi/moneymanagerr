@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/constants/constants.dart';
-import 'package:moneymanager/shared/models/transaction.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/providers/category_provider.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
-import 'package:moneymanager/shared/services/notification_service.dart';
-import 'package:moneymanager/shared/widgets/widgets.dart';
+import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/core/models/category_model.dart';
+import 'package:moneymanager/core/models/transaction_model.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
+import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/core/services/notification_service.dart';
+import 'package:moneymanager/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -24,7 +26,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
-  String _type = 'expense';
+  TransactionType _type = TransactionType.expense;
   String? _category; // Changed to nullable
   DateTime _date = DateTime.now();
 
@@ -36,7 +38,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId != null) {
-      categoryProvider.loadCategories(userId);
+      categoryProvider.load(userId);
     }
 
     if (widget.transaction != null) {
@@ -58,10 +60,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   // Helper method to ensure category is valid
-  void _ensureValidCategory(List<String> categories) {
+  void _ensureValidCategory(List<CategoryModel> categories) {
     if (_category == null || !categories.contains(_category)) {
       if (categories.isNotEmpty) {
-        _category = categories.first;
+        _category = categories.first.name; // Set to first category if available
       }
     }
   }
@@ -103,7 +105,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final amount = double.parse(_amountController.text);
 
       if (widget.transaction == null) {
-        await transactionProvider.addTransaction(
+        await transactionProvider.add(
           userId: userId,
           title: _titleController.text,
           amount: amount,
@@ -122,7 +124,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
 
         // Check for break-even balance notification
-        if (transactionProvider.isApproachingBreakEven()) {
+        if (transactionProvider.isNearBreakEven()) {
           await notificationService.showBreakEvenNotification(
             currentBalance: transactionProvider.getBalance(),
             threshold: 100,
@@ -138,8 +140,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           category: _category!,
           type: _type,
           note: _noteController.text.isNotEmpty ? _noteController.text : null,
+          createdAt: widget.transaction!.createdAt,
+          updatedAt: DateTime.now(),
         );
-        await transactionProvider.updateTransaction(updatedTransaction);
+        await transactionProvider.update(updatedTransaction);
       }
 
       if (mounted) {
@@ -196,7 +200,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
 
       try {
-        await transactionProvider.deleteTransaction(widget.transaction!.id, userId);
+        await transactionProvider.remove(widget.transaction!.id, userId);
 
         if (mounted) {
           Navigator.pop(context);
@@ -313,7 +317,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         AppDropdown<String>(
                           label: 'Category',
                           value: _category,
-                          items: currentCategories,
+                          items: currentCategories.map((category) => category.name).toList(),
                           getLabel: (category) => category,
                           onChanged: (value) {
                             setState(() {

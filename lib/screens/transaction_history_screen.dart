@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/constants/app_constants.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
+import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
-import 'package:moneymanager/shared/widgets/transaction_item.dart';
+import 'package:moneymanager/widgets/transaction_item.dart';
 import 'package:provider/provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class TransactionHistoryScreen extends StatefulWidget {
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
-  String _filterType = 'all';
+  TransactionType _filterType = TransactionType.all;
   DateTimeRange? _dateRange;
   final TextEditingController _searchController = TextEditingController();
 
@@ -27,11 +28,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     
     // Sync local state with provider state
     _filterType = transactionProvider.filterType;
-    _dateRange = transactionProvider.dateRange;
+    _dateRange = transactionProvider.filterRange;
     _searchController.text = transactionProvider.searchQuery;
     
     if (userId != null) {
-      transactionProvider.fetchTransactions(userId);
+      transactionProvider.fetch(userId);
     }
   }
 
@@ -66,7 +67,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       modalSetState?.call(() {
         _dateRange = picked;
       });
-      Provider.of<TransactionProvider>(context, listen: false).setDateRange(picked);
+      Provider.of<TransactionProvider>(context, listen: false).setRangeFilter(picked);
     }
   }
 
@@ -78,17 +79,17 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     modalSetState?.call(() {
       _dateRange = null;
     });
-    Provider.of<TransactionProvider>(context, listen: false).setDateRange(null);
+    Provider.of<TransactionProvider>(context, listen: false).setRangeFilter(null);
   }
 
   void _clearAllFilters() {
     setState(() {
-      _filterType = 'all';
+      _filterType = TransactionType.all;
       _dateRange = null;
       _searchController.clear();
     });
     final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-    transactionProvider.clearFilters();
+    transactionProvider.clearAllFilters();
   }
 
   @override
@@ -98,9 +99,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
-        final transactions = transactionProvider.transactions;
+        final transactions = transactionProvider.all;
         final hasActiveFilters = transactionProvider.filterType != 'all' || 
-                                transactionProvider.dateRange != null || 
+                                transactionProvider.filterRange != null ||
                                 transactionProvider.searchQuery.isNotEmpty;
 
         return Scaffold(
@@ -145,7 +146,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -166,12 +167,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               setState(() {
                                 _searchController.clear();
                               });
-                              transactionProvider.setSearchQuery('');
+                              transactionProvider.setQuery('');
                             },
                           )
                         : null,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                      borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
@@ -179,7 +180,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                   onChanged: (value) {
-                    transactionProvider.setSearchQuery(value);
+                    transactionProvider.setQuery(value);
                   },
                 ),
               ),
@@ -331,11 +332,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       Expanded(
                         child: _buildFilterChip(
                           'All',
-                          _filterType == 'all',
+                          _filterType == TransactionType.all,
                           () {
-                            setState(() => _filterType = 'all');
-                            setModalState(() => _filterType = 'all');
-                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('all');
+                            setState(() => _filterType = TransactionType.all);
+                            setModalState(() => _filterType = TransactionType.all);
+                            Provider.of<TransactionProvider>(context, listen: false).setTypeFilter(TransactionType.all);
                           },
                           Colors.grey,
                         ),
@@ -344,11 +345,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       Expanded(
                         child: _buildFilterChip(
                           'Income',
-                          _filterType == 'income',
+                          _filterType == TransactionType.income,
                           () {
-                            setState(() => _filterType = 'income');
-                            setModalState(() => _filterType = 'income');
-                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('income');
+                            setState(() => _filterType = TransactionType.income);
+                            setModalState(() => _filterType = TransactionType.income);
+                            Provider.of<TransactionProvider>(context, listen: false).setTypeFilter(TransactionType.income);
                           },
                           Colors.green,
                         ),
@@ -357,11 +358,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       Expanded(
                         child: _buildFilterChip(
                           'Expense',
-                          _filterType == 'expense',
+                          _filterType == TransactionType.expense,
                           () {
-                            setState(() => _filterType = 'expense');
-                            setModalState(() => _filterType = 'expense');
-                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('expense');
+                            setState(() => _filterType = TransactionType.expense);
+                            setModalState(() => _filterType = TransactionType.expense);
+                            Provider.of<TransactionProvider>(context, listen: false).setTypeFilter(TransactionType.expense);
                           },
                           Colors.red,
                         ),
@@ -451,7 +452,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                             ),
                           ),
                           child: const Text(

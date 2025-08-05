@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/screens/settings/category_management_screen.dart';
 import 'package:moneymanager/screens/settings/notification_settings_screen.dart';
 import 'package:provider/provider.dart';

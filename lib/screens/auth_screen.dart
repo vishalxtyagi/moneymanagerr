@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/constants/constants.dart';
+import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class AuthScreen extends StatelessWidget {

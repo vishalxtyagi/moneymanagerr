@@ -1,14 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:moneymanager/constants/constants.dart';
-import 'package:moneymanager/firebase_options.dart';
-import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/providers/category_provider.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
-import 'package:moneymanager/screens/auth_screen.dart';
-import 'package:moneymanager/shared/services/notification_service.dart';
-import 'package:moneymanager/shared/widgets/main_navigation.dart';
+import 'widgets/main_navigation.dart';
+import 'core/constants/themes.dart';
 import 'package:provider/provider.dart';
+import 'core/providers/auth_provider.dart';
+import 'core/providers/category_provider.dart';
+import 'core/providers/transaction_provider.dart';
+import 'firebase_options.dart';
+import 'screens/auth_screen.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,8 +31,33 @@ void main() async {
   );
 }
 
-class MoneyManagerApp extends StatelessWidget {
+class MoneyManagerApp extends StatefulWidget {
   const MoneyManagerApp({super.key});
+
+  @override
+  State<MoneyManagerApp> createState() => _MoneyManagerAppState();
+}
+
+
+class _MoneyManagerAppState extends State<MoneyManagerApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      NotificationService.ensurePersistentNotification();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +65,12 @@ class MoneyManagerApp extends StatelessWidget {
       title: 'Money Manager',
       debugShowCheckedModeBanner: false,
       theme: AppThemes.lightTheme,
-      darkTheme: AppThemes.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
-          return authProvider.user == null
-              ? const AuthScreen()
-              : const MainNavigation();
+          return authProvider.isSignedIn
+              ? const MainNavigation()
+              : const AuthScreen();
         },
       ),
     );

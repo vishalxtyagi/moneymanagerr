@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/constants/app_constants.dart';
+import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/shared/models/transaction.dart';
-import 'package:moneymanager/providers/transaction_provider.dart';
-import 'package:moneymanager/shared/widgets/transaction_item.dart';
-import 'package:moneymanager/utils/currency_helper.dart';
+import 'package:moneymanager/core/models/transaction_model.dart';
+import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/widgets/transaction_item.dart';
+import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:provider/provider.dart';
 
 class CalendarViewScreen extends StatefulWidget {
@@ -52,7 +52,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final transactions = transactionProvider.transactions;
+          final transactions = transactionProvider.all;
           final selectedDayTransactions = _selectedDay != null 
               ? _getTransactionsForDay(_selectedDay!, transactions)
               : <TransactionModel>[];
@@ -140,7 +140,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                    borderRadius: BorderRadius.circular(AppStyles.borderRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.1),
@@ -172,7 +172,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             ),
                           ),
                           Text(
-                            CurrencyHelper.format(_getTotalForDay(_selectedDay!, transactions)),
+                            CurrencyUtil.format(_getTotalForDay(_selectedDay!, transactions)),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
