@@ -1,0 +1,54 @@
+name: moneymanager
+description: "A simple money manager app to track your expenses and income."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  awesome_notifications: ^0.10.1
+  firebase_core: ^3.15.1
+  fl_chart: ^0.68.0
+  flutter_local_notifications: ^19.3.0
+  google_fonts: ^6.2.1
+  iconsax_flutter: ^1.0.1
+  intl: ^0.20.2
+  provider: ^6.1.5
+  flutter_native_splash: ^2.4.4
+  cloud_firestore: ^5.6.12
+  firebase_auth: ^5.7.0
+  google_sign_in: ^6.2.2
+  table_calendar: ^3.1.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.4
+  flutter_lints: ^4.0.0
+
+flutter_launcher_icons:
+  adaptive_icon_background: "#4CAF50"
+  adaptive_icon_foreground: "assets/images/logo_light.png"
+  android: "launcher_icon"
+  background_color: "#4CAF50"
+  image_path: "assets/images/logo_light.png"
+  ios: true
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/logo_dark.png
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/logo_dark.png
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

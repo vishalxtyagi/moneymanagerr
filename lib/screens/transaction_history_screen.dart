@@ -1,0 +1,502 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:moneymanager/constants/app_constants.dart';
+import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/providers/transaction_provider.dart';
+import 'package:moneymanager/screens/add_transaction_screen.dart';
+import 'package:moneymanager/shared/widgets/transaction_item.dart';
+import 'package:provider/provider.dart';
+
+class TransactionHistoryScreen extends StatefulWidget {
+  const TransactionHistoryScreen({super.key});
+
+  @override
+  State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
+}
+
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+  String _filterType = 'all';
+  DateTimeRange? _dateRange;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+    final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
+    
+    // Sync local state with provider state
+    _filterType = transactionProvider.filterType;
+    _dateRange = transactionProvider.dateRange;
+    _searchController.text = transactionProvider.searchQuery;
+    
+    if (userId != null) {
+      transactionProvider.fetchTransactions(userId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDateRange(BuildContext context, [StateSetter? modalSetState]) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _dateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4CAF50),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _dateRange) {
+      setState(() {
+        _dateRange = picked;
+      });
+      // Update modal state if called from modal
+      modalSetState?.call(() {
+        _dateRange = picked;
+      });
+      Provider.of<TransactionProvider>(context, listen: false).setDateRange(picked);
+    }
+  }
+
+  void _clearDateFilter([StateSetter? modalSetState]) {
+    setState(() {
+      _dateRange = null;
+    });
+    // Update modal state if called from modal
+    modalSetState?.call(() {
+      _dateRange = null;
+    });
+    Provider.of<TransactionProvider>(context, listen: false).setDateRange(null);
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _filterType = 'all';
+      _dateRange = null;
+      _searchController.clear();
+    });
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+    transactionProvider.clearFilters();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWeb = screenWidth > 800;
+    
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        final transactions = transactionProvider.transactions;
+        final hasActiveFilters = transactionProvider.filterType != 'all' || 
+                                transactionProvider.dateRange != null || 
+                                transactionProvider.searchQuery.isNotEmpty;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Transaction History'),
+            elevation: 0,
+            actions: [
+              if (hasActiveFilters)
+                IconButton(
+                  icon: const Icon(Icons.clear_all),
+                  onPressed: _clearAllFilters,
+                  tooltip: 'Clear all filters',
+                ),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.filter_alt),
+                    onPressed: () => _showFilterBottomSheet(context, isWeb),
+                    tooltip: 'Filter transactions',
+                  ),
+                  if (hasActiveFilters)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF44336),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Search Bar
+              Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search transactions...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                              });
+                              transactionProvider.setSearchQuery('');
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  onChanged: (value) {
+                    transactionProvider.setSearchQuery(value);
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Transactions List
+              Expanded(
+                child: transactions.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              hasActiveFilters 
+                                  ? 'No transactions match your filters'
+                                  : 'No transactions found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              hasActiveFilters
+                                  ? 'Try adjusting your filters'
+                                  : 'Start by adding your first transaction',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            if (hasActiveFilters) ...[
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _clearAllFilters,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4CAF50),
+                                ),
+                                child: const Text(
+                                  'Clear Filters',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: isWeb ? 24 : 16),
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = transactions[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: TransactionItem(
+                              transaction: transaction,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddTransactionScreen(
+                                      transaction: transaction,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFilterBottomSheet(BuildContext context, bool isWeb) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Title
+                  const Text(
+                    'Filter Transactions',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Transaction Type Filter
+                  const Text(
+                    'Transaction Type',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterChip(
+                          'All',
+                          _filterType == 'all',
+                          () {
+                            setState(() => _filterType = 'all');
+                            setModalState(() => _filterType = 'all');
+                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('all');
+                          },
+                          Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildFilterChip(
+                          'Income',
+                          _filterType == 'income',
+                          () {
+                            setState(() => _filterType = 'income');
+                            setModalState(() => _filterType = 'income');
+                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('income');
+                          },
+                          Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildFilterChip(
+                          'Expense',
+                          _filterType == 'expense',
+                          () {
+                            setState(() => _filterType = 'expense');
+                            setModalState(() => _filterType = 'expense');
+                            Provider.of<TransactionProvider>(context, listen: false).setFilterType('expense');
+                          },
+                          Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Date Range Filter
+                  const Text(
+                    'Date Range',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  if (_dateRange != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.date_range, color: Color(0xFF4CAF50), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${DateFormat('MMM dd, yyyy').format(_dateRange!.start)} - ${DateFormat('MMM dd, yyyy').format(_dateRange!.end)}',
+                              style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: Color(0xFF4CAF50), size: 20),
+                            onPressed: () {
+                              _clearDateFilter(setModalState);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _selectDateRange(context, setModalState),
+                          icon: const Icon(Icons.date_range, size: 20),
+                          label: Text(_dateRange == null ? 'Select Date Range' : 'Change Date Range'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[100],
+                            foregroundColor: Colors.grey[700],
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF44336),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                            ),
+                          ),
+                          child: const Text(
+                            'Close',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap, Color color) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey[300]!,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

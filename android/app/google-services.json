@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "337842086344",
+    "project_id": "runo-moneymanager",
+    "storage_bucket": "runo-moneymanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337842086344:android:0eda6c47b6ecf1e1e760fd",
+        "android_client_info": {
+          "package_name": "ai.runo.moneymanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "337842086344-bekpbs8et6drqomltsppn7i9mnggfo3p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp0sIgYjusyFAd_QtWXgS_uqmKqIwCR3s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "337842086344-bekpbs8et6drqomltsppn7i9mnggfo3p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "337842086344-jutrbvglcgu2kk6mpgsattarq3nvilul.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "ai.runo.moneymanager"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
