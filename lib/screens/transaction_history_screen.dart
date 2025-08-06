@@ -94,13 +94,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isWeb = screenWidth > 800;
     
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
         final transactions = transactionProvider.all;
-        final hasActiveFilters = transactionProvider.filterType != 'all' || 
+        final hasActiveFilters = transactionProvider.filterType != TransactionType.all ||
                                 transactionProvider.filterRange != null ||
                                 transactionProvider.searchQuery.isNotEmpty;
 

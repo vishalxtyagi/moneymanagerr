@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -35,11 +36,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
   double _getTotalForDay(DateTime day, List<TransactionModel> transactions) {
     final dayTransactions = _getTransactionsForDay(day, transactions);
-    return dayTransactions.fold(0.0, (sum, transaction) {
-      if (transaction.type == 'expense') {
-        return sum - transaction.amount;
+    return dayTransactions.fold(0.0, (total, transaction) {
+      if (transaction.type == TransactionType.expense) {
+        return total - transaction.amount;
       } else {
-        return sum + transaction.amount;
+        return total + transaction.amount;
       }
     });
   }

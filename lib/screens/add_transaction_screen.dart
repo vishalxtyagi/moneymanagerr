@@ -61,7 +61,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   // Helper method to ensure category is valid
   void _ensureValidCategory(List<CategoryModel> categories) {
-    if (_category == null || !categories.contains(_category)) {
+    if (_category == null || !categories.any((c) => c.name == _category)) {
       if (categories.isNotEmpty) {
         _category = categories.first.name; // Set to first category if available
       }
@@ -116,7 +116,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         );
 
         // Show notification for large expenses
-        if (_type == 'expense' && amount >= 1000) {
+        if (_type == TransactionType.expense && amount >= 1000) {
           await notificationService.showLargeExpenseNotification(
             amount: amount,
             threshold: 1000,
@@ -223,7 +223,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isWeb = screenWidth > 800;
 
     return Scaffold(
@@ -243,7 +243,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         builder: (context, categoryProvider, child) {
           final expenseCategories = categoryProvider.expenseCategories;
           final incomeCategories = categoryProvider.incomeCategories;
-          final currentCategories = _type == 'expense' ? expenseCategories : incomeCategories;
+          final currentCategories = _type == TransactionType.expense ? expenseCategories : incomeCategories;
 
           // Ensure category is valid whenever categories or type changes
           _ensureValidCategory(currentCategories);
@@ -266,7 +266,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           setState(() {
                             _type = type;
                             // Reset category when type changes
-                            final currentCategories = _type == 'expense' ? expenseCategories : incomeCategories;
+                            final currentCategories = _type == TransactionType.expense ? expenseCategories : incomeCategories;
                             _ensureValidCategory(currentCategories);
                           });
                         },

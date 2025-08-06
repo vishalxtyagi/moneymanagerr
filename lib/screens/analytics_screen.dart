@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/responsive_helper.dart';
@@ -617,11 +618,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             t.date.day == date.day).toList();
 
         final income = dayTransactions
-            .where((t) => t.type == 'income')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
         final expense = dayTransactions
-            .where((t) => t.type == 'expense')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
 
         data.add({
           'label': DateFormat('MMM d').format(date),
@@ -646,11 +647,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             t.date.isBefore(weekEndDate.add(const Duration(days: 1)))).toList();
 
         final income = weekTransactions
-            .where((t) => t.type == 'income')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
         final expense = weekTransactions
-            .where((t) => t.type == 'expense')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
 
         data.add({
           'label': 'W${i + 1}',
@@ -670,11 +671,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             t.date.year == month.year && t.date.month == month.month).toList();
 
         final income = monthTransactions
-            .where((t) => t.type == 'income')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
         final expense = monthTransactions
-            .where((t) => t.type == 'expense')
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
 
         data.add({
           'label': DateFormat('MMM yyyy').format(month),

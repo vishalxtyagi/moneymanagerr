@@ -8,14 +8,15 @@ class ResponsiveHelper {
 
   // Check device types
   static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < mobileBreakpoint;
+      MediaQuery.sizeOf(context).width < mobileBreakpoint;
 
-  static bool isTablet(BuildContext context) =>
-      MediaQuery.of(context).size.width >= mobileBreakpoint &&
-      MediaQuery.of(context).size.width < tabletBreakpoint;
+  static bool isTablet(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    return screenWidth >= mobileBreakpoint && screenWidth < tabletBreakpoint;
+  }
 
   static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= tabletBreakpoint;
+      MediaQuery.sizeOf(context).width >= tabletBreakpoint;
 
   // Get responsive values
   static T responsive<T>(
@@ -63,7 +64,7 @@ class ResponsiveHelper {
 
   // Get responsive font size
   static double getFontSize(BuildContext context, double baseFontSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     
     if (screenWidth > desktopBreakpoint) {
       return baseFontSize * 1.2;

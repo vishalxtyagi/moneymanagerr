@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/models/transaction_model.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
@@ -93,7 +94,7 @@ class TransactionItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: ResponsiveHelper.getFontSize(context, 16),
                         fontWeight: FontWeight.bold,
-                        color: transaction.type == 'expense' ? AppColors.error : AppColors.success,
+                        color: transaction.type == TransactionType.expense ? AppColors.error : AppColors.success,
                       ),
                     ),
                     if (transaction.note?.isNotEmpty == true)
