@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/core/constants/colors.dart';
@@ -5,8 +6,24 @@ import 'package:moneymanager/core/constants/colors.dart';
 class CategoryUtil {
   CategoryUtil._();
 
-  static const IconData defaultIcon = Iconsax.category;
+  static Color getRandomCategoryColor() {
+    return categoryColors[Random().nextInt(categoryColors.length)];
+  }
+
+  static IconData getIconByIndex(int index) {
+    if (index < 0 || index >= availableIcons.length) {
+      return availableIcons[defaultIconIndex];
+    }
+    return availableIcons[index];
+  }
+
+  static int getIconIndex(IconData icon) {
+    final index = availableIcons.indexOf(icon);
+    return index == -1 ? 0 : index;
+  }
+
   static const int defaultIconIndex = 0;
+  static const categoryColors = AppColors.colorPalette;
 
   static const List<IconData> availableIcons = [
     // General
@@ -57,21 +74,4 @@ class CategoryUtil {
     Iconsax.percentage_circle,
     Iconsax.security_safe,
   ];
-
-  static IconData getIconByIndex(int index) {
-    if (index < 0 || index >= availableIcons.length) {
-      return availableIcons[0];
-    }
-    return availableIcons[index];
-  }
-
-  static int getIconIndex(IconData icon) {
-    final index = availableIcons.indexOf(icon);
-    return index == -1 ? 0 : index;
-  }
-
-  static Color getColor(String name) {
-    const colors = AppColors.colorPalette;
-    return colors[name.hashCode % colors.length];
-  }
 }

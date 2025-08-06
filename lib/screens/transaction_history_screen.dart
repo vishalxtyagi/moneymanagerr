@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/core/models/category_model.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
-import 'package:moneymanager/widgets/transaction_item.dart';
+import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:provider/provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -99,7 +101,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     
     return Consumer<TransactionProvider>(
       builder: (context, transactionProvider, child) {
-        final transactions = transactionProvider.all;
+        final transactions = transactionProvider.filtered;
         final hasActiveFilters = transactionProvider.filterType != TransactionType.all ||
                                 transactionProvider.filterRange != null ||
                                 transactionProvider.searchQuery.isNotEmpty;
@@ -241,17 +243,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                         itemCount: transactions.length,
                         itemBuilder: (context, index) {
                           final transaction = transactions[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: TransactionItem(
+                          return Selector<CategoryProvider, CategoryModel>(
+                            selector: (_, provider) => provider.getCategoryByName(transaction.category, isIncome: transaction.type == TransactionType.income),
+                            builder: (_, category, __) => TransactionItem(
                               transaction: transaction,
+                              category: category,
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => AddTransactionScreen(
-                                      transaction: transaction,
-                                    ),
+                                    builder: (context) => AddTransactionScreen(transaction: transaction),
                                   ),
                                 );
                               },

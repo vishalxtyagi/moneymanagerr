@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/models/category_model.dart';
-import 'package:moneymanager/core/utils/category_util.dart';
 import 'package:provider/provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
@@ -127,10 +126,10 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: CategoryUtil.getColor(category.name).withOpacity(0.1),
+                            backgroundColor: category.color.withOpacity(0.1),
                             child: Icon(
                               Iconsax.category,
-                              color: CategoryUtil.getColor(category.name),
+                              color: category.color,
                             ),
                           ),
                           title: Text(
@@ -206,7 +205,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       }
       
       try {
-        await categoryProvider.add(userId, CategoryModel(name: categoryName, iconIndex: 0, isIncome: _selectedTab == 'income'));
+        await categoryProvider.add(userId, CategoryModel.withFallback(name: categoryName, isIncome: _selectedTab == 'income'));
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(

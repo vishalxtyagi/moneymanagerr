@@ -4,6 +4,11 @@ import 'colors.dart';
 class AppStyles {
   AppStyles._();
 
+  // Responsive Breakpoints
+  static const double mobile = 768.0;
+  static const double tablet = 1024.0;
+  static const double desktop = 1440.0;
+
   // Spacing
   static const double xs = 8.0;
   static const double sm = 16.0;
@@ -25,11 +30,6 @@ class AppStyles {
   static const EdgeInsets paddingXS = EdgeInsets.all(xs);
   static const EdgeInsets paddingSM = EdgeInsets.all(sm);
   static const EdgeInsets paddingMD = EdgeInsets.all(md);
-
-  static const EdgeInsets paddingHorizontalSM = EdgeInsets.symmetric(horizontal: sm);
-  static const EdgeInsets paddingHorizontalMD = EdgeInsets.symmetric(horizontal: md);
-  static const EdgeInsets paddingVerticalSM = EdgeInsets.symmetric(vertical: sm);
-  static const EdgeInsets paddingVerticalMD = EdgeInsets.symmetric(vertical: md);
 
   // Common decorations
   static BoxDecoration get cardDecoration => BoxDecoration(

@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'widgets/main_navigation.dart';
 import 'core/constants/themes.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
@@ -8,6 +7,7 @@ import 'core/providers/category_provider.dart';
 import 'core/providers/transaction_provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -69,7 +69,7 @@ class _MoneyManagerAppState extends State<MoneyManagerApp> with WidgetsBindingOb
       home: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           return authProvider.isSignedIn
-              ? const MainNavigation()
+              ? const MainNavigationScreen()
               : const AuthScreen();
         },
       ),

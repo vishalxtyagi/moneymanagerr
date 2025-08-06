@@ -8,7 +8,12 @@ import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/services/notification_service.dart';
-import 'package:moneymanager/widgets/widgets.dart';
+import 'package:moneymanager/widgets/common/button.dart';
+import 'package:moneymanager/widgets/common/card.dart';
+import 'package:moneymanager/widgets/common/dropdown.dart';
+import 'package:moneymanager/widgets/common/text_field.dart';
+import 'package:moneymanager/widgets/common/type_selector.dart';
+import 'package:moneymanager/widgets/header/simple_header.dart';
 import 'package:provider/provider.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -259,17 +264,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Transaction Type Selector
-                      const SimpleHeader(title: 'Transaction Type'),
-                      TransactionTypeSelector(
-                        selectedType: _type,
-                        onTypeChanged: (type) {
+                      const AppSimpleHeader(title: 'Transaction Type'),
+                      AppTypeSelector<TransactionType>(
+                        selectedValue: _type,
+                        values: const [TransactionType.expense, TransactionType.income],
+                        labelBuilder: (type) => type == TransactionType.income ? 'Income' : 'Expense',
+                        iconBuilder: (type) => type == TransactionType.income ? Icons.arrow_upward : Icons.arrow_downward,
+                        colorBuilder: (type) => type == TransactionType.income ? AppColors.success : AppColors.error,
+                        onChanged: (type) {
                           setState(() {
                             _type = type;
                             // Reset category when type changes
                             final currentCategories = _type == TransactionType.expense ? expenseCategories : incomeCategories;
                             _ensureValidCategory(currentCategories);
                           });
-                        },
+                        }
                       ),
                       const SizedBox(height: 24),
 
@@ -365,7 +374,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         text: widget.transaction == null ? 'Add Transaction' : 'Update Transaction',
                         onPressed: currentCategories.isNotEmpty ? _submit : null,
                         width: double.infinity,
-                        size: ButtonSize.large,
+                        size: ButtonSize.lg,
                         type: ButtonType.primary,
                       ),
                       const SizedBox(height: 10),
@@ -376,7 +385,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           text: 'Delete Transaction',
                           onPressed: _deleteTransaction,
                           width: double.infinity,
-                          size: ButtonSize.large,
+                          size: ButtonSize.lg,
                           type: ButtonType.error,
                         ),
                     ],

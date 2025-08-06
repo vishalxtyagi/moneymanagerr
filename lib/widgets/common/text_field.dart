@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/styles.dart';
+
 class AppTextField extends StatelessWidget {
   final String label;
   final String? hint;
@@ -37,20 +38,20 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(AppStyles.borderRadius);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
         ),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           validator: validator,
@@ -66,32 +67,37 @@ class AppTextField extends StatelessWidget {
             hintText: hint,
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              borderSide: const BorderSide(color: AppColors.textDisabled),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
-            ),
             contentPadding: const EdgeInsets.symmetric(
               vertical: AppStyles.sm,
               horizontal: AppStyles.sm,
             ),
             filled: true,
-            fillColor: enabled ? AppColors.surface : Colors.grey[100],
+            fillColor: enabled
+                ? AppColors.surface
+                : AppColors.scaffoldBackground,
+            border: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide:
+              const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide:
+              const BorderSide(color: AppColors.textDisabled),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide:
+              const BorderSide(color: AppColors.error, width: 2),
+            ),
           ),
         ),
       ],

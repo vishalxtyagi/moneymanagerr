@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/models/transaction_model.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
-import 'package:moneymanager/widgets/transaction_item.dart';
+import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:provider/provider.dart';
 
@@ -228,6 +229,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: TransactionItem(
                               transaction: transaction,
+                              category: Provider.of<CategoryProvider>(context, listen: false).getCategoryByName(transaction.category, isIncome: transaction.type == TransactionType.income),
                               onTap: () {
                                 Navigator.push(
                                   context,

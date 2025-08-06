@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 
-class SectionHeader extends StatelessWidget {
+class AppSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? action;
@@ -9,7 +9,7 @@ class SectionHeader extends StatelessWidget {
   final FontWeight fontWeight;
   final Color? color;
 
-  const SectionHeader({
+  const AppSectionHeader({
     super.key,
     required this.title,
     this.subtitle,
@@ -17,7 +17,15 @@ class SectionHeader extends StatelessWidget {
     this.fontSize = 18,
     this.fontWeight = FontWeight.bold,
     this.color,
-  });
+  }) : assert(title != '');
+
+  TextStyle _titleStyle() {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color ?? AppColors.textPrimary,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,14 +37,7 @@ class SectionHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: fontWeight,
-                    color: color ?? AppColors.textPrimary,
-                  ),
-                ),
+                Text(title, style: _titleStyle()),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -52,38 +53,6 @@ class SectionHeader extends StatelessWidget {
           ),
           if (action != null) action!,
         ],
-      ),
-    );
-  }
-}
-
-class SimpleHeader extends StatelessWidget {
-  final String title;
-  final double fontSize;
-  final FontWeight fontWeight;
-  final Color? color;
-  final EdgeInsetsGeometry padding;
-
-  const SimpleHeader({
-    super.key,
-    required this.title,
-    this.fontSize = 16,
-    this.fontWeight = FontWeight.w600,
-    this.color,
-    this.padding = const EdgeInsets.only(bottom: 8),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: fontWeight,
-          color: color ?? AppColors.textPrimary,
-        ),
       ),
     );
   }

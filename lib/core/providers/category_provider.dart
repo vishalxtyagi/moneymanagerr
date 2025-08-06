@@ -71,4 +71,9 @@ class CategoryProvider with ChangeNotifier {
       debugPrint('Error saving $path: $e');
     }
   }
+
+  CategoryModel getCategoryByName(String name, {required bool isIncome}) {
+    final targetList = isIncome ? _incomeCategories : _expenseCategories;
+    return targetList.firstWhere((c) => c.name == name, orElse: () => CategoryModel.withFallback(name: name, isIncome: isIncome));
+  }
 }
