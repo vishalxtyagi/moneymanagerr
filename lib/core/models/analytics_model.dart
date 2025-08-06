@@ -9,7 +9,7 @@ class AnalyticsModel {
   final double balance;
   final double income;
   final double expense;
-  final Map<String, dynamic> consumptionData;
+  final ConsumptionData consumptionData;
   final Map<String, double> categoryExpenses;
   final List<TimeSeriesItem> timeSeriesData;
 
@@ -36,26 +36,26 @@ class AnalyticsModel {
     );
   }
 
-  static Map<String, dynamic> _getConsumptionData(
+  static ConsumptionData _getConsumptionData(
       double income, double expense) {
     if (income == 0) {
-      return {
-        'text': 'No income',
-        'color': AppColors.secondary,
-        'percentage': 0,
-      };
+      return ConsumptionData(
+        text: 'No income',
+        color: AppColors.secondary,
+        percentage: 0,
+      );
     }
 
     final percentage = (expense / income) * 100;
     final isOver = percentage > 100;
 
-    return {
-      'text': isOver
+    return ConsumptionData(
+      text: isOver
           ? '${(percentage - 100).toStringAsFixed(0)}% over budget!'
           : '${percentage.toStringAsFixed(0)}% spent',
-      'color': isOver ? AppColors.error : AppColors.primaryVariant,
-      'percentage': percentage,
-    };
+      color: isOver ? AppColors.error : AppColors.primaryVariant,
+      percentage: percentage,
+    );
   }
 
   static List<TimeSeriesItem> _getTimeSeriesData(
@@ -161,4 +161,16 @@ class TimeSeriesItem {
 
   TimeSeriesItem(
       {required this.label, required this.income, required this.expense});
+}
+
+class ConsumptionData {
+  final String text;
+  final Color color;
+  final double percentage;
+
+  ConsumptionData({
+    required this.text,
+    required this.color,
+    required this.percentage,
+  });
 }

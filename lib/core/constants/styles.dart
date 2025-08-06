@@ -31,6 +31,19 @@ class AppStyles {
   static const EdgeInsets paddingSM = EdgeInsets.all(sm);
   static const EdgeInsets paddingMD = EdgeInsets.all(md);
 
+  // Text Styles
+  static final TextStyle labelStyle = TextStyle(
+    color: Colors.white.withOpacity(0.8),
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const TextStyle amountStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+  );
+
   // Common decorations
   static BoxDecoration get cardDecoration => BoxDecoration(
         borderRadius: cardRadius,

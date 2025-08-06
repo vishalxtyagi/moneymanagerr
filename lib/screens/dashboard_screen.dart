@@ -64,7 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           _buildHeader(context, authProvider, responsive),
                           SizedBox(height: responsive.spacing(scale: 1.5)),
-                          _buildBalanceCard(balance, income, expense, consumptionData),
+                          const BalanceCard(),
                           SizedBox(height: responsive.spacing()),
                         ],
                       ),
@@ -134,15 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               : null,
         ),
       ],
-    );
-  }
-
-  Widget _buildBalanceCard(double balance, double income, double expense, Map<String, dynamic> consumptionData) {
-    return BalanceCard(
-      balance: balance,
-      income: income,
-      expense: expense,
-      consumptionData: consumptionData,
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/generated/assets.dart';
 
 class AppLogo extends StatelessWidget {
   final LogoType type;
@@ -14,12 +13,9 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = type == LogoType.light
-        ? Assets.imagesLogoLight
-        : Assets.imagesLogoDark;
-
+    final logoType = type == LogoType.light ? 'light' : 'dark';
     return Image.asset(
-      asset,
+      'assets/images/logo_$logoType.png',
       width: size,
       height: size,
       fit: BoxFit.contain,
