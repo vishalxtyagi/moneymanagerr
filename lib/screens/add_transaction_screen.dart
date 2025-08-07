@@ -122,18 +122,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
         // Show notification for large expenses
         if (_type == TransactionType.expense && amount >= 1000) {
-          await notificationService.showLargeExpenseNotification(
-            amount: amount,
-            threshold: 1000,
-          );
+          // await notificationService.showLargeExpenseNotification(
+          //   amount: amount,
+          //   threshold: 1000,
+          // );
         }
 
         // Check for break-even balance notification
         if (transactionProvider.isNearBreakEven()) {
-          await notificationService.showBreakEvenNotification(
-            currentBalance: transactionProvider.getBalance(),
-            threshold: 100,
-          );
+          // await notificationService.showBreakEvenNotification(
+          //   currentBalance: transactionProvider.getBalance(),
+          //   threshold: 100,
+          // );
         }
       } else {
         final updatedTransaction = TransactionModel(

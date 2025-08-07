@@ -10,10 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  awesome_notifications: ^0.10.1
   firebase_core: ^3.15.1
   fl_chart: ^0.68.0
-  flutter_local_notifications: ^19.3.0
   google_fonts: ^6.2.1
   iconsax_flutter: ^1.0.1
   intl: ^0.20.2
@@ -24,6 +22,7 @@ dependencies:
   google_sign_in: ^6.2.2
   table_calendar: ^3.1.2
   uuid: ^4.5.1
+  awesome_notifications: ^0.10.1
 
 dev_dependencies:
   flutter_test:

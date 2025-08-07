@@ -9,46 +9,48 @@ class AuthProvider with ChangeNotifier {
   User? _user;
 
   User? get user => _user;
+  bool get isSignedIn => _user != null;
 
   AuthProvider() {
+    _user = _auth.currentUser;
+
     _auth.authStateChanges().listen((user) {
-      _user = user;
-      notifyListeners();
+      if (_user?.uid != user?.uid) {
+        _user = user;
+        notifyListeners();
+      }
     });
   }
 
-  Future<void> signInWithGoogle() async {
+  Future<bool> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return; // Sign-in cancelled
+      if (googleUser == null) return false;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Try to sign in with credential (Firebase creates new user if not exists)
-      final userCredential = await _auth.signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
+      return true;
 
-      _user = userCredential.user;
-      notifyListeners();
     } catch (e) {
       debugPrint('Google Sign-In Error: $e');
-      rethrow;
+      return false;
     }
   }
 
   Future<void> signOut() async {
     try {
-      await _googleSignIn.signOut();
-      await _auth.signOut();
+      await Future.wait([
+        _googleSignIn.signOut(),
+        _auth.signOut(),
+      ]);
     } catch (e) {
       debugPrint('Sign Out Error: $e');
     }
   }
-
-  bool get isSignedIn => _user != null;
 }

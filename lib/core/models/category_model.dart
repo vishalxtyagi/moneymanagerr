@@ -56,6 +56,7 @@ class CategoryModel {
   ];
 
   static final List<CategoryModel> defaultExpenseCategories = [
+    withFallback(name: 'Quick Expense', iconIdx: 0, isIncome: false),
     withFallback(name: 'Food & Dining', iconIdx: 2, isIncome: false),
     withFallback(name: 'Transportation', iconIdx: 4, isIncome: false),
     withFallback(name: 'Shopping & Entertainment', iconIdx: 8, isIncome: false),
