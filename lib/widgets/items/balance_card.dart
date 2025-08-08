@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/models/analytics_model.dart';
-import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/responsive_util.dart';
 

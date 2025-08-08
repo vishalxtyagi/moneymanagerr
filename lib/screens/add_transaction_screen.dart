@@ -199,6 +199,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       final transactionProvider =
           Provider.of<TransactionProvider>(context, listen: false);
 

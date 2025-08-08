@@ -48,12 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Consumer2<TransactionProvider, AuthProvider>(
           builder: (context, transactionProvider, authProvider, child) {
             final recentTransactions = transactionProvider.all.take(5).toList();
-            final balance = transactionProvider.getBalance();
-            final income = transactionProvider.getTotalIncome();
-            final expense = transactionProvider.getTotalExpense();
-
-            // Calculate consumption indicator
-            final consumptionData = _getConsumptionData(income, expense);
 
             return responsive.constrain(
               SingleChildScrollView(
@@ -273,34 +267,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-  }
-
-  Map<String, dynamic> _getConsumptionData(double income, double expense) {
-    if (income == 0) {
-      return {
-        'text': 'No income',
-        'color': AppColors.textSecondary,
-        'percentage': 0.0,
-      };
-    }
-
-    final consumptionPercentage = (expense / income) * 100;
-    String text;
-    Color color;
-
-    if (consumptionPercentage <= 100) {
-      text = '${consumptionPercentage.toStringAsFixed(0)}% spent';
-      color = AppColors.primaryVariant;
-    } else {
-      final overBudget = consumptionPercentage - 100;
-      text = '${overBudget.toStringAsFixed(0)}% over budget!';
-      color = AppColors.error;
-    }
-
-    return {
-      'text': text,
-      'color': color,
-      'percentage': consumptionPercentage,
-    };
   }
 }

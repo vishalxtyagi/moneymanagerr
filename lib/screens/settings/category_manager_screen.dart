@@ -93,7 +93,7 @@ class _CategoryList extends StatelessWidget {
           isIncome ? provider.incomeCategories : provider.expenseCategories,
       builder: (context, categories, _) {
         if (categories.isEmpty) {
-          return AppEmptyState(
+          return const AppEmptyState(
             icon: Iconsax.category,
             title: 'No categories',
             subtitle: 'Tap + to add categories',

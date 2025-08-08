@@ -710,8 +710,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         final weekEndDate = weekStartDate.add(const Duration(days: 6));
 
         // Only include weeks that overlap with the selected range
-        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate))
+        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate)) {
           continue;
+        }
 
         final weekTransactions = transactions
             .where((t) =>
