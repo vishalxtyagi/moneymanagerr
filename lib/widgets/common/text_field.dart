@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/styles.dart';
+import 'package:flutter/services.dart';
 
 class AppTextField extends StatelessWidget {
   final String label;
@@ -17,6 +18,10 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final VoidCallback? onTap;
+  // New: allow providing a literal value instead of a controller (avoids rebuild-time controllers)
+  final String? initialValue;
+  // New: allow input formatters (e.g., currency/decimal constraints)
+  final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
     super.key,
@@ -34,6 +39,8 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.readOnly = false,
     this.onTap,
+    this.initialValue,
+    this.inputFormatters,
   });
 
   @override
@@ -54,6 +61,8 @@ class AppTextField extends StatelessWidget {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          // Only set initialValue when no controller is provided
+          initialValue: controller == null ? initialValue : null,
           validator: validator,
           onChanged: onChanged,
           keyboardType: keyboardType,
@@ -63,6 +72,7 @@ class AppTextField extends StatelessWidget {
           enabled: enabled,
           readOnly: readOnly,
           onTap: onTap,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: prefixIcon,

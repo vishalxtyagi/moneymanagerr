@@ -15,6 +15,7 @@ import 'package:moneymanager/widgets/common/text_field.dart';
 import 'package:moneymanager/widgets/common/type_selector.dart';
 import 'package:moneymanager/widgets/header/simple_header.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction;
@@ -35,6 +36,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   TransactionType _type = TransactionType.expense;
   String? _category; // Changed to nullable
   DateTime _date = DateTime.now();
+
+  // ValueNotifiers to minimize rebuilds
+  late final ValueNotifier<TransactionType> _typeVN;
+  late final ValueNotifier<String?> _categoryVN;
+  late final ValueNotifier<DateTime> _dateVN;
 
   @override
   bool get wantKeepAlive => true;
@@ -59,6 +65,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _amountController.text = widget.transaction!.amount.toString();
       _noteController.text = widget.transaction!.note ?? '';
     }
+
+    // Init notifiers from current state
+    _typeVN = ValueNotifier<TransactionType>(_type);
+    _categoryVN = ValueNotifier<String?>(_category);
+    _dateVN = ValueNotifier<DateTime>(_date);
   }
 
   @override
@@ -66,6 +77,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
+    _typeVN.dispose();
+    _categoryVN.dispose();
+    _dateVN.dispose();
     super.dispose();
   }
 
@@ -81,7 +95,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _date,
+      initialDate: _dateVN.value,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       builder: (context, child) {
@@ -95,10 +109,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         );
       },
     );
-    if (picked != null && picked != _date) {
-      setState(() {
-        _date = picked;
-      });
+    if (picked != null && picked != _dateVN.value) {
+      _dateVN.value = picked;
+      _date = picked; // keep in sync for any legacy reads
     }
   }
 
@@ -119,14 +132,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           userId: userId,
           title: _titleController.text,
           amount: amount,
-          date: _date,
-          category: _category!,
-          type: _type,
+          date: _dateVN.value,
+          category: _categoryVN.value!,
+          type: _typeVN.value,
           note: _noteController.text.isNotEmpty ? _noteController.text : null,
         );
 
         // Show notification for large expenses
-        if (_type == TransactionType.expense && amount >= 1000) {
+        if (_typeVN.value == TransactionType.expense && amount >= 1000) {
           await NotificationService.showExpenseAlert(amount, 1000);
         }
 
@@ -141,9 +154,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           userId: widget.transaction!.userId,
           title: _titleController.text,
           amount: amount,
-          date: _date,
-          category: _category!,
-          type: _type,
+          date: _dateVN.value,
+          category: _categoryVN.value!,
+          type: _typeVN.value,
           note: _noteController.text.isNotEmpty ? _noteController.text : null,
           createdAt: widget.transaction!.createdAt,
           updatedAt: DateTime.now(),
@@ -248,184 +261,179 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           ),
         ],
       ),
-      body: Consumer<CategoryProvider>(
-        builder: (context, categoryProvider, child) {
-          final expenseCategories = categoryProvider.expenseCategories;
-          final incomeCategories = categoryProvider.incomeCategories;
-          final currentCategories = _type == TransactionType.expense
-              ? expenseCategories
-              : incomeCategories;
-
-          // Ensure category is valid whenever categories or type changes
-          _ensureValidCategory(currentCategories);
-
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(isWeb ? 32 : 20),
-            child: Center(
-              child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Transaction Type Selector
-                      const AppSimpleHeader(title: 'Transaction Type'),
-                      AppTypeSelector<TransactionType>(
-                          selectedValue: _type,
+      body: Padding(
+        padding: EdgeInsets.all(isWeb ? 32 : 20),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  // Transaction Type Selector (isolated rebuild)
+                  const AppSimpleHeader(title: 'Transaction Type'),
+                  RepaintBoundary(
+                    child: ValueListenableBuilder<TransactionType>(
+                      valueListenable: _typeVN,
+                      builder: (context, type, _) {
+                        return AppTypeSelector<TransactionType>(
+                          selectedValue: type,
                           values: const [
                             TransactionType.expense,
-                            TransactionType.income
+                            TransactionType.income,
                           ],
-                          labelBuilder: (type) => type == TransactionType.income
-                              ? 'Income'
-                              : 'Expense',
-                          iconBuilder: (type) => type == TransactionType.income
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                          colorBuilder: (type) => type == TransactionType.income
-                              ? AppColors.success
-                              : AppColors.error,
-                          onChanged: (type) {
-                            setState(() {
-                              _type = type;
-                              // Reset category when type changes
-                              final currentCategories =
-                                  _type == TransactionType.expense
-                                      ? expenseCategories
-                                      : incomeCategories;
-                              _ensureValidCategory(currentCategories);
-                            });
-                          }),
-                      const SizedBox(height: 24),
+                          labelBuilder: (t) =>
+                              t == TransactionType.income ? 'Income' : 'Expense',
+                          iconBuilder: (t) =>
+                              t == TransactionType.income ? Icons.arrow_upward : Icons.arrow_downward,
+                          colorBuilder: (t) =>
+                              t == TransactionType.income ? AppColors.success : AppColors.error,
+                          onChanged: (newType) {
+                            final provider = context.read<CategoryProvider>();
+                            final list = newType == TransactionType.expense
+                                ? provider.expenseCategories
+                                : provider.incomeCategories;
+                            _typeVN.value = newType;
+                            _type = newType; // optional sync
+                            _categoryVN.value = list.isNotEmpty ? list.first.name : null;
+                            _category = _categoryVN.value; // optional sync
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-                      // Amount
-                      AppTextField(
-                        label: 'Amount',
-                        hint: 'Enter amount',
-                        controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        prefixIcon: const Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          child: Text('₹',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w600)),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an amount';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter a valid amount';
-                          }
-                          if (double.parse(value) <= 0) {
-                            return 'Amount must be greater than 0';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
+                  // Amount
+                  AppTextField(
+                    label: 'Amount',
+                    hint: 'Enter amount',
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^[0-9]*\.?[0-9]{0,2}')),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Please enter an amount';
+                      final v = double.tryParse(value);
+                      if (v == null) return 'Please enter a valid amount';
+                      if (v <= 0) return 'Amount must be greater than 0';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
 
-                      // Title
-                      AppTextField(
+                  // Title (hint reacts only to type changes)
+                  ValueListenableBuilder<TransactionType>(
+                    valueListenable: _typeVN,
+                    builder: (context, type, _) {
+                      return AppTextField(
                         label: 'Label',
-                        hint: _type == TransactionType.expense
-                            ? 'What did you spend on?'
-                            : 'What did you earn?',
+                        hint: type == TransactionType.expense ? 'What did you spend on?' : 'What did you earn?',
                         controller: _titleController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a description';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
+                        validator: (value) => (value == null || value.isEmpty) ? 'Please enter a description' : null,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
 
-                      // Category
-                      if (currentCategories.isNotEmpty)
-                        AppDropdown<String>(
-                          label: 'Category',
-                          value: _category,
-                          items: currentCategories
-                              .map((category) => category.name)
-                              .toList(),
-                          getLabel: (category) => category,
-                          onChanged: (value) {
-                            setState(() {
-                              _category = value;
+                  // Category (rebuilds only when categories or type changes)
+                  ValueListenableBuilder<TransactionType>(
+                    valueListenable: _typeVN,
+                    builder: (context, type, _) {
+                      return Selector<CategoryProvider, List<CategoryModel>>(
+                        selector: (context, provider) =>
+                            type == TransactionType.expense ? provider.expenseCategories : provider.incomeCategories,
+                        builder: (context, categories, __) {
+                          final current = _categoryVN.value;
+                          final hasCurrent = current != null && categories.any((c) => c.name == current);
+                          if (!hasCurrent && categories.isNotEmpty) {
+                            // defer to next frame to avoid build-time setState
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _categoryVN.value = categories.first.name;
+                              _category = _categoryVN.value; // optional sync
                             });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select a category';
-                            }
-                            return null;
-                          },
-                        )
-                      else
-                        const AppCard(
-                          padding: EdgeInsets.all(16),
-                          child: Text('No categories available'),
-                        ),
-                      const SizedBox(height: 24),
+                          }
+                          if (categories.isEmpty) {
+                            return const AppCard(padding: EdgeInsets.all(16), child: Text('No categories available'));
+                          }
+                          return ValueListenableBuilder<String?>(
+                            valueListenable: _categoryVN,
+                            builder: (context, selected, ___) => AppDropdown<String>(
+                              label: 'Category',
+                              value: selected,
+                              items: categories.map((c) => c.name).toList(),
+                              getLabel: (v) => v,
+                              onChanged: (value) => _categoryVN.value = value,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Please select a category' : null,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
 
-                      // Date
-                      AppTextField(
+                  // Date (rebuilds only when date changes)
+                  ValueListenableBuilder<DateTime>(
+                    valueListenable: _dateVN,
+                    builder: (context, date, _) {
+                      return AppTextField(
                         label: 'Date',
-                        controller: TextEditingController(
-                          text: DateFormat('EEEE, MMM dd, yyyy').format(_date),
-                        ),
+                        initialValue: DateFormat('EEEE, MMM dd, yyyy').format(date),
                         readOnly: true,
                         onTap: () => _selectDate(context),
-                        prefixIcon: const Icon(Icons.calendar_today,
-                            color: AppColors.textSecondary),
-                        suffixIcon: const Icon(Icons.chevron_right,
-                            color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Note
-                      AppTextField(
-                        label: 'Note (Optional)',
-                        hint: 'Add a note about this transaction...',
-                        controller: _noteController,
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Save Button
-                      AppButton(
-                        text: widget.transaction == null
-                            ? 'Add Transaction'
-                            : 'Update Transaction',
-                        onPressed:
-                            currentCategories.isNotEmpty ? _submit : null,
-                        width: double.infinity,
-                        size: ButtonSize.lg,
-                        type: ButtonType.primary,
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Delete Button
-                      if (widget.transaction != null)
-                        AppButton(
-                          text: 'Delete Transaction',
-                          onPressed: _deleteTransaction,
-                          width: double.infinity,
-                          size: ButtonSize.lg,
-                          type: ButtonType.error,
-                        ),
-                    ],
+                        prefixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
+                        suffixIcon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                      );
+                    },
                   ),
-                ),
+                  const SizedBox(height: 24),
+
+                  // Note
+                  AppTextField(
+                    label: 'Note (Optional)',
+                    hint: 'Add a note about this transaction...',
+                    controller: _noteController,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Save / Delete Buttons (enabled state reacts only to category changes)
+                  RepaintBoundary(
+                    child: Column(
+                      children: [
+                        ValueListenableBuilder<String?>(
+                          valueListenable: _categoryVN,
+                          builder: (context, selected, _) => AppButton(
+                            text: widget.transaction == null ? 'Add Transaction' : 'Update Transaction',
+                            onPressed: selected != null ? _submit : null,
+                            width: double.infinity,
+                            size: ButtonSize.lg,
+                            type: ButtonType.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        if (widget.transaction != null)
+                          AppButton(
+                            text: 'Delete Transaction',
+                            onPressed: _deleteTransaction,
+                            width: double.infinity,
+                            size: ButtonSize.lg,
+                            type: ButtonType.error,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
