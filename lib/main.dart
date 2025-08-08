@@ -14,11 +14,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
 
-    final notificationService = NotificationService.getInstance();
+    final notificationService = NotificationService();
     await notificationService.initialize();
-    
+
     runApp(const MoneyManagerApp());
   } catch (e) {
     debugPrint('App initialization failed: $e');
@@ -60,9 +61,8 @@ class _AuthChecker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Selector<AuthProvider, bool>(
       selector: (_, auth) => auth.isSignedIn,
-      builder: (_, isSignedIn, __) => isSignedIn 
-          ? const MainNavigationScreen() 
-          : const AuthScreen(),
+      builder: (_, isSignedIn, __) =>
+          isSignedIn ? const MainNavigationScreen() : const AuthScreen(),
     );
   }
 }

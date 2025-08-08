@@ -28,9 +28,9 @@ class ResponsiveUtil {
   }
 
   EdgeInsets screenPadding() => EdgeInsets.symmetric(
-    horizontal: value(mobile: 16, tablet: 24, desktop: 32),
-    vertical: value(mobile: 16, tablet: 20, desktop: 24),
-  );
+        horizontal: value(mobile: 16, tablet: 24, desktop: 32),
+        vertical: value(mobile: 16, tablet: 20, desktop: 24),
+      );
 
   double spacing({double scale = 1}) =>
       value(mobile: 16, tablet: 20, desktop: 24) * scale;

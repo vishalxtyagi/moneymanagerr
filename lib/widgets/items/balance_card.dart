@@ -7,14 +7,15 @@ import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/responsive_util.dart';
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key});
+  final AnalyticsModel analytics;
+
+  const BalanceCard({super.key, required this.analytics});
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
     final padding = responsive.spacing(scale: 1.5);
     final radius = responsive.spacing(scale: 1.25);
-    final analytics = AnalyticsModel.from(context.read<TransactionProvider>(), null);
 
     return Card(
       elevation: 8,

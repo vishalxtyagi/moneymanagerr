@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 
-class NotificationSettingsScreen extends StatefulWidget {
-  const NotificationSettingsScreen({super.key});
+class NotificationManagerScreen extends StatefulWidget {
+  const NotificationManagerScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationManagerScreen> createState() =>
+      _NotificationManagerScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationManagerScreenState extends State<NotificationManagerScreen> {
   bool _dailyReminder = true;
   bool _budgetAlert = true;
   bool _expenseAlert = true;
   bool _weeklyReport = false;
   bool _monthlyReport = true;
-  
+
   TimeOfDay _reminderTime = const TimeOfDay(hour: 18, minute: 0);
   double _budgetThreshold = 80.0;
   double _expenseThreshold = 100.0;
@@ -57,16 +58,15 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ],
               ),
             ),
-            
             const SizedBox(height: 20),
-            
             _buildSectionHeader('Budget Alerts'),
             Card(
               child: Column(
                 children: [
                   SwitchListTile(
                     title: const Text('Budget Threshold Alert'),
-                    subtitle: Text('Alert when spending reaches ${_budgetThreshold.toInt()}% of budget'),
+                    subtitle: Text(
+                        'Alert when spending reaches ${_budgetThreshold.toInt()}% of budget'),
                     value: _budgetAlert,
                     onChanged: (value) {
                       setState(() {
@@ -78,7 +78,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     const Divider(height: 1),
                     ListTile(
                       title: const Text('Budget Alert Threshold'),
-                      subtitle: Text('${_budgetThreshold.toInt()}% of daily budget'),
+                      subtitle:
+                          Text('${_budgetThreshold.toInt()}% of daily budget'),
                       trailing: SizedBox(
                         width: 100,
                         child: Slider(
@@ -99,16 +100,15 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ],
               ),
             ),
-            
             const SizedBox(height: 20),
-            
             _buildSectionHeader('Expense Alerts'),
             Card(
               child: Column(
                 children: [
                   SwitchListTile(
                     title: const Text('Large Expense Alert'),
-                    subtitle: Text('Alert for expenses above ₹${_expenseThreshold.toInt()}'),
+                    subtitle: Text(
+                        'Alert for expenses above ₹${_expenseThreshold.toInt()}'),
                     value: _expenseAlert,
                     onChanged: (value) {
                       setState(() {
@@ -141,9 +141,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ],
               ),
             ),
-            
             const SizedBox(height: 20),
-            
             _buildSectionHeader('Reports'),
             Card(
               child: Column(
@@ -172,9 +170,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ],
               ),
             ),
-            
             const SizedBox(height: 30),
-            
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

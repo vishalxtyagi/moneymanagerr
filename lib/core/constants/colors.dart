@@ -20,7 +20,6 @@ class AppColors {
   static const Color textDisabled = Color(0xFFBDBDBD);
   static const Color textOnPrimary = Colors.white;
 
-
   // Backgrounds and Surfaces
   static const Color scaffoldBackground = Color(0xFFF5F7FA);
   static const Color surface = Colors.white;
@@ -35,18 +34,23 @@ class AppColors {
   static const Color border = Color(0xFFE0E0E0);
   static const Color divider = Color(0xFFEEEEEE);
 
-
   // Color Palette
   static const List<Color> colorPalette = [
-    Color(0xFFF44336), // Red
-    Color(0xFF4CAF50), // Green
-    Color(0xFFFFEB3B), // Yellow
-    Color(0xFFFF9800), // Orange
-    Color(0xFF2196F3), // Blue
-    Color(0xFF9C27B0), // Purple
-    Color(0xFF795548), // Brown
-    Color(0xFF607D8B), // Blue Grey
-    Color(0xFFE91E63), // Pink
-    Color(0xFF00BCD4), // Cyan
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF8B5CF6), // Purple
+    Color(0xFFEC4899), // Pink
+    Color(0xFFEF4444), // Red
+    Color(0xFFF97316), // Orange
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFEAB308), // Yellow
+    Color(0xFF84CC16), // Lime
+    Color(0xFF22C55E), // Green
+    Color(0xFF10B981), // Emerald
+    Color(0xFF14B8A6), // Teal
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF0EA5E9), // Sky
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF8B5CF6), // Violet
   ];
 }

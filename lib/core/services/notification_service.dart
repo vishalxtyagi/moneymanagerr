@@ -9,45 +9,45 @@ import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:uuid/uuid.dart';
 
 class NotificationService {
-  static final AwesomeNotifications _notifications = AwesomeNotifications();
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static const _mainChannel = 'financial_alerts';
+  static const _persistentChannel = 'financial_assistant';
+  static const _expenseAction = 'QUICK_EXPENSE';
+  static const _balanceAction = 'VIEW_BALANCE';
+  static const _persistentId = 100;
 
-  static const String _mainChannelKey = 'financial_alerts';
-  static const String _persistentChannelKey = 'financial_assistant';
-  static const String _quickExpenseAction = 'QUICK_EXPENSE';
-  static const String _viewBalanceAction = 'VIEW_BALANCE';
-  static const int _persistentNotificationId = 100;
+  static final _instance = NotificationService._();
+  static final _notifications = AwesomeNotifications();
+  static final _firestore = FirebaseFirestore.instance;
+  static final _auth = FirebaseAuth.instance;
 
-  static NotificationService? _instance;
+  factory NotificationService() => _instance;
   NotificationService._();
-  factory NotificationService.getInstance() => _instance ??= NotificationService._();
 
-  bool _isInitialized = false;
-  bool _isPermissionGranted = false;
-  StreamSubscription<User?>? _authSubscription;
+  static bool _initialized = false;
+  static bool _hasPermission = false;
+  StreamSubscription<User?>? _authSub;
 
-  bool get isInitialized => _isInitialized;
-  bool get isPermissionGranted => _isPermissionGranted;
+  static bool get isReady => _initialized && _hasPermission;
 
   Future<bool> initialize() async {
-    if (_isInitialized) return true;
+    if (_initialized) return _hasPermission;
 
     try {
       final success = await _notifications.initialize(
         'resource://drawable/app_icon',
         [
           NotificationChannel(
-            channelKey: _mainChannelKey,
+            channelKey: _mainChannel,
             channelName: 'Financial Alerts',
-            channelDescription: 'Financial notifications and feedback',
+            channelDescription: 'Financial notifications',
             defaultColor: AppColors.primary,
-            importance: NotificationImportance.High,
+            importance: NotificationImportance.Max,
+            channelShowBadge: true,
           ),
           NotificationChannel(
-            channelKey: _persistentChannelKey,
+            channelKey: _persistentChannel,
             channelName: 'Financial Assistant',
-            channelDescription: 'Quick financial actions',
+            channelDescription: 'Quick actions',
             defaultColor: AppColors.primary,
             importance: NotificationImportance.Default,
             locked: true,
@@ -58,46 +58,37 @@ class NotificationService {
         debug: kDebugMode,
       );
 
-      if (!success) return false;
+      if (success) {
+        _hasPermission = await _notifications.isNotificationAllowed() ||
+            await _notifications.requestPermissionToSendNotifications();
 
-      _isPermissionGranted = await _notifications.isNotificationAllowed() ||
-          await _notifications.requestPermissionToSendNotifications();
+        _notifications.setListeners(
+          onActionReceivedMethod: _handleAction,
+          onDismissActionReceivedMethod: _onDismiss,
+        );
 
-      _notifications.setListeners(
-        onActionReceivedMethod: _handleNotificationAction,
-        onDismissActionReceivedMethod: _onNotificationDismissed,
-      );
+        _authSub = _auth.authStateChanges().listen((user) {
+          user != null ? _showPersistent() : _hidePersistent();
+        });
+      }
 
-      _setupAuthListener();
-      _isInitialized = true;
-      return true;
+      return _initialized = success;
     } catch (e) {
-      debugPrint('NotificationService initialization failed: $e');
+      debugPrint('Notification init failed: $e');
       return false;
     }
   }
 
-  void _setupAuthListener() {
-    _authSubscription?.cancel();
-    _authSubscription = _auth.authStateChanges().listen((user) {
-      if (user != null) {
-        _showPersistentNotification();
-      } else {
-        _hidePersistentNotification();
-      }
-    });
-  }
-
-  Future<void> _showPersistentNotification() async {
-    if (!_isPermissionGranted) return;
+  Future<void> _showPersistent() async {
+    if (!_hasPermission) return;
 
     try {
       await _notifications.createNotification(
         content: NotificationContent(
-          id: _persistentNotificationId,
-          channelKey: _persistentChannelKey,
+          id: _persistentId,
+          channelKey: _persistentChannel,
           title: '💰 Money Manager',
-          body: 'Quick financial actions at your fingertips',
+          body: 'Tap below for quick actions — Add Expense or View Balance.',
           category: NotificationCategory.Service,
           actionType: ActionType.KeepOnTop,
           autoDismissible: false,
@@ -105,67 +96,69 @@ class NotificationService {
         ),
         actionButtons: [
           NotificationActionButton(
-            key: _quickExpenseAction,
+            key: _expenseAction,
             label: 'Add Expense',
             requireInputText: true,
             actionType: ActionType.SilentAction,
           ),
           NotificationActionButton(
-            key: _viewBalanceAction,
+            key: _balanceAction,
             label: 'View Balance',
+            autoDismissible: false,
             actionType: ActionType.SilentAction,
           ),
         ],
       );
     } catch (e) {
-      debugPrint('Failed to show persistent notification: $e');
+      debugPrint('Show persistent failed: $e');
     }
   }
 
-  Future<void> _hidePersistentNotification() async {
+  Future<void> _hidePersistent() async {
     try {
-      await _notifications.cancel(_persistentNotificationId);
+      await _notifications.cancel(_persistentId);
     } catch (e) {
-      debugPrint('Failed to hide persistent notification: $e');
+      debugPrint('Hide persistent failed: $e');
     }
   }
 
   @pragma("vm:entry-point")
-  static Future<void> _handleNotificationAction(ReceivedAction action) async {
+  static Future<void> _handleAction(ReceivedAction action) async {
     final user = _auth.currentUser;
     if (user == null) {
-      return _showNotification('🔐 Sign In Required', 'Please open the app to sign in');
+      return _notify(
+          '🔐 Sign In Required', 'Please open Money Manager to continue.');
     }
 
     try {
       switch (action.buttonKeyPressed) {
-        case _quickExpenseAction:
-          await _processQuickExpense(user.uid, action.buttonKeyInput);
+        case _expenseAction:
+          await _addExpense(user.uid, action.buttonKeyInput);
           break;
-        case _viewBalanceAction:
-          await _processViewBalance(user.uid);
+        case _balanceAction:
+          await _showBalance(user.uid);
           break;
       }
     } catch (e) {
-      await _showNotification('❌ Error', 'Action failed. Please try again.');
-      debugPrint('Notification action error: $e');
+      await _notify(
+          '❌ Action Failed', 'Something went wrong. Please try again.');
+      debugPrint('Action error: $e');
     }
   }
 
-  static Future<void> _processQuickExpense(String userId, String input) async {
-    final cleanInput = input.trim();
+  static Future<void> _addExpense(String userId, String input) async {
+    final amount = double.tryParse(input.trim());
 
-    if (cleanInput.isEmpty) {
-      return _showNotification('⚠️ Empty Input', 'Please enter an amount');
+    if (input.trim().isEmpty) {
+      return _notify('⚠️ No Amount Entered', 'Please enter an expense amount.');
     }
-
-    final amount = double.tryParse(cleanInput);
     if (amount == null || amount <= 0) {
-      return _showNotification('⚠️ Invalid Amount', 'Enter a valid positive number');
+      return _notify(
+          '⚠️ Invalid Amount', 'Enter a valid number like 250 or 99.50.');
     }
-
     if (amount > 999999) {
-      return _showNotification('⚠️ Amount Too Large', 'Enter a reasonable amount');
+      return _notify(
+          '💸 Whoa, That’s Big!', 'Please enter a reasonable amount.');
     }
 
     await _firestore.collection('transactions').add({
@@ -181,10 +174,11 @@ class NotificationService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    await _showNotification('✅ Expense Added', '${CurrencyUtil.format(amount)} logged successfully!');
+    await _notify('✅ Expense Logged',
+        '${CurrencyUtil.format(amount)} added successfully.');
   }
 
-  static Future<void> _processViewBalance(String userId) async {
+  static Future<void> _showBalance(String userId) async {
     final snapshot = await _firestore
         .collection('transactions')
         .where('userId', isEqualTo: userId)
@@ -195,7 +189,7 @@ class NotificationService {
       final data = doc.data();
       final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
       final type = data['type'] as String?;
-      
+
       if (type == TransactionType.income.name) {
         balance += amount;
       } else if (type == TransactionType.expense.name) {
@@ -203,68 +197,52 @@ class NotificationService {
       }
     }
 
-    // Enhanced balance display with status
-    String emoji = '💰';
-    String status = '';
-    
-    if (balance < 0) {
-      emoji = '⚠️';
-      status = ' (Deficit)';
-    } else if (balance > 10000) {
-      emoji = '💎';
-      status = ' (Excellent)';
-    } else if (balance > 1000) {
-      emoji = '💚';
-      status = ' (Good)';
-    } else if (balance < 100) {
-      emoji = '🟡';
-      status = ' (Low)';
-    }
-
-    await _showNotification('$emoji Current Balance', '${CurrencyUtil.format(balance)}$status');
+    await _notify('Current Balance',
+        'You have ${CurrencyUtil.format(balance)} available.');
   }
 
-  static Future<void> _showNotification(String title, String body) async {
+  static Future<void> _notify(String title, String body) async {
     try {
       await _notifications.createNotification(
         content: NotificationContent(
           id: DateTime.now().millisecondsSinceEpoch % 100000,
-          channelKey: _mainChannelKey,
+          channelKey: _mainChannel,
           title: title,
           body: body,
           autoDismissible: true,
         ),
       );
     } catch (e) {
-      debugPrint('Failed to show notification: $e');
+      debugPrint('Notify failed: $e');
     }
-  }
-
-  // Public methods for app usage
-  Future<void> showBalanceWarning(double balance, double threshold) async {
-    if (!_isPermissionGranted || balance > threshold) return;
-    await _showNotification('⚠️ Low Balance Alert', 'Balance: ${CurrencyUtil.format(balance)}');
-  }
-
-  Future<void> showExpenseAlert(double amount, double threshold) async {
-    if (!_isPermissionGranted || amount < threshold) return;
-    await _showNotification('📉 Large Expense Alert', 'You spent ${CurrencyUtil.format(amount)}');
-  }
-
-  Future<void> showCustomNotification(String title, String body) async {
-    if (!_isPermissionGranted) return;
-    await _showNotification(title, body);
   }
 
   @pragma("vm:entry-point")
-  static Future<void> _onNotificationDismissed(ReceivedAction action) async {
-    if (action.id == _persistentNotificationId) {
-      final instance = NotificationService.getInstance();
-      await instance._showPersistentNotification();
+  static Future<void> _onDismiss(ReceivedAction action) async {
+    if (action.id == _persistentId) {
+      await _instance._showPersistent();
     }
   }
 
-  void dispose() {
-    _authSubscription?.cancel();
+  // Public API
+  static Future<void> showBalanceWarning(
+      double balance, double threshold) async {
+    if (isReady && balance <= threshold) {
+      await _notify('⚠️ Low Balance Alert',
+          'Your balance is down to ${CurrencyUtil.format(balance)}.');
+    }
   }
+
+  static Future<void> showExpenseAlert(double amount, double threshold) async {
+    if (isReady && amount >= threshold) {
+      await _notify('📉 Large Expense Alert',
+          'You just spent ${CurrencyUtil.format(amount)}.');
+    }
+  }
+
+  Future<void> showCustomNotification(String title, String body) async {
+    if (isReady) await _notify(title, body);
+  }
+
+  void dispose() => _authSub?.cancel();
 }

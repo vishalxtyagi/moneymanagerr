@@ -26,8 +26,8 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
-    final radius = borderRadius ??
-        BorderRadius.circular(responsive.spacing(scale: 0.8));
+    final radius =
+        borderRadius ?? BorderRadius.circular(responsive.spacing(scale: 0.8));
     final contentPadding = padding ?? responsive.screenPadding();
 
     final cardContent = Card(
@@ -41,13 +41,13 @@ class AppCard extends StatelessWidget {
     return onTap == null
         ? cardContent
         : Material(
-      color: Colors.transparent,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: cardContent,
-      ),
-    );
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: InkWell(
+              borderRadius: radius,
+              onTap: onTap,
+              child: cardContent,
+            ),
+          );
   }
 }

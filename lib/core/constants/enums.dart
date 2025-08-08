@@ -1,17 +1,6 @@
-enum ButtonType {
-  primary,
-  secondary,
-  success,
-  error,
-  warning,
-  outlined,
-  text
-}
+enum ButtonType { primary, secondary, success, error, warning, outlined, text }
 
-enum LogoType {
-  light,
-  dark
-}
+enum LogoType { light, dark }
 
 enum TransactionType {
   all,
@@ -19,8 +8,4 @@ enum TransactionType {
   expense,
 }
 
-enum ButtonSize {
-  sm,
-  md,
-  lg
-}
+enum ButtonSize { sm, md, lg }

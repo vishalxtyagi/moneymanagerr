@@ -70,8 +70,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '337842086344',
     projectId: 'runo-moneymanager',
     storageBucket: 'runo-moneymanager.firebasestorage.app',
-    androidClientId: '337842086344-1rf4g46e7m1ufn14d2frssbdvrli6ivk.apps.googleusercontent.com',
-    iosClientId: '337842086344-jutrbvglcgu2kk6mpgsattarq3nvilul.apps.googleusercontent.com',
+    androidClientId:
+        '337842086344-1rf4g46e7m1ufn14d2frssbdvrli6ivk.apps.googleusercontent.com',
+    iosClientId:
+        '337842086344-jutrbvglcgu2kk6mpgsattarq3nvilul.apps.googleusercontent.com',
     iosBundleId: 'ai.runo.moneymanager',
   );
 }

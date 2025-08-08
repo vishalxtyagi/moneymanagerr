@@ -47,9 +47,9 @@ class AppDropdown<T> extends StatelessWidget {
           value: value,
           items: items
               .map((item) => DropdownMenuItem<T>(
-            value: item,
-            child: Text(getLabel(item)),
-          ))
+                    value: item,
+                    child: Text(getLabel(item)),
+                  ))
               .toList(),
           onChanged: onChanged,
           validator: validator,

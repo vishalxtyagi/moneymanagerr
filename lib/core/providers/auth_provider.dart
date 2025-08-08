@@ -27,7 +27,8 @@ class AuthProvider with ChangeNotifier {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return false;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -36,7 +37,6 @@ class AuthProvider with ChangeNotifier {
 
       await _auth.signInWithCredential(credential);
       return true;
-
     } catch (e) {
       debugPrint('Google Sign-In Error: $e');
       return false;

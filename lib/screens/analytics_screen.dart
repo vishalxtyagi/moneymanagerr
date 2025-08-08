@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/themes.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
@@ -36,9 +37,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
     return Scaffold(
-      appBar: AppBar( 
+      appBar: AppBar(
         title: Text(
-          'Analytics', 
+          'Analytics',
           style: TextStyle(
             fontSize: responsive.fontSize(20),
             fontWeight: FontWeight.bold,
@@ -61,11 +62,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => _showDateRangeOptions(responsive),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.date_range, size: 18, color: Colors.black),
+                        const Icon(Icons.date_range,
+                            size: 18, color: Colors.black),
                         const SizedBox(width: 6),
                         Text(
                           _getDateRangeLabel(),
@@ -75,7 +78,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, size: 16, color: Colors.black),
+                        const Icon(Icons.arrow_drop_down,
+                            size: 16, color: Colors.black),
                       ],
                     ),
                   ),
@@ -87,10 +91,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final balance = transactionProvider.getBalance(range: _selectedDateRange);
-          final income = transactionProvider.getTotalIncome(range: _selectedDateRange);
-          final expense = transactionProvider.getTotalExpense(range: _selectedDateRange);
-          final categoryExpenses = transactionProvider.getExpensesByCategory(range: _selectedDateRange);
+          final balance =
+              transactionProvider.getBalance(range: _selectedDateRange);
+          final income =
+              transactionProvider.getTotalIncome(range: _selectedDateRange);
+          final expense =
+              transactionProvider.getTotalExpense(range: _selectedDateRange);
+          final categoryExpenses = transactionProvider.getExpensesByCategory(
+              range: _selectedDateRange);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
           // final consumptionRate = transactionProvider.getConsumptionRate(range: _selectedDateRange);
 
@@ -100,14 +108,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Column(
                 children: [
                   // Summary Cards Row
-                  _buildSummarySection(balance, income, expense, 0, responsive), //consumptionRate),
+                  _buildSummarySection(balance, income, expense, 0,
+                      responsive), //consumptionRate),
                   SizedBox(height: responsive.spacing(scale: 1.5)),
 
                   // Charts Section
                   if (responsive.isDesktop)
-                    _buildDesktopLayout(categoryExpenses, timeSeriesData, responsive)
+                    _buildDesktopLayout(
+                        categoryExpenses, timeSeriesData, responsive)
                   else
-                    _buildMobileLayout(categoryExpenses, timeSeriesData, responsive),
+                    _buildMobileLayout(
+                        categoryExpenses, timeSeriesData, responsive),
                 ],
               ),
             ),
@@ -117,17 +128,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildSummarySection(double balance, double income, double expense, double consumptionRate, ResponsiveUtil responsive) {
+  Widget _buildSummarySection(double balance, double income, double expense,
+      double consumptionRate, ResponsiveUtil responsive) {
     if (responsive.isDesktop) {
       return Row(
         children: [
-          Expanded(child: _buildSummaryCard('Balance', balance, balance >= 0 ? Colors.green : Colors.red, Icons.account_balance_wallet, responsive)),
+          Expanded(
+              child: _buildSummaryCard(
+                  'Balance',
+                  balance,
+                  balance >= 0 ? Colors.green : Colors.red,
+                  Icons.account_balance_wallet,
+                  responsive)),
           SizedBox(width: responsive.spacing()),
-          Expanded(child: _buildSummaryCard('Income', income, Colors.green, Icons.arrow_upward, responsive)),
+          Expanded(
+              child: _buildSummaryCard('Income', income, Colors.green,
+                  Icons.arrow_upward, responsive)),
           SizedBox(width: responsive.spacing()),
-          Expanded(child: _buildSummaryCard('Expense', expense, Colors.red, Icons.arrow_downward, responsive)),
+          Expanded(
+              child: _buildSummaryCard('Expense', expense, Colors.red,
+                  Icons.arrow_downward, responsive)),
           SizedBox(width: responsive.spacing()),
-          Expanded(child: _buildSummaryCard('Consumption Rate', consumptionRate, Colors.orange, Icons.trending_up, responsive, isSavingsRate: true)),
+          Expanded(
+              child: _buildSummaryCard('Consumption Rate', consumptionRate,
+                  Colors.orange, Icons.trending_up, responsive,
+                  isSavingsRate: true)),
         ],
       );
     } else {
@@ -135,17 +160,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: _buildSummaryCard('Balance', balance, balance >= 0 ? Colors.green : Colors.red, Icons.account_balance_wallet, responsive)),
+              Expanded(
+                  child: _buildSummaryCard(
+                      'Balance',
+                      balance,
+                      balance >= 0 ? Colors.green : Colors.red,
+                      Icons.account_balance_wallet,
+                      responsive)),
               SizedBox(width: responsive.spacing()),
-              Expanded(child: _buildSummaryCard('Income', income, Colors.green, Icons.arrow_upward, responsive)),
+              Expanded(
+                  child: _buildSummaryCard('Income', income, Colors.green,
+                      Icons.arrow_upward, responsive)),
             ],
           ),
           SizedBox(height: responsive.spacing()),
           Row(
             children: [
-              Expanded(child: _buildSummaryCard('Expense', expense, Colors.red, Icons.arrow_downward, responsive)),
+              Expanded(
+                  child: _buildSummaryCard('Expense', expense, Colors.red,
+                      Icons.arrow_downward, responsive)),
               SizedBox(width: responsive.spacing()),
-              Expanded(child: _buildSummaryCard('Consumption Rate', consumptionRate, Colors.orange, Icons.trending_up, responsive, isSavingsRate: true)),
+              Expanded(
+                  child: _buildSummaryCard('Consumption Rate', consumptionRate,
+                      Colors.orange, Icons.trending_up, responsive,
+                      isSavingsRate: true)),
             ],
           ),
         ],
@@ -153,7 +191,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
   }
 
-  Widget _buildDesktopLayout(Map<String, double> categoryExpenses, List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildDesktopLayout(Map<String, double> categoryExpenses,
+      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -170,7 +209,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildMobileLayout(Map<String, double> categoryExpenses, List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildMobileLayout(Map<String, double> categoryExpenses,
+      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return Column(
       children: [
         _buildExpenseBreakdownChart(categoryExpenses, responsive),
@@ -180,7 +220,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, double amount, Color color, IconData icon, ResponsiveUtil responsive, {bool isSavingsRate = false}) {
+  Widget _buildSummaryCard(String title, double amount, Color color,
+      IconData icon, ResponsiveUtil responsive,
+      {bool isSavingsRate = false}) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +250,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           SizedBox(height: responsive.spacing(scale: 0.75)),
           Text(
-            isSavingsRate 
+            isSavingsRate
                 ? '${amount.toStringAsFixed(1)}%'
                 : CurrencyUtil.formatCompact(amount),
             style: TextStyle(
@@ -222,7 +264,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildExpenseBreakdownChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildExpenseBreakdownChart(
+      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +286,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Icon(
                         Icons.pie_chart,
-                        size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                        size: responsive.value(
+                            mobile: 48.0, tablet: 56.0, desktop: 64.0),
                         color: Colors.grey,
                       ),
                       SizedBox(height: responsive.spacing()),
@@ -267,7 +311,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: SizedBox(
                               width: 200,
                               height: 200,
-                              child: _buildPieChart(categoryExpenses, responsive),
+                              child:
+                                  _buildPieChart(categoryExpenses, responsive),
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -294,7 +339,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildPieChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildPieChart(
+      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     return PieChart(
       PieChartData(
         pieTouchData: PieTouchData(
@@ -306,24 +352,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 _touchedIndex = -1;
                 return;
               }
-              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+              _touchedIndex =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
             });
           },
         ),
         borderData: FlBorderData(show: false),
         sectionsSpace: 2,
-        centerSpaceRadius: responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
+        centerSpaceRadius:
+            responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
         sections: _generatePieChartSections(categoryExpenses),
       ),
     );
   }
 
-  Widget _buildLegendList(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildLegendList(
+      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     final entries = categoryExpenses.entries.toList();
     final maxInitialItems = responsive.isDesktop ? 5 : 3;
     final hasMoreItems = entries.length > maxInitialItems;
-    final itemsToShow = _showAllCategories ? entries : entries.take(maxInitialItems).toList();
-    
+    final itemsToShow =
+        _showAllCategories ? entries : entries.take(maxInitialItems).toList();
+
     return Column(
       children: [
         // Legend items
@@ -368,7 +418,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
           );
         }),
-        
+
         // Show more/less button
         if (hasMoreItems) ...[
           const SizedBox(height: 8),
@@ -382,27 +432,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _showAllCategories 
-                        ? 'Show Less' 
+                    _showAllCategories
+                        ? 'Show Less'
                         : 'Show ${entries.length - maxInitialItems} More',
                     style: TextStyle(
                       fontSize: responsive.fontSize(12),
-                      color: Colors.blue,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     _showAllCategories ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.blue,
+                    color: AppColors.primary,
                     size: 18,
                   ),
                 ],
@@ -414,7 +464,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildSpendingTrendChart(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildSpendingTrendChart(
+      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,20 +480,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           SizedBox(height: responsive.spacing(scale: 1.5)),
           SizedBox(
-            height: responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
+            height:
+                responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.bar_chart, 
-                          size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                          Icons.bar_chart,
+                          size: responsive.value(
+                              mobile: 48.0, tablet: 56.0, desktop: 64.0),
                           color: Colors.grey,
                         ),
                         SizedBox(height: responsive.spacing()),
                         Text(
-                          'No transaction data available', 
+                          'No transaction data available',
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: responsive.fontSize(16),
@@ -491,8 +544,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             },
                           ),
                         ),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
                       ),
                       borderData: FlBorderData(show: false),
                       barGroups: timeSeriesData.asMap().entries.map((entry) {
@@ -504,7 +559,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             BarChartRodData(
                               toY: data['income'],
                               color: Colors.green,
-                              width: responsive.value(mobile: 8.0, tablet: 10.0, desktop: 12.0),
+                              width: responsive.value(
+                                  mobile: 8.0, tablet: 10.0, desktop: 12.0),
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(4),
                                 topRight: Radius.circular(4),
@@ -513,7 +569,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             BarChartRodData(
                               toY: data['expense'],
                               color: Colors.red,
-                              width: responsive.value(mobile: 8.0, tablet: 10.0, desktop: 12.0),
+                              width: responsive.value(
+                                  mobile: 8.0, tablet: 10.0, desktop: 12.0),
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(4),
                                 topRight: Radius.circular(4),
@@ -539,7 +596,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color, ResponsiveUtil responsive) {
+  Widget _buildLegendItem(
+      String label, Color color, ResponsiveUtil responsive) {
     return Row(
       children: [
         Material(
@@ -559,34 +617,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  List<PieChartSectionData> _generatePieChartSections(Map<String, double> categoryExpenses) {
+  List<PieChartSectionData> _generatePieChartSections(
+      Map<String, double> categoryExpenses) {
     return categoryExpenses.entries.toList().asMap().entries.map((entry) {
       final index = entry.key;
       final category = entry.value;
       final isTouched = index == _touchedIndex;
       final fontSize = isTouched ? 16.0 : 12.0;
       final radius = isTouched ? 70.0 : 60.0;
-      
+
       return PieChartSectionData(
         color: _getCategoryColor(index),
         value: category.value,
         title: isTouched ? category.key : '',
         radius: radius,
         titleStyle: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          backgroundColor: Colors.black87
-        ),
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            backgroundColor: Colors.black87),
       );
     }).toList();
   }
 
   Color _getCategoryColor(int index) {
     const List<Color> colors = [
-      Color(0xFFF44336), Color(0xFF4CAF50), Color(0xFFFFEB3B), Color(0xFFFF9800),
-      Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF795548), Color(0xFF607D8B),
-      Color(0xFFE91E63), Color(0xFF00BCD4),
+      Color(0xFFF44336),
+      Color(0xFF4CAF50),
+      Color(0xFFFFEB3B),
+      Color(0xFFFF9800),
+      Color(0xFF2196F3),
+      Color(0xFF9C27B0),
+      Color(0xFF795548),
+      Color(0xFF607D8B),
+      Color(0xFFE91E63),
+      Color(0xFF00BCD4),
     ];
     return colors[index % colors.length];
   }
@@ -602,22 +667,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   List<Map<String, dynamic>> _getTimeSeriesData(TransactionProvider provider) {
     if (_selectedDateRange == null) return [];
-    
+
     final transactions = provider.all;
     final startDate = _selectedDateRange!.start;
     final endDate = _selectedDateRange!.end;
     final daysDifference = endDate.difference(startDate).inDays + 1;
-    
+
     List<Map<String, dynamic>> data = [];
 
     if (daysDifference <= 7) {
       // Daily view for 7 days or less
       for (int i = 0; i < daysDifference; i++) {
         final date = startDate.add(Duration(days: i));
-        final dayTransactions = transactions.where((t) =>
-            t.date.year == date.year &&
-            t.date.month == date.month &&
-            t.date.day == date.day).toList();
+        final dayTransactions = transactions
+            .where((t) =>
+                t.date.year == date.year &&
+                t.date.month == date.month &&
+                t.date.day == date.day)
+            .toList();
 
         final income = dayTransactions
             .where((t) => t.type == TransactionType.income)
@@ -634,19 +701,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       }
     } else if (daysDifference <= 35) {
       // Weekly view for up to 5 weeks
-      final weekStart = startDate.subtract(Duration(days: startDate.weekday - 1));
+      final weekStart =
+          startDate.subtract(Duration(days: startDate.weekday - 1));
       final weeks = ((endDate.difference(weekStart).inDays) / 7).ceil();
-      
+
       for (int i = 0; i < weeks; i++) {
         final weekStartDate = weekStart.add(Duration(days: i * 7));
         final weekEndDate = weekStartDate.add(const Duration(days: 6));
-        
+
         // Only include weeks that overlap with the selected range
-        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate)) continue;
-        
-        final weekTransactions = transactions.where((t) =>
-            t.date.isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
-            t.date.isBefore(weekEndDate.add(const Duration(days: 1)))).toList();
+        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate))
+          continue;
+
+        final weekTransactions = transactions
+            .where((t) =>
+                t.date
+                    .isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
+                t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
+            .toList();
 
         final income = weekTransactions
             .where((t) => t.type == TransactionType.income)
@@ -665,12 +737,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       // Monthly view for longer periods
       final monthStart = DateTime(startDate.year, startDate.month, 1);
       final monthEnd = DateTime(endDate.year, endDate.month + 1, 0);
-      final months = (monthEnd.year - monthStart.year) * 12 + (monthEnd.month - monthStart.month) + 1;
-      
+      final months = (monthEnd.year - monthStart.year) * 12 +
+          (monthEnd.month - monthStart.month) +
+          1;
+
       for (int i = 0; i < months; i++) {
         final month = DateTime(monthStart.year, monthStart.month + i, 1);
-        final monthTransactions = transactions.where((t) =>
-            t.date.year == month.year && t.date.month == month.month).toList();
+        final monthTransactions = transactions
+            .where(
+                (t) => t.date.year == month.year && t.date.month == month.month)
+            .toList();
 
         final income = monthTransactions
             .where((t) => t.type == TransactionType.income)
@@ -717,7 +793,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.date_range, color: Colors.blue),
+              const Icon(Icons.date_range, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Select Time Period',
@@ -729,26 +805,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Quick options
-          _buildDateOption('This Month', Icons.calendar_month, 'This Month', responsive),
-          _buildDateOption('Last Month', Icons.calendar_today, 'Last Month', responsive),
-          _buildDateOption('This Year', Icons.calendar_view_month, 'This Year', responsive),
+          _buildDateOption(
+              'This Month', Icons.calendar_month, 'This Month', responsive),
+          _buildDateOption(
+              'Last Month', Icons.calendar_today, 'Last Month', responsive),
+          _buildDateOption(
+              'This Year', Icons.calendar_view_month, 'This Year', responsive),
 
           const Divider(height: 30),
-          
+
           // Custom range option
-          _buildDateOption('Custom Range', Icons.edit_calendar, 'custom', responsive),
-          
+          _buildDateOption(
+              'Custom Range', Icons.edit_calendar, 'custom', responsive),
+
           const SizedBox(height: 10),
         ],
       ),
     );
   }
 
-  Widget _buildDateOption(String title, IconData icon, String value, ResponsiveUtil responsive) {
+  Widget _buildDateOption(
+      String title, IconData icon, String value, ResponsiveUtil responsive) {
     final isSelected = _isCurrentSelection(value);
-    
+
     return InkWell(
       onTap: () => Navigator.pop(context, value),
       borderRadius: BorderRadius.circular(8),
@@ -756,15 +837,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withOpacity(0.1) : null,
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: Colors.blue.withOpacity(0.3)) : null,
+          border: isSelected
+              ? Border.all(color: AppColors.primary.withOpacity(0.3))
+              : null,
         ),
         child: Row(
           children: [
             Icon(
-              icon, 
-              color: isSelected ? Colors.blue : Colors.grey[600],
+              icon,
+              color: isSelected ? AppColors.primary : Colors.grey[600],
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -774,12 +857,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: TextStyle(
                   fontSize: responsive.fontSize(14),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? Colors.blue : Colors.black87,
+                  color: isSelected ? AppColors.primary : Colors.black87,
                 ),
               ),
             ),
-            if (isSelected) 
-              const Icon(Icons.check, color: Colors.blue, size: 20),
+            if (isSelected)
+              const Icon(Icons.check, color: AppColors.primary, size: 20),
           ],
         ),
       ),
@@ -788,30 +871,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   bool _isCurrentSelection(String value) {
     if (_selectedDateRange == null) return false;
-    
+
     final now = DateTime.now();
     final start = _selectedDateRange!.start;
     final end = _selectedDateRange!.end;
-    
+
     switch (value) {
       case 'This Month':
         final thisMonth = DateTimeRange(
           start: DateTime(now.year, now.month, 1),
           end: DateTime(now.year, now.month + 1, 0),
         );
-        return _datesEqual(start, thisMonth.start) && _datesEqual(end, thisMonth.end);
-        
+        return _datesEqual(start, thisMonth.start) &&
+            _datesEqual(end, thisMonth.end);
+
       case 'Last Month':
         final lastMonth = DateTime(now.year, now.month - 1, 1);
         final lastMonthEnd = DateTime(now.year, now.month, 0);
         return _datesEqual(start, lastMonth) && _datesEqual(end, lastMonthEnd);
-        
+
       case 'This Year':
         final thisYear = DateTimeRange(
           start: DateTime(now.year, 1, 1),
           end: DateTime(now.year, 12, 31),
         );
-        return _datesEqual(start, thisYear.start) && _datesEqual(end, thisYear.end);
+        return _datesEqual(start, thisYear.start) &&
+            _datesEqual(end, thisYear.end);
 
       default:
         return false;
@@ -828,7 +913,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: context.colors.copyWith(
-              primary: Colors.blue,
+              primary: AppColors.primary,
             ),
           ),
           child: child!,
@@ -846,7 +931,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   void _setQuickDateRange(String type) {
     final now = DateTime.now();
     DateTimeRange? newRange;
-    
+
     switch (type) {
       case 'This Month':
         newRange = DateTimeRange(
@@ -854,7 +939,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           end: DateTime(now.year, now.month + 1, 0),
         );
         break;
-        
+
       case 'Last Month':
         final lastMonth = DateTime(now.year, now.month - 1, 1);
         newRange = DateTimeRange(
@@ -862,7 +947,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           end: DateTime(now.year, now.month, 0),
         );
         break;
-        
+
       case 'This Year':
         newRange = DateTimeRange(
           start: DateTime(now.year, 1, 1),
@@ -870,7 +955,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         );
         break;
     }
-    
+
     if (newRange != null) {
       setState(() {
         _selectedDateRange = newRange;
@@ -880,25 +965,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   String _getDateRangeLabel() {
     if (_selectedDateRange == null) return 'Select Period';
-    
+
     final start = _selectedDateRange!.start;
     final end = _selectedDateRange!.end;
     final now = DateTime.now();
-    
+
     // Check for common ranges
     final thisMonth = DateTimeRange(
       start: DateTime(now.year, now.month, 1),
       end: DateTime(now.year, now.month + 1, 0),
     );
-    
+
     final thisYear = DateTimeRange(
       start: DateTime(now.year, 1, 1),
       end: DateTime(now.year, 12, 31),
     );
-    
-    if (_datesEqual(start, thisMonth.start) && _datesEqual(end, thisMonth.end)) {
+
+    if (_datesEqual(start, thisMonth.start) &&
+        _datesEqual(end, thisMonth.end)) {
       return 'This Month';
-    } else if (_datesEqual(start, thisYear.start) && _datesEqual(end, thisYear.end)) {
+    } else if (_datesEqual(start, thisYear.start) &&
+        _datesEqual(end, thisYear.end)) {
       return 'This Year';
     } else if (start.year == end.year && start.month == end.month) {
       return DateFormat('MMM yyyy').format(start);
@@ -911,7 +998,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   bool _datesEqual(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 }

@@ -5,8 +5,10 @@ import 'package:moneymanager/core/models/category_model.dart';
 class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  List<CategoryModel> _expenseCategories = List.from(CategoryModel.defaultExpenseCategories);
-  List<CategoryModel> _incomeCategories = List.from(CategoryModel.defaultIncomeCategories);
+  List<CategoryModel> _expenseCategories =
+      List.from(CategoryModel.defaultExpenseCategories);
+  List<CategoryModel> _incomeCategories =
+      List.from(CategoryModel.defaultIncomeCategories);
 
   List<CategoryModel> get expenseCategories =>
       List.unmodifiable(_expenseCategories);
@@ -74,6 +76,8 @@ class CategoryProvider with ChangeNotifier {
 
   CategoryModel getCategoryByName(String name, {required bool isIncome}) {
     final targetList = isIncome ? _incomeCategories : _expenseCategories;
-    return targetList.firstWhere((c) => c.name == name, orElse: () => CategoryModel.withFallback(name: name, isIncome: isIncome));
+    return targetList.firstWhere((c) => c.name == name,
+        orElse: () =>
+            CategoryModel.withFallback(name: name, isIncome: isIncome));
   }
 }

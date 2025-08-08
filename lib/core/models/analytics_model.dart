@@ -36,8 +36,7 @@ class AnalyticsModel {
     );
   }
 
-  static ConsumptionData _getConsumptionData(
-      double income, double expense) {
+  static ConsumptionData _getConsumptionData(double income, double expense) {
     if (income == 0) {
       return ConsumptionData(
         text: 'No income',

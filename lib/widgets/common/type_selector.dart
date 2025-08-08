@@ -29,18 +29,18 @@ class AppTypeSelector<T> extends StatelessWidget {
       child: Row(
         children: values
             .map((value) => Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _TypeButton<T>(
-              value: value,
-              label: labelBuilder(value),
-              icon: iconBuilder?.call(value),
-              color: colorBuilder?.call(value),
-              isSelected: value == selectedValue,
-              onTap: () => onChanged(value),
-            ),
-          ),
-        ))
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _TypeButton<T>(
+                      value: value,
+                      label: labelBuilder(value),
+                      icon: iconBuilder?.call(value),
+                      color: colorBuilder?.call(value),
+                      isSelected: value == selectedValue,
+                      onTap: () => onChanged(value),
+                    ),
+                  ),
+                ))
             .toList(),
       ),
     );

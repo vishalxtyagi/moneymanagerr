@@ -14,7 +14,7 @@ class TransactionProvider with ChangeNotifier {
   TransactionType _typeFilter = TransactionType.all;
   DateTimeRange? _rangeFilter;
   String _query = '';
-  
+
   User? _currentUser;
 
   // Getters
@@ -23,8 +23,10 @@ class TransactionProvider with ChangeNotifier {
   TransactionType get filterType => _typeFilter;
   DateTimeRange? get filterRange => _rangeFilter;
   String get searchQuery => _query;
-  bool get hasActiveFilters => 
-      _typeFilter != TransactionType.all || _rangeFilter != null || _query.isNotEmpty;
+  bool get hasActiveFilters =>
+      _typeFilter != TransactionType.all ||
+      _rangeFilter != null ||
+      _query.isNotEmpty;
 
   /// Update auth state (called by main provider)
   void updateAuth(User? user) {
@@ -36,7 +38,7 @@ class TransactionProvider with ChangeNotifier {
       }
     }
   }
-  
+
   /// Optimized method to update specific transaction in memory
   void _updateTransactionInMemory(TransactionModel updatedTxn) {
     final index = _all.indexWhere((txn) => txn.id == updatedTxn.id);
@@ -46,7 +48,7 @@ class TransactionProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Optimized method to remove transaction from memory
   void _removeTransactionFromMemory(String id) {
     _all.removeWhere((txn) => txn.id == id);
@@ -125,7 +127,7 @@ class TransactionProvider with ChangeNotifier {
     try {
       // Optimistic update
       _updateTransactionInMemory(txn);
-      
+
       await _firestore.collection('transactions').doc(txn.id).update({
         ...txn.toMap(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -143,7 +145,7 @@ class TransactionProvider with ChangeNotifier {
     try {
       // Optimistic removal
       _removeTransactionFromMemory(id);
-      
+
       await _firestore.collection('transactions').doc(id).delete();
     } catch (e) {
       // Revert on error
@@ -181,7 +183,7 @@ class TransactionProvider with ChangeNotifier {
   /// Clear all filters
   void clearAllFilters() {
     if (!hasActiveFilters) return;
-    
+
     _typeFilter = TransactionType.all;
     _rangeFilter = null;
     _query = '';
@@ -192,7 +194,7 @@ class TransactionProvider with ChangeNotifier {
   /// Apply all filters to transactions
   void _applyFilters() {
     _filtered.clear();
-    
+
     for (final txn in _all) {
       if (_matchesAllFilters(txn)) {
         _filtered.add(txn);
@@ -209,7 +211,7 @@ class TransactionProvider with ChangeNotifier {
 
     // Date range filter
     if (_rangeFilter != null) {
-      if (txn.date.isBefore(_rangeFilter!.start) || 
+      if (txn.date.isBefore(_rangeFilter!.start) ||
           txn.date.isAfter(_rangeFilter!.end.add(const Duration(days: 1)))) {
         return false;
       }
@@ -217,7 +219,8 @@ class TransactionProvider with ChangeNotifier {
 
     // Search query filter
     if (_query.isNotEmpty) {
-      final searchIn = '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase();
+      final searchIn =
+          '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase();
       if (!searchIn.contains(_query)) {
         return false;
       }
@@ -229,11 +232,12 @@ class TransactionProvider with ChangeNotifier {
   /// Filter transactions by date range
   List<TransactionModel> _filterByRange(DateTimeRange? range) {
     if (range == null) return _all;
-    
-    return _all.where((txn) => 
-      !txn.date.isBefore(range.start) && 
-      !txn.date.isAfter(range.end.add(const Duration(days: 1)))
-    ).toList();
+
+    return _all
+        .where((txn) =>
+            !txn.date.isBefore(range.start) &&
+            !txn.date.isAfter(range.end.add(const Duration(days: 1))))
+        .toList();
   }
 
   /// Calculate total income for date range
@@ -258,17 +262,17 @@ class TransactionProvider with ChangeNotifier {
   /// Get expenses grouped by category
   Map<String, double> getExpensesByCategory({DateTimeRange? range}) {
     final expenses = <String, double>{};
-    
+
     for (final txn in _filterByRange(range)) {
       if (txn.type == TransactionType.expense) {
         expenses[txn.category] = (expenses[txn.category] ?? 0) + txn.amount;
       }
     }
-    
+
     // Sort by value descending
     final sortedEntries = expenses.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return Map.fromEntries(sortedEntries);
   }
 
@@ -285,9 +289,10 @@ class TransactionProvider with ChangeNotifier {
 
   /// Get transactions within date range
   List<TransactionModel> getByDateRange(DateTime start, DateTime end) {
-    return _all.where((txn) => 
-      !txn.date.isBefore(start) && 
-      !txn.date.isAfter(end.add(const Duration(days: 1)))
-    ).toList();
+    return _all
+        .where((txn) =>
+            !txn.date.isBefore(start) &&
+            !txn.date.isAfter(end.add(const Duration(days: 1))))
+        .toList();
   }
 }

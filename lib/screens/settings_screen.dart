@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
-import 'package:moneymanager/screens/settings/category_management_screen.dart';
-import 'package:moneymanager/screens/settings/notification_settings_screen.dart';
+import 'package:moneymanager/screens/settings/category_manager_screen.dart';
+import 'package:moneymanager/screens/settings/notification_manager_screen.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -50,13 +50,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       leading: const Icon(Icons.warning),
                       title: const Text('Low Threshold Alert'),
-                      subtitle: Text('Alert when balance goes below ₹${_lowThresholdAmount.toStringAsFixed(0)}'),
+                      subtitle: Text(
+                          'Alert when balance goes below ₹${_lowThresholdAmount.toStringAsFixed(0)}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const NotificationSettingsScreen(),
+                            builder: (context) =>
+                                const NotificationManagerScreen(),
                           ),
                         );
                       },
@@ -75,13 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     leading: const Icon(Icons.category),
                     title: const Text('Manage Categories'),
-                    subtitle: const Text('Add, edit, or remove transaction categories'),
+                    subtitle: const Text(
+                        'Add, edit, or remove transaction categories'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const CategoryManagementScreen(),
+                          builder: (context) => const CategoryManagerScreen(),
                         ),
                       );
                     },
@@ -90,7 +93,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     leading: const Icon(Icons.auto_awesome),
                     title: const Text('Auto-categorize Transactions'),
-                    subtitle: const Text('Automatically categorize based on merchant names'),
+                    subtitle: const Text(
+                        'Automatically categorize based on merchant names'),
                     trailing: Switch(
                       value: _autoCategorize,
                       onChanged: (value) {
@@ -131,7 +135,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.delete_forever, color: Colors.red),
+                    leading:
+                        const Icon(Icons.delete_forever, color: Colors.red),
                     title: const Text('Clear All Data'),
                     subtitle: const Text('Permanently delete all transactions'),
                     trailing: const Icon(Icons.chevron_right),
@@ -200,7 +205,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final confirmed = await _showSignOutDialog(context);
                   if (confirmed) {
                     try {
-                      await Provider.of<AuthProvider>(context, listen: false).signOut();
+                      await Provider.of<AuthProvider>(context, listen: false)
+                          .signOut();
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -304,7 +310,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Data'),
-        content: const Text('This action cannot be undone. All your transactions will be permanently deleted.'),
+        content: const Text(
+            'This action cannot be undone. All your transactions will be permanently deleted.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -315,7 +322,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               // TODO: Implement clear data
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Clear data feature coming soon!')),
+                const SnackBar(
+                    content: Text('Clear data feature coming soon!')),
               );
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -369,7 +377,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text('Version: 1.0.0'),
             SizedBox(height: 8),
-            Text('A simple and intuitive money management app to help you track your expenses and income.'),
+            Text(
+                'A simple and intuitive money management app to help you track your expenses and income.'),
             SizedBox(height: 16),
             Text('Features:'),
             Text('• Track income and expenses'),
@@ -391,21 +400,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<bool> _showSignOutDialog(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Sign Out'),
+            content: const Text('Are you sure you want to sign out?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Sign Out'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
-} 
+}

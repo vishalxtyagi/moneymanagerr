@@ -29,7 +29,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     _selectedDay = DateTime.now();
   }
 
-  List<TransactionModel> _getTransactionsForDay(DateTime day, List<TransactionModel> transactions) {
+  List<TransactionModel> _getTransactionsForDay(
+      DateTime day, List<TransactionModel> transactions) {
     return transactions.where((transaction) {
       return isSameDay(transaction.date, day);
     }).toList();
@@ -55,7 +56,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
           final transactions = transactionProvider.all;
-          final selectedDayTransactions = _selectedDay != null 
+          final selectedDayTransactions = _selectedDay != null
               ? _getTransactionsForDay(_selectedDay!, transactions)
               : <TransactionModel>[];
 
@@ -79,7 +80,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                   lastDay: DateTime.utc(2030, 12, 31),
                   focusedDay: _focusedDay,
                   calendarFormat: _calendarFormat,
-                  eventLoader: (day) => _getTransactionsForDay(day, transactions),
+                  eventLoader: (day) =>
+                      _getTransactionsForDay(day, transactions),
                   startingDayOfWeek: StartingDayOfWeek.monday,
                   selectedDayPredicate: (day) {
                     return isSameDay(_selectedDay, day);
@@ -133,7 +135,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                   ),
                 ),
               ),
-              
+
               // Date Summary
               if (_selectedDay != null)
                 Container(
@@ -174,12 +176,15 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             ),
                           ),
                           Text(
-                            CurrencyUtil.format(_getTotalForDay(_selectedDay!, transactions)),
+                            CurrencyUtil.format(
+                                _getTotalForDay(_selectedDay!, transactions)),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: _getTotalForDay(_selectedDay!, transactions) >= 0 
-                                  ? const Color(0xFF4CAF50) 
+                              color: _getTotalForDay(
+                                          _selectedDay!, transactions) >=
+                                      0
+                                  ? const Color(0xFF4CAF50)
                                   : Colors.red,
                             ),
                           ),
@@ -229,7 +234,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: TransactionItem(
                               transaction: transaction,
-                              category: Provider.of<CategoryProvider>(context, listen: false).getCategoryByName(transaction.category, isIncome: transaction.type == TransactionType.income),
+                              category: Provider.of<CategoryProvider>(context,
+                                      listen: false)
+                                  .getCategoryByName(transaction.category,
+                                      isIncome: transaction.type ==
+                                          TransactionType.income),
                               onTap: () {
                                 Navigator.push(
                                   context,

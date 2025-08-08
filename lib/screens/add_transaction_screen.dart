@@ -40,7 +40,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.initState();
 
     // Load categories for the current user
-    final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+    final categoryProvider =
+        Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId != null) {
       categoryProvider.load(userId);
@@ -103,8 +104,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId == null) return;
 
-    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-    final notificationService = Provider.of<NotificationService>(context, listen: false);
+    final transactionProvider =
+        Provider.of<TransactionProvider>(context, listen: false);
 
     try {
       final amount = double.parse(_amountController.text);
@@ -122,18 +123,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
         // Show notification for large expenses
         if (_type == TransactionType.expense && amount >= 1000) {
-          // await notificationService.showLargeExpenseNotification(
-          //   amount: amount,
-          //   threshold: 1000,
-          // );
+          await NotificationService.showExpenseAlert(amount, 1000);
         }
 
         // Check for break-even balance notification
         if (transactionProvider.isNearBreakEven()) {
-          // await notificationService.showBreakEvenNotification(
-          //   currentBalance: transactionProvider.getBalance(),
-          //   threshold: 100,
-          // );
+          await NotificationService.showBalanceWarning(
+              transactionProvider.getBalance(), 100);
         }
       } else {
         final updatedTransaction = TransactionModel(
@@ -183,7 +179,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Transaction'),
-          content: const Text('Are you sure you want to delete this transaction? This action cannot be undone.'),
+          content: const Text(
+              'Are you sure you want to delete this transaction? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -202,7 +199,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
 
     if (confirmed == true) {
-      final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+      final transactionProvider =
+          Provider.of<TransactionProvider>(context, listen: false);
 
       try {
         await transactionProvider.remove(widget.transaction!.id, userId);
@@ -248,7 +246,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         builder: (context, categoryProvider, child) {
           final expenseCategories = categoryProvider.expenseCategories;
           final incomeCategories = categoryProvider.incomeCategories;
-          final currentCategories = _type == TransactionType.expense ? expenseCategories : incomeCategories;
+          final currentCategories = _type == TransactionType.expense
+              ? expenseCategories
+              : incomeCategories;
 
           // Ensure category is valid whenever categories or type changes
           _ensureValidCategory(currentCategories);
@@ -257,7 +257,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             padding: EdgeInsets.all(isWeb ? 32 : 20),
             child: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
+                constraints:
+                    BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -266,20 +267,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       // Transaction Type Selector
                       const AppSimpleHeader(title: 'Transaction Type'),
                       AppTypeSelector<TransactionType>(
-                        selectedValue: _type,
-                        values: const [TransactionType.expense, TransactionType.income],
-                        labelBuilder: (type) => type == TransactionType.income ? 'Income' : 'Expense',
-                        iconBuilder: (type) => type == TransactionType.income ? Icons.arrow_upward : Icons.arrow_downward,
-                        colorBuilder: (type) => type == TransactionType.income ? AppColors.success : AppColors.error,
-                        onChanged: (type) {
-                          setState(() {
-                            _type = type;
-                            // Reset category when type changes
-                            final currentCategories = _type == TransactionType.expense ? expenseCategories : incomeCategories;
-                            _ensureValidCategory(currentCategories);
-                          });
-                        }
-                      ),
+                          selectedValue: _type,
+                          values: const [
+                            TransactionType.expense,
+                            TransactionType.income
+                          ],
+                          labelBuilder: (type) => type == TransactionType.income
+                              ? 'Income'
+                              : 'Expense',
+                          iconBuilder: (type) => type == TransactionType.income
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          colorBuilder: (type) => type == TransactionType.income
+                              ? AppColors.success
+                              : AppColors.error,
+                          onChanged: (type) {
+                            setState(() {
+                              _type = type;
+                              // Reset category when type changes
+                              final currentCategories =
+                                  _type == TransactionType.expense
+                                      ? expenseCategories
+                                      : incomeCategories;
+                              _ensureValidCategory(currentCategories);
+                            });
+                          }),
                       const SizedBox(height: 24),
 
                       // Amount
@@ -287,10 +299,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         label: 'Amount',
                         hint: 'Enter amount',
                         controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         prefixIcon: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          child: Text('₹', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Text('₹',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w600)),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -310,7 +326,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       // Title
                       AppTextField(
                         label: 'Label',
-                        hint: 'What did you spend on?',
+                        hint: _type == TransactionType.expense
+                            ? 'What did you spend on?'
+                            : 'What did you earn?',
                         controller: _titleController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -326,7 +344,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         AppDropdown<String>(
                           label: 'Category',
                           value: _category,
-                          items: currentCategories.map((category) => category.name).toList(),
+                          items: currentCategories
+                              .map((category) => category.name)
+                              .toList(),
                           getLabel: (category) => category,
                           onChanged: (value) {
                             setState(() {
@@ -355,8 +375,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         readOnly: true,
                         onTap: () => _selectDate(context),
-                        prefixIcon: const Icon(Icons.calendar_today, color: AppColors.textSecondary),
-                        suffixIcon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                        prefixIcon: const Icon(Icons.calendar_today,
+                            color: AppColors.textSecondary),
+                        suffixIcon: const Icon(Icons.chevron_right,
+                            color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 24),
 
@@ -371,8 +393,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                       // Save Button
                       AppButton(
-                        text: widget.transaction == null ? 'Add Transaction' : 'Update Transaction',
-                        onPressed: currentCategories.isNotEmpty ? _submit : null,
+                        text: widget.transaction == null
+                            ? 'Add Transaction'
+                            : 'Update Transaction',
+                        onPressed:
+                            currentCategories.isNotEmpty ? _submit : null,
                         width: double.infinity,
                         size: ButtonSize.lg,
                         type: ButtonType.primary,

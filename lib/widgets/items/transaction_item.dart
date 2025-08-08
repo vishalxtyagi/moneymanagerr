@@ -95,7 +95,8 @@ class TransactionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  CurrencyUtil.formatSigned(transaction.amount, transaction.type),
+                  CurrencyUtil.formatSigned(
+                      transaction.amount, transaction.type),
                   style: TextStyle(
                     fontSize: responsive.fontSize(16),
                     fontWeight: FontWeight.bold,
@@ -106,7 +107,8 @@ class TransactionItem extends StatelessWidget {
                 ),
                 if ((transaction.note ?? '').isNotEmpty)
                   Padding(
-                    padding: EdgeInsets.only(top: responsive.spacing(scale: 0.25)),
+                    padding:
+                        EdgeInsets.only(top: responsive.spacing(scale: 0.25)),
                     child: Icon(
                       Icons.note,
                       size: responsive.fontSize(14),

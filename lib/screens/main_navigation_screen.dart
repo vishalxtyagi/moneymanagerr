@@ -19,16 +19,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   late final List<Widget> _screens;
-  
+
   static const List<_NavItem> _navItems = [
-    _NavItem(icon: Iconsax.home_2_copy, selectedIcon: Iconsax.home_2, label: 'Home'),
-    _NavItem(icon: Iconsax.chart_2_copy, selectedIcon: Iconsax.chart_21, label: 'Analytics'),
-    _NavItem(icon: Iconsax.add_copy, selectedIcon: Iconsax.add_copy, label: 'Add', hidden: true),
-    _NavItem(icon: Iconsax.calendar_2_copy, selectedIcon: Iconsax.calendar_2, label: 'Calendar'),
-    _NavItem(icon: Iconsax.setting_2_copy, selectedIcon: Iconsax.setting_2, label: 'Settings'),
+    _NavItem(
+        icon: Iconsax.home_2_copy, selectedIcon: Iconsax.home_2, label: 'Home'),
+    _NavItem(
+        icon: Iconsax.chart_2_copy,
+        selectedIcon: Iconsax.chart_21,
+        label: 'Analytics'),
+    _NavItem(
+        icon: Iconsax.add_copy,
+        selectedIcon: Iconsax.add_copy,
+        label: 'Add',
+        hidden: true),
+    _NavItem(
+        icon: Iconsax.calendar_2_copy,
+        selectedIcon: Iconsax.calendar_2,
+        label: 'Calendar'),
+    _NavItem(
+        icon: Iconsax.setting_2_copy,
+        selectedIcon: Iconsax.setting_2,
+        label: 'Settings'),
   ];
 
-  void _onDestinationSelected(int index) => setState(() => _currentIndex = index);
+  void _onDestinationSelected(int index) =>
+      setState(() => _currentIndex = index);
 
   @override
   void initState() {

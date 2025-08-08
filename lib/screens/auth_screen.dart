@@ -36,9 +36,9 @@ class AuthScreen extends StatelessWidget {
   }
 
   Future<void> _handleSignIn(
-      BuildContext context,
-      ScaffoldMessengerState scaffoldMessenger,
-      ) async {
+    BuildContext context,
+    ScaffoldMessengerState scaffoldMessenger,
+  ) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
       await authProvider.signInWithGoogle();

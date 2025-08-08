@@ -15,18 +15,20 @@ class CategoryModel {
   });
 
   Map<String, dynamic> toMap() => {
-    'name': name,
-    'iconIndex': iconIdx,
-    'isIncome': isIncome,
-    'color': color.value,
-  };
+        'name': name,
+        'iconIndex': iconIdx,
+        'isIncome': isIncome,
+        'color': color.value,
+      };
 
   factory CategoryModel.fromMap(Map<String, dynamic> map) {
     return CategoryModel(
       name: map['name'],
       iconIdx: map['iconIndex'] ?? CategoryUtil.defaultIconIndex,
       isIncome: map['isIncome'] ?? false,
-      color: Color(map['color']),
+      color: map['color'] != null
+          ? Color(map['color'])
+          : CategoryUtil.getRandomCategoryColor(),
     );
   }
 

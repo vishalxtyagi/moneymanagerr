@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/core/models/analytics_model.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
@@ -27,8 +28,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-    final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+    final transactionProvider =
+        Provider.of<TransactionProvider>(context, listen: false);
+    final categoryProvider =
+        Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId != null) {
       transactionProvider.fetch(userId);
@@ -48,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final balance = transactionProvider.getBalance();
             final income = transactionProvider.getTotalIncome();
             final expense = transactionProvider.getTotalExpense();
-            
+
             // Calculate consumption indicator
             final consumptionData = _getConsumptionData(income, expense);
 
@@ -64,12 +67,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           _buildHeader(context, authProvider, responsive),
                           SizedBox(height: responsive.spacing(scale: 1.5)),
-                          const BalanceCard(),
+                          BalanceCard(
+                              analytics: AnalyticsModel.from(
+                                  transactionProvider, null)),
                           SizedBox(height: responsive.spacing()),
                         ],
                       ),
                     ),
-                    
+
                     // Content Section
                     Container(
                       color: Colors.grey[100]!,
@@ -81,7 +86,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           SizedBox(height: responsive.spacing()),
 
                           // Recent Transactions
-                          _buildRecentTransactions(recentTransactions, context, responsive),
+                          _buildRecentTransactions(
+                              recentTransactions, context, responsive),
                         ],
                       ),
                     ),
@@ -95,7 +101,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, AuthProvider authProvider, ResponsiveUtil responsive) {
+  Widget _buildHeader(BuildContext context, AuthProvider authProvider,
+      ResponsiveUtil responsive) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -137,12 +144,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatisticsRow(TransactionProvider provider, ResponsiveUtil responsive) {
+  Widget _buildStatisticsRow(
+      TransactionProvider provider, ResponsiveUtil responsive) {
     final todayTransactions = provider.all.where((t) {
       final today = DateTime.now();
       return t.date.year == today.year &&
-             t.date.month == today.month &&
-             t.date.day == today.day;
+          t.date.month == today.month &&
+          t.date.day == today.day;
     }).length;
 
     final thisMonthTransactions = provider.all.where((t) {
@@ -151,7 +159,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).length;
 
     final topCategory = provider.getTopCategories(count: 1);
-    final topCategoryName = topCategory.isNotEmpty ? topCategory.first.key : 'None';
+    final topCategoryName =
+        topCategory.isNotEmpty ? topCategory.first.key : 'None';
 
     final stats = [
       ('Today', '$todayTransactions', Icons.today),
@@ -161,34 +170,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (responsive.isDesktop) {
       return Row(
-        children: stats.map((stat) => 
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: StatisticCard(
-                title: stat.$1,
-                value: stat.$2,
-                icon: stat.$3,
-                color: AppColors.primary,
+        children: stats
+            .map(
+              (stat) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: StatisticCard(
+                    title: stat.$1,
+                    value: stat.$2,
+                    icon: stat.$3,
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ).toList(),
+            )
+            .toList(),
       );
     } else {
       return Row(
         children: [
-          Expanded(child: StatisticCard(title: stats[0].$1, value: stats[0].$2, icon: stats[0].$3, color: AppColors.primary)),
+          Expanded(
+              child: StatisticCard(
+                  title: stats[0].$1,
+                  value: stats[0].$2,
+                  icon: stats[0].$3,
+                  color: AppColors.primary)),
           const SizedBox(width: 12),
-          Expanded(child: StatisticCard(title: stats[1].$1, value: stats[1].$2, icon: stats[1].$3, color: AppColors.primary)),
+          Expanded(
+              child: StatisticCard(
+                  title: stats[1].$1,
+                  value: stats[1].$2,
+                  icon: stats[1].$3,
+                  color: AppColors.primary)),
           const SizedBox(width: 12),
-          Expanded(child: StatisticCard(title: stats[2].$1, value: stats[2].$2, icon: stats[2].$3, color: AppColors.primary)),
+          Expanded(
+              child: StatisticCard(
+                  title: stats[2].$1,
+                  value: stats[2].$2,
+                  icon: stats[2].$3,
+                  color: AppColors.primary)),
         ],
       );
     }
   }
 
-  Widget _buildRecentTransactions(List<dynamic> recentTransactions, BuildContext context, ResponsiveUtil responsive) {
+  Widget _buildRecentTransactions(List<dynamic> recentTransactions,
+      BuildContext context, ResponsiveUtil responsive) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,25 +247,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
               title: 'No transactions yet',
               subtitle: 'Start by adding your first transaction',
             )
-            else
-              Column(
-                children: recentTransactions
-                    .map((transaction) => TransactionItem(
-                          transaction: transaction,
-                          category: Provider.of<CategoryProvider>(context, listen: false).getCategoryByName(transaction.category, isIncome: transaction.type == TransactionType.income),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddTransactionScreen(
-                                  transaction: transaction,
-                                ),
+          else
+            Column(
+              children: recentTransactions
+                  .map((transaction) => TransactionItem(
+                        transaction: transaction,
+                        category: Provider.of<CategoryProvider>(context,
+                                listen: false)
+                            .getCategoryByName(transaction.category,
+                                isIncome:
+                                    transaction.type == TransactionType.income),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddTransactionScreen(
+                                transaction: transaction,
                               ),
-                            );
-                          },
-                        ))
-                    .toList(),
-              ),
+                            ),
+                          );
+                        },
+                      ))
+                  .toList(),
+            ),
         ],
       ),
     );
@@ -273,7 +304,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     };
   }
 }
-
-
-
-
