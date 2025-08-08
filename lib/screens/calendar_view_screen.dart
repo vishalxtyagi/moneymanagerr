@@ -18,10 +18,14 @@ class CalendarViewScreen extends StatefulWidget {
   State<CalendarViewScreen> createState() => _CalendarViewScreenState();
 }
 
-class _CalendarViewScreenState extends State<CalendarViewScreen> {
+class _CalendarViewScreenState extends State<CalendarViewScreen>
+    with AutomaticKeepAliveClientMixin {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -49,6 +53,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for keep alive
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendar View'),
@@ -63,74 +68,76 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
           return Column(
             children: [
               // Calendar Widget
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TableCalendar<TransactionModel>(
-                  firstDay: DateTime.utc(2020, 1, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
-                  focusedDay: _focusedDay,
-                  calendarFormat: _calendarFormat,
-                  eventLoader: (day) =>
-                      _getTransactionsForDay(day, transactions),
-                  startingDayOfWeek: StartingDayOfWeek.monday,
-                  selectedDayPredicate: (day) {
-                    return isSameDay(_selectedDay, day);
-                  },
-                  onDaySelected: (selectedDay, focusedDay) {
-                    if (!isSameDay(_selectedDay, selectedDay)) {
-                      setState(() {
-                        _selectedDay = selectedDay;
-                        _focusedDay = focusedDay;
-                      });
-                    }
-                  },
-                  onFormatChanged: (format) {
-                    if (_calendarFormat != format) {
-                      setState(() {
-                        _calendarFormat = format;
-                      });
-                    }
-                  },
-                  onPageChanged: (focusedDay) {
-                    _focusedDay = focusedDay;
-                  },
-                  calendarStyle: const CalendarStyle(
-                    outsideDaysVisible: false,
-                    weekendTextStyle: TextStyle(color: Colors.red),
-                    holidayTextStyle: TextStyle(color: Colors.red),
-                    selectedDecoration: BoxDecoration(
-                      color: Color(0xFF4CAF50),
-                      shape: BoxShape.circle,
-                    ),
-                    todayDecoration: BoxDecoration(
-                      color: Color(0xFF81C784),
-                      shape: BoxShape.circle,
-                    ),
-                    markerDecoration: BoxDecoration(
-                      color: Color(0xFF2E7D32),
-                      shape: BoxShape.circle,
-                    ),
+              RepaintBoundary(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  headerStyle: const HeaderStyle(
-                    formatButtonVisible: true,
-                    titleCentered: true,
-                    formatButtonShowsNext: false,
-                    formatButtonDecoration: BoxDecoration(
-                      color: Color(0xFF4CAF50),
-                      borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                  child: TableCalendar<TransactionModel>(
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    focusedDay: _focusedDay,
+                    calendarFormat: _calendarFormat,
+                    eventLoader: (day) =>
+                        _getTransactionsForDay(day, transactions),
+                    startingDayOfWeek: StartingDayOfWeek.monday,
+                    selectedDayPredicate: (day) {
+                      return isSameDay(_selectedDay, day);
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      if (!isSameDay(_selectedDay, selectedDay)) {
+                        setState(() {
+                          _selectedDay = selectedDay;
+                          _focusedDay = focusedDay;
+                        });
+                      }
+                    },
+                    onFormatChanged: (format) {
+                      if (_calendarFormat != format) {
+                        setState(() {
+                          _calendarFormat = format;
+                        });
+                      }
+                    },
+                    onPageChanged: (focusedDay) {
+                      _focusedDay = focusedDay;
+                    },
+                    calendarStyle: const CalendarStyle(
+                      outsideDaysVisible: false,
+                      weekendTextStyle: TextStyle(color: Colors.red),
+                      holidayTextStyle: TextStyle(color: Colors.red),
+                      selectedDecoration: BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                      todayDecoration: BoxDecoration(
+                        color: Color(0xFF81C784),
+                        shape: BoxShape.circle,
+                      ),
+                      markerDecoration: BoxDecoration(
+                        color: Color(0xFF2E7D32),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                    formatButtonTextStyle: TextStyle(
-                      color: Colors.white,
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: true,
+                      titleCentered: true,
+                      formatButtonShowsNext: false,
+                      formatButtonDecoration: BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                      ),
+                      formatButtonTextStyle: TextStyle(
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -232,23 +239,25 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                           final transaction = selectedDayTransactions[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
-                            child: TransactionItem(
-                              transaction: transaction,
-                              category: Provider.of<CategoryProvider>(context,
-                                      listen: false)
+                            child: Selector<CategoryProvider, dynamic>(
+                              selector: (_, provider) => provider
                                   .getCategoryByName(transaction.category,
                                       isIncome: transaction.type ==
                                           TransactionType.income),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddTransactionScreen(
-                                      transaction: transaction,
+                              builder: (_, category, __) => TransactionItem(
+                                transaction: transaction,
+                                category: category,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AddTransactionScreen(
+                                        transaction: transaction,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           );
                         },

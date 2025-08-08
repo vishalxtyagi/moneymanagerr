@@ -25,7 +25,8 @@ class AddTransactionScreen extends StatefulWidget {
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _AddTransactionScreenState extends State<AddTransactionScreen>
+    with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
@@ -34,6 +35,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   TransactionType _type = TransactionType.expense;
   String? _category; // Changed to nullable
   DateTime _date = DateTime.now();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -227,6 +231,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for keep alive
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isWeb = screenWidth > 800;
 

@@ -36,6 +36,22 @@ class AnalyticsModel {
     );
   }
 
+  // Lightweight: totals only
+  factory AnalyticsModel.fromTotals({
+    required double income,
+    required double expense,
+  }) {
+    final balance = income - expense;
+    return AnalyticsModel(
+      balance: balance,
+      income: income,
+      expense: expense,
+      consumptionData: _getConsumptionData(income, expense),
+      categoryExpenses: const {},
+      timeSeriesData: const [],
+    );
+  }
+
   static ConsumptionData _getConsumptionData(double income, double expense) {
     if (income == 0) {
       return ConsumptionData(

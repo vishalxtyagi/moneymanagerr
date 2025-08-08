@@ -161,8 +161,10 @@ class NotificationService {
           '💸 Whoa, That’s Big!', 'Please enter a reasonable amount.');
     }
 
-    await _firestore.collection('transactions').add({
-      'id': const Uuid().v4(),
+    // Ensure Firestore doc.id matches our generated id to keep models consistent
+    final id = const Uuid().v4();
+    await _firestore.collection('transactions').doc(id).set({
+      'id': id,
       'userId': userId,
       'title': 'Quick Entry',
       'amount': amount,

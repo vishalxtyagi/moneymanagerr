@@ -24,72 +24,91 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
-    final transactionProvider =
-        Provider.of<TransactionProvider>(context, listen: false);
+    // Remove duplicate fetch: TransactionProvider.fetch is already triggered by auth changes
     final categoryProvider =
         Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
     if (userId != null) {
-      transactionProvider.fetch(userId);
       categoryProvider.load(userId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for keep alive
     final responsive = ResponsiveUtil.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFB8E6B8),
       body: SafeArea(
-        child: Consumer2<TransactionProvider, AuthProvider>(
-          builder: (context, transactionProvider, authProvider, child) {
-            final recentTransactions = transactionProvider.all.take(5).toList();
-
-            return responsive.constrain(
-              SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header + Balance section
+              Padding(
+                padding: responsive.screenPadding(),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Section
-                    Padding(
-                      padding: responsive.screenPadding(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(context, authProvider, responsive),
-                          SizedBox(height: responsive.spacing(scale: 1.5)),
-                          BalanceCard(
-                              analytics: AnalyticsModel.from(
-                                  transactionProvider, null)),
-                          SizedBox(height: responsive.spacing()),
-                        ],
+                    Selector<AuthProvider, AuthProvider>(
+                      selector: (_, a) => a,
+                      builder: (context, authProvider, _) => _buildHeader(
+                          context, authProvider, responsive),
+                    ),
+                    SizedBox(height: responsive.spacing(scale: 1.5)),
+                    // Use lightweight totals to build analytics for the card
+                    Selector<TransactionProvider, (double,double)>(
+                      selector: (_, p) => (p.totalIncome, p.totalExpense),
+                      builder: (_, totals, __) => RepaintBoundary(
+                        child: BalanceCard(
+                          analytics: AnalyticsModel.fromTotals(
+                            income: totals.$1,
+                            expense: totals.$2,
+                          ),
+                        ),
                       ),
                     ),
+                    SizedBox(height: responsive.spacing()),
+                  ],
+                ),
+              ),
 
-                    // Content Section
-                    Container(
-                      color: Colors.grey[100]!,
-                      padding: responsive.screenPadding(),
-                      child: Column(
-                        children: [
-                          // Statistics Row
-                          _buildStatisticsRow(transactionProvider, responsive),
-                          SizedBox(height: responsive.spacing()),
-
-                          // Recent Transactions
+              // Content Section
+              Container(
+                color: Colors.grey[100]!,
+                padding: responsive.screenPadding(),
+                child: Column(
+                  children: [
+                    // Statistics Row: use provider counters
+                    Selector<TransactionProvider, (int,int,String)>(
+                      selector: (_, p) {
+                        final top = p.getTopCategories(count: 1);
+                        final topName = top.isNotEmpty ? top.first.key : 'None';
+                        return (p.todayCount, p.monthCount, topName);
+                      },
+                      builder: (context, tuple, _) => _buildStatisticsRowFrom(
+                          tuple.$1, tuple.$2, tuple.$3, responsive),
+                    ),
+                    SizedBox(height: responsive.spacing()),
+                    // Recent Transactions: only 5 items
+                    Selector<TransactionProvider, List<dynamic>>(
+                      selector: (_, p) => p.all.take(5).toList(),
+                      builder: (context, recentTransactions, _) =>
                           _buildRecentTransactions(
                               recentTransactions, context, responsive),
-                        ],
-                      ),
                     ),
                   ],
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
@@ -138,24 +157,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatisticsRow(
-      TransactionProvider provider, ResponsiveUtil responsive) {
-    final todayTransactions = provider.all.where((t) {
-      final today = DateTime.now();
-      return t.date.year == today.year &&
-          t.date.month == today.month &&
-          t.date.day == today.day;
-    }).length;
-
-    final thisMonthTransactions = provider.all.where((t) {
-      final today = DateTime.now();
-      return t.date.year == today.year && t.date.month == today.month;
-    }).length;
-
-    final topCategory = provider.getTopCategories(count: 1);
-    final topCategoryName =
-        topCategory.isNotEmpty ? topCategory.first.key : 'None';
-
+  // New helper to render statistics from precomputed tuple
+  Widget _buildStatisticsRowFrom(
+      int todayTransactions, int thisMonthTransactions, String topCategoryName,
+      ResponsiveUtil responsive) {
     final stats = [
       ('Today', '$todayTransactions', Icons.today),
       ('This Month', '$thisMonthTransactions', Icons.calendar_month),
@@ -244,23 +249,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           else
             Column(
               children: recentTransactions
-                  .map((transaction) => TransactionItem(
-                        transaction: transaction,
-                        category: Provider.of<CategoryProvider>(context,
-                                listen: false)
+                  .map((transaction) => Selector<CategoryProvider, dynamic>(
+                        selector: (context, provider) => provider
                             .getCategoryByName(transaction.category,
-                                isIncome:
-                                    transaction.type == TransactionType.income),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddTransactionScreen(
-                                transaction: transaction,
+                                isIncome: transaction.type ==
+                                    TransactionType.income),
+                        builder: (_, category, __) => TransactionItem(
+                          transaction: transaction,
+                          category: category,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddTransactionScreen(
+                                  transaction: transaction,
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ))
                   .toList(),
             ),

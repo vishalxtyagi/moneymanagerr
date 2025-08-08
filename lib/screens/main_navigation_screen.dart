@@ -49,11 +49,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens = const [
-      DashboardScreen(),
-      AnalyticsScreen(),
-      SizedBox.shrink(),
-      CalendarViewScreen(),
-      SettingsScreen(),
+      // Preserve state and scroll positions across tabs
+      DashboardScreen(key: PageStorageKey('DashboardScreen')),
+      AnalyticsScreen(key: PageStorageKey('AnalyticsScreen')),
+      SizedBox.shrink(key: PageStorageKey('AddPlaceholder')),
+      CalendarViewScreen(key: PageStorageKey('CalendarViewScreen')),
+      SettingsScreen(key: PageStorageKey('SettingsScreen')),
     ];
   }
 
@@ -63,18 +64,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Scaffold(
       body: Row(children: [
         if (!isMobile)
-          _RailNavigation(
-            currentIndex: _currentIndex,
-            destinations: _navItems,
-            onDestinationSelected: _onDestinationSelected,
+          RepaintBoundary(
+            child: _RailNavigation(
+              currentIndex: _currentIndex,
+              destinations: _navItems,
+              onDestinationSelected: _onDestinationSelected,
+            ),
           ),
         Expanded(child: IndexedStack(index: _currentIndex, children: _screens))
       ]),
       bottomNavigationBar: isMobile
-          ? _BottomNavigation(
-              currentIndex: _currentIndex,
-              destinations: _navItems,
-              onDestinationSelected: _onDestinationSelected,
+          ? RepaintBoundary(
+              child: _BottomNavigation(
+                currentIndex: _currentIndex,
+                destinations: _navItems,
+                onDestinationSelected: _onDestinationSelected,
+              ),
             )
           : null,
       floatingActionButton: FloatingActionButton(

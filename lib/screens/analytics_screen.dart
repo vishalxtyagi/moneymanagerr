@@ -5,6 +5,7 @@ import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/themes.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/responsive_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
@@ -17,10 +18,14 @@ class AnalyticsScreen extends StatefulWidget {
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
 }
 
-class _AnalyticsScreenState extends State<AnalyticsScreen> {
+class _AnalyticsScreenState extends State<AnalyticsScreen>
+    with AutomaticKeepAliveClientMixin {
   int _touchedIndex = -1;
   DateTimeRange? _selectedDateRange;
   bool _showAllCategories = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -35,6 +40,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for keep alive
     final responsive = ResponsiveUtil.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -198,12 +204,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Expanded(
           flex: 1,
-          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
+          child: RepaintBoundary(
+            child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
+          ),
         ),
         SizedBox(width: responsive.spacing(scale: 1.5)),
         Expanded(
           flex: 2,
-          child: _buildSpendingTrendChart(timeSeriesData, responsive),
+          child: RepaintBoundary(
+            child: _buildSpendingTrendChart(timeSeriesData, responsive),
+          ),
         ),
       ],
     );
@@ -213,9 +223,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return Column(
       children: [
-        _buildExpenseBreakdownChart(categoryExpenses, responsive),
+        RepaintBoundary(
+          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
+        ),
         SizedBox(height: responsive.spacing(scale: 1.5)),
-        _buildSpendingTrendChart(timeSeriesData, responsive),
+        RepaintBoundary(
+          child: _buildSpendingTrendChart(timeSeriesData, responsive),
+        ),
       ],
     );
   }
@@ -339,33 +353,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildPieChart(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
-    return PieChart(
-      PieChartData(
-        pieTouchData: PieTouchData(
-          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-            setState(() {
-              if (!event.isInterestedForInteractions ||
-                  pieTouchResponse == null ||
-                  pieTouchResponse.touchedSection == null) {
-                _touchedIndex = -1;
-                return;
-              }
-              _touchedIndex =
-                  pieTouchResponse.touchedSection!.touchedSectionIndex;
-            });
-          },
-        ),
-        borderData: FlBorderData(show: false),
-        sectionsSpace: 2,
-        centerSpaceRadius:
-            responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
-        sections: _generatePieChartSections(categoryExpenses),
-      ),
-    );
-  }
-
   Widget _buildLegendList(
       Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     final entries = categoryExpenses.entries.toList();
@@ -378,7 +365,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         // Legend items
         ...itemsToShow.asMap().entries.map((entry) {
-          final index = entries.indexOf(entry.value);
+          // Removed redundant index lookup; color is resolved from CategoryProvider
           final categoryEntry = entry.value;
           return Container(
             margin: const EdgeInsets.symmetric(vertical: 2),
@@ -391,7 +378,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Row(
               children: [
                 Material(
-                  color: _getCategoryColor(index),
+                  color: _resolveCategoryColor(categoryEntry.key),
                   borderRadius: BorderRadius.circular(6),
                   child: const SizedBox(width: 12, height: 12),
                 ),
@@ -464,6 +451,57 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  Widget _buildPieChart(
+      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+    return PieChart(
+      PieChartData(
+        pieTouchData: PieTouchData(
+          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+            setState(() {
+              if (!event.isInterestedForInteractions ||
+                  pieTouchResponse == null ||
+                  pieTouchResponse.touchedSection == null) {
+                _touchedIndex = -1;
+                return;
+              }
+              _touchedIndex =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
+            });
+          },
+        ),
+        borderData: FlBorderData(show: false),
+        sectionsSpace: 2,
+        centerSpaceRadius:
+            responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
+        sections: _generatePieChartSections(categoryExpenses),
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _generatePieChartSections(
+      Map<String, double> categoryExpenses) {
+    return categoryExpenses.entries.toList().asMap().entries.map((entry) {
+      final index = entry.key;
+      final category = entry.value;
+      final isTouched = index == _touchedIndex;
+      final fontSize = isTouched ? 16.0 : 12.0;
+      final radius = isTouched ? 70.0 : 60.0;
+
+      return PieChartSectionData(
+        color: _resolveCategoryColor(category.key),
+        value: category.value,
+        title: isTouched ? category.key : '',
+        radius: radius,
+        titleStyle: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            backgroundColor: Colors.black87),
+      );
+    }).toList();
+  }
+
+  // Re-introduced spending trend chart (was accidentally removed during previous edit)
   Widget _buildSpendingTrendChart(
       List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return AppCard(
@@ -617,43 +655,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  List<PieChartSectionData> _generatePieChartSections(
-      Map<String, double> categoryExpenses) {
-    return categoryExpenses.entries.toList().asMap().entries.map((entry) {
-      final index = entry.key;
-      final category = entry.value;
-      final isTouched = index == _touchedIndex;
-      final fontSize = isTouched ? 16.0 : 12.0;
-      final radius = isTouched ? 70.0 : 60.0;
-
-      return PieChartSectionData(
-        color: _getCategoryColor(index),
-        value: category.value,
-        title: isTouched ? category.key : '',
-        radius: radius,
-        titleStyle: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            backgroundColor: Colors.black87),
-      );
-    }).toList();
-  }
-
-  Color _getCategoryColor(int index) {
-    const List<Color> colors = [
-      Color(0xFFF44336),
-      Color(0xFF4CAF50),
-      Color(0xFFFFEB3B),
-      Color(0xFFFF9800),
-      Color(0xFF2196F3),
-      Color(0xFF9C27B0),
-      Color(0xFF795548),
-      Color(0xFF607D8B),
-      Color(0xFFE91E63),
-      Color(0xFF00BCD4),
-    ];
-    return colors[index % colors.length];
+  // Resolve category color from CategoryProvider to keep charts consistent
+  Color _resolveCategoryColor(String categoryName) {
+    final provider = context.read<CategoryProvider>();
+    return provider.getCategoryByName(categoryName, isIncome: false).color;
   }
 
   double _getMaxValue(List<Map<String, dynamic>> data) {
