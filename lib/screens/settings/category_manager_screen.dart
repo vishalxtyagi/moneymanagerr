@@ -414,19 +414,20 @@ class _CategoryDialogState extends State<_CategoryDialog> {
             color: _selectedColor,
           ));
 
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Category ${widget.editingCategory != null ? 'updated' : 'added'}')),
+      );
+    } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Category ${widget.editingCategory != null ? 'updated' : 'added'}')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
-    } catch (e) {
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
     }
   }
 }

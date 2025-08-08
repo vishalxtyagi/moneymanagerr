@@ -202,18 +202,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
+                  // Capture dependencies before awaiting
+                  final auth = context.read<AuthProvider>();
+                  final messenger = ScaffoldMessenger.of(context);
+
                   final confirmed = await _showSignOutDialog(context);
-                  if (confirmed) {
-                    try {
-                      await Provider.of<AuthProvider>(context, listen: false)
-                          .signOut();
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error signing out: $e')),
-                        );
-                      }
-                    }
+                  if (!confirmed) return;
+
+                  try {
+                    await auth.signOut();
+                  } catch (e) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error signing out: $e')),
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -254,6 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              if (!mounted) return;
               // TODO: Implement CSV export
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('CSV export coming soon!')),
@@ -264,16 +266,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement PDF export
+              if (!mounted) return;
+              // TODO: Implement JSON export
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF export coming soon!')),
+                const SnackBar(content: Text('JSON export coming soon!')),
               );
             },
-            child: const Text('PDF'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('JSON'),
           ),
         ],
       ),

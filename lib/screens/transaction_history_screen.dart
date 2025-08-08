@@ -65,6 +65,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   Future<void> _selectDateRange(BuildContext context,
       [StateSetter? modalSetState]) async {
+    // Capture provider before awaiting to avoid using context across async gaps
+    final txProvider = context.read<TransactionProvider>();
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
@@ -82,6 +84,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       },
     );
     if (picked != null && picked != _dateRange) {
+      if (!mounted) return;
       setState(() {
         _dateRange = picked;
       });
@@ -89,8 +92,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       modalSetState?.call(() {
         _dateRange = picked;
       });
-      Provider.of<TransactionProvider>(context, listen: false)
-          .setRangeFilter(picked);
+      txProvider.setRangeFilter(picked);
     }
   }
 

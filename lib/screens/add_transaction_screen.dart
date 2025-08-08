@@ -83,15 +83,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     super.dispose();
   }
 
-  // Helper method to ensure category is valid
-  void _ensureValidCategory(List<CategoryModel> categories) {
-    if (_category == null || !categories.any((c) => c.name == _category)) {
-      if (categories.isNotEmpty) {
-        _category = categories.first.name; // Set to first category if available
-      }
-    }
-  }
-
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
