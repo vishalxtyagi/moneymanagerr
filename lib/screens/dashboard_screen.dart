@@ -164,50 +164,97 @@ class _DashboardScreenState extends State<DashboardScreen>
       ('Top Category', topCategoryName, Icons.category),
     ];
 
-    if (responsive.isDesktop) {
-      return Row(
-        children: stats
-            .map(
-              (stat) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: StatisticCard(
-                    title: stat.$1,
-                    value: stat.$2,
-                    icon: stat.$3,
-                    color: AppColors.primary,
+      // Helper to map by index to onTap filters
+      List<Widget> buildCards() {
+        return [
+          StatisticCard(
+            title: stats[0].$1,
+            value: stats[0].$2,
+            icon: stats[0].$3,
+            color: AppColors.primary,
+            onTap: () {
+              // Today filter: set date range to today
+              final now = DateTime.now();
+              final start = DateTime(now.year, now.month, now.day);
+              final end = start; // single day
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TransactionHistoryScreen(
+                    initialRange: DateTimeRange(start: start, end: end),
+                    ephemeralFilters: true,
                   ),
                 ),
-              ),
-            )
-            .toList(),
-      );
-    } else {
+              );
+            },
+          ),
+          StatisticCard(
+            title: stats[1].$1,
+            value: stats[1].$2,
+            icon: stats[1].$3,
+            color: AppColors.primary,
+            onTap: () {
+              // This month filter: range is first day to today
+              final now = DateTime.now();
+              final start = DateTime(now.year, now.month, 1);
+              final end = DateTime(now.year, now.month, now.day);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TransactionHistoryScreen(
+                    initialRange: DateTimeRange(start: start, end: end),
+                    ephemeralFilters: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          StatisticCard(
+            title: stats[2].$1,
+            value: stats[2].$2,
+            icon: stats[2].$3,
+            color: AppColors.primary,
+            onTap: () {
+              final topName = topCategoryName;
+              if (topName == 'None') return;
+              // Open history filtered by expense type + that category (assuming top is expense)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TransactionHistoryScreen(
+                    initialType: TransactionType.expense,
+                    initialCategory: topName,
+                    ephemeralFilters: true,
+                  ),
+                ),
+              );
+            },
+          ),
+        ];
+      }
+
+      final cards = buildCards();
+      if (responsive.isDesktop) {
+        return Row(
+          children: cards
+              .map((c) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: c,
+                    ),
+                  ))
+              .toList(),
+        );
+      }
       return Row(
         children: [
-          Expanded(
-              child: StatisticCard(
-                  title: stats[0].$1,
-                  value: stats[0].$2,
-                  icon: stats[0].$3,
-                  color: AppColors.primary)),
+          Expanded(child: cards[0]),
           const SizedBox(width: 12),
-          Expanded(
-              child: StatisticCard(
-                  title: stats[1].$1,
-                  value: stats[1].$2,
-                  icon: stats[1].$3,
-                  color: AppColors.primary)),
+          Expanded(child: cards[1]),
           const SizedBox(width: 12),
-          Expanded(
-              child: StatisticCard(
-                  title: stats[2].$1,
-                  value: stats[2].$2,
-                  icon: stats[2].$3,
-                  color: AppColors.primary)),
+          Expanded(child: cards[2]),
         ],
       );
-    }
   }
 
   Widget _buildRecentTransactions(List<dynamic> recentTransactions,

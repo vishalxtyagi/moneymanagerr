@@ -12,7 +12,14 @@ import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:provider/provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
-  const TransactionHistoryScreen({super.key});
+  /// Optional initial filters when navigating from summary or charts
+  final TransactionType? initialType;
+  final String? initialCategory;
+  final DateTimeRange? initialRange;
+  final String? initialQuery;
+  final String? focusTransactionId;
+  final bool ephemeralFilters; // if true, restore previous filters on pop
+  const TransactionHistoryScreen({super.key, this.initialType, this.initialCategory, this.initialRange, this.initialQuery, this.focusTransactionId, this.ephemeralFilters = false});
 
   @override
   State<TransactionHistoryScreen> createState() =>
@@ -23,8 +30,37 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     with AutomaticKeepAliveClientMixin {
   TransactionType _filterType = TransactionType.all;
   DateTimeRange? _dateRange;
+  String? _category; // local mirror of provider category filter
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _didScrollToFocus = false;
+  // Snapshot for ephemeral restore
+  TransactionType? _prevType;
+  DateTimeRange? _prevRange;
+  String? _prevCategory;
+  String? _prevQuery;
+
+  void _ensureCategoryValid() {
+    if (_category == null) return;
+    final catProvider = context.read<CategoryProvider>();
+    bool valid;
+    switch (_filterType) {
+      case TransactionType.income:
+        valid = catProvider.incomeCategories.any((c) => c.name == _category);
+        break;
+      case TransactionType.expense:
+        valid = catProvider.expenseCategories.any((c) => c.name == _category);
+        break;
+      case TransactionType.all:
+        valid = catProvider.incomeCategories.any((c) => c.name == _category) ||
+            catProvider.expenseCategories.any((c) => c.name == _category);
+        break;
+    }
+    if (!valid) {
+      setState(() => _category = null);
+      context.read<TransactionProvider>().setCategoryFilter(null);
+    }
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -35,9 +71,40 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final transactionProvider =
         Provider.of<TransactionProvider>(context, listen: false);
 
-    // Sync local state with provider state
+    final hasInitial = widget.initialType != null ||
+        widget.initialRange != null ||
+        widget.initialCategory != null ||
+        (widget.initialQuery?.isNotEmpty ?? false);
+
+    if (widget.ephemeralFilters && hasInitial) {
+      // snapshot
+      _prevType = transactionProvider.filterType;
+      _prevRange = transactionProvider.filterRange;
+      _prevCategory = transactionProvider.filterCategory;
+      _prevQuery = transactionProvider.searchQuery;
+      // clear existing filters completely
+      transactionProvider.clearAllFilters();
+      transactionProvider.setCategoryFilter(null); // ensure category cleared
+    }
+
+    // Apply initial filters (only the ones provided) without keeping stale ones
+    if (widget.initialType != null) {
+      transactionProvider.setTypeFilter(widget.initialType!);
+    }
+    if (widget.initialRange != null) {
+      transactionProvider.setRangeFilter(widget.initialRange);
+    }
+    if (widget.initialCategory != null) {
+      transactionProvider.setCategoryFilter(widget.initialCategory);
+    }
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      transactionProvider.setQuery(widget.initialQuery!);
+    }
+
+    // Sync local state with provider (after applying overrides)
     _filterType = transactionProvider.filterType;
     _dateRange = transactionProvider.filterRange;
+    _category = transactionProvider.filterCategory;
     _searchController.text = transactionProvider.searchQuery;
 
     // Remove duplicate fetch (auth-driven fetch already starts in provider)
@@ -58,6 +125,15 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   @override
   void dispose() {
+    // Restore previous filters if ephemeral
+    if (widget.ephemeralFilters && _prevType != null) {
+      final provider = Provider.of<TransactionProvider>(context, listen: false);
+      provider.clearAllFilters();
+      provider.setTypeFilter(_prevType!);
+      provider.setRangeFilter(_prevRange);
+      provider.setCategoryFilter(_prevCategory);
+      if ((_prevQuery ?? '').isNotEmpty) provider.setQuery(_prevQuery!);
+    }
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -113,6 +189,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       _filterType = TransactionType.all;
       _dateRange = null;
       _searchController.clear();
+  _category = null;
     });
     final transactionProvider =
         Provider.of<TransactionProvider>(context, listen: false);
@@ -132,9 +209,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         actions: [
           Consumer<TransactionProvider>(
             builder: (_, provider, __) {
-              final hasActiveFilters =
-                  provider.filterType != TransactionType.all ||
-                      provider.filterRange != null;
+              final hasActiveFilters = provider.hasActiveFilters;
               return Row(children: [
                 if (hasActiveFilters)
                   IconButton(
@@ -224,10 +299,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             child: Consumer<TransactionProvider>(
               builder: (context, transactionProvider, child) {
                 final transactions = transactionProvider.filtered;
-                final hasActiveFilters =
-                    transactionProvider.filterType != TransactionType.all ||
-                        transactionProvider.filterRange != null ||
-                        transactionProvider.searchQuery.isNotEmpty;
+                // Attempt auto-scroll to focused transaction once data present
+                if (!_didScrollToFocus && widget.focusTransactionId != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final idx = transactions.indexWhere((t) => t.id == widget.focusTransactionId);
+                    if (idx != -1) {
+                      _didScrollToFocus = true;
+                      _scrollController.animateTo(
+                        (idx * 80).toDouble().clamp(0, _scrollController.position.hasContentDimensions ? _scrollController.position.maxScrollExtent : 50000),
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  });
+                }
+                final hasActiveFilters = transactionProvider.hasActiveFilters;
 
                 // Initial loading state: no data yet but more expected
                 if (transactions.isEmpty &&
@@ -301,23 +387,32 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                         );
                       }
                       final transaction = transactions[index];
+                      final isFocused = transaction.id == widget.focusTransactionId;
                       return Selector<CategoryProvider, CategoryModel>(
                         selector: (_, provider) =>
                             provider.getCategoryByName(transaction.category,
                                 isIncome: transaction.type ==
                                     TransactionType.income),
-                        builder: (_, category, __) => TransactionItem(
-                          transaction: transaction,
-                          category: category,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddTransactionScreen(
-                                    transaction: transaction),
-                              ),
-                            );
-                          },
+                        builder: (_, category, __) => Container(
+                          decoration: isFocused
+                              ? BoxDecoration(
+                                  border: Border.all(color: Colors.amber, width: 2),
+                                  borderRadius: BorderRadius.circular(12),
+                                )
+                              : null,
+                          child: TransactionItem(
+                            transaction: transaction,
+                            category: category,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddTransactionScreen(
+                                      transaction: transaction),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       );
                     },
@@ -353,7 +448,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 top: 20,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              child: Column(
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -404,6 +500,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                             Provider.of<TransactionProvider>(context,
                                     listen: false)
                                 .setTypeFilter(TransactionType.all);
+                            _ensureCategoryValid();
+                            if (_category != null) {
+                              setState(() => _category = null);
+                              setModalState(() => _category = null);
+                              Provider.of<TransactionProvider>(context, listen: false)
+                                  .setCategoryFilter(null);
+                            }
                           },
                           AppColors.secondary,
                         ),
@@ -421,6 +524,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                             Provider.of<TransactionProvider>(context,
                                     listen: false)
                                 .setTypeFilter(TransactionType.income);
+                            _ensureCategoryValid();
                           },
                           Colors.green,
                         ),
@@ -438,6 +542,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                             Provider.of<TransactionProvider>(context,
                                     listen: false)
                                 .setTypeFilter(TransactionType.expense);
+                            _ensureCategoryValid();
                           },
                           Colors.red,
                         ),
@@ -445,6 +550,59 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     ],
                   ),
                   const SizedBox(height: 24),
+
+                  if (_filterType != TransactionType.all) ...[
+                    // Category Filter (only when specific type selected)
+                    const Text(
+                      'Category',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer<CategoryProvider>(
+                      builder: (context, catProvider, _) {
+                        final isIncome = _filterType == TransactionType.income;
+                        final categories = isIncome
+                            ? catProvider.incomeCategories
+                            : catProvider.expenseCategories;
+                        final List<DropdownMenuItem<String?>> items = [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All Categories'),
+                          ),
+                          ...categories.map((c) => DropdownMenuItem<String?>(
+                                value: c.name,
+                                child: Text(c.name),
+                              ))
+                        ];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: _category,
+                              isExpanded: true,
+                              items: items,
+                              onChanged: (val) {
+                                setState(() => _category = val);
+                                setModalState(() => _category = val);
+                                Provider.of<TransactionProvider>(context, listen: false)
+                                    .setCategoryFilter(val);
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Date Range Filter
                   const Text(
@@ -548,6 +706,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     ],
                   ),
                 ],
+              ),
               ),
             );
           },

@@ -33,6 +33,7 @@ class TransactionProvider with ChangeNotifier {
   TransactionType _typeFilter = TransactionType.all;
   DateTimeRange? _rangeFilter;
   String _query = '';
+  String? _categoryFilter;
   Timer? _searchDebounce;
 
   User? _currentUser;
@@ -48,6 +49,7 @@ class TransactionProvider with ChangeNotifier {
   TransactionType get filterType => _typeFilter;
   DateTimeRange? get filterRange => _rangeFilter;
   String get searchQuery => _query;
+  String? get filterCategory => _categoryFilter;
   double get totalIncome => _totalIncome;
   double get totalExpense => _totalExpense;
   int get todayCount => _todayCount;
@@ -55,7 +57,7 @@ class TransactionProvider with ChangeNotifier {
   bool get hasActiveFilters =>
       _typeFilter != TransactionType.all ||
       _rangeFilter != null ||
-      _query.isNotEmpty;
+  _categoryFilter != null;
 
   /// Helpers for date checks
   bool _isToday(DateTime d) {
@@ -400,6 +402,7 @@ class TransactionProvider with ChangeNotifier {
     _typeFilter = TransactionType.all;
     _rangeFilter = null;
     _query = '';
+  _categoryFilter = null;
     _applyFilters();
     notifyListeners();
   }
@@ -431,6 +434,9 @@ class TransactionProvider with ChangeNotifier {
       final blob = _searchBlobCache[txn.id] ??= (
           '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase());
       if (!blob.contains(_query)) return false;
+    }
+    if (_categoryFilter != null && txn.category != _categoryFilter) {
+      return false;
     }
     return true;
   }
@@ -496,6 +502,7 @@ class TransactionProvider with ChangeNotifier {
     _typeFilter = TransactionType.all;
     _rangeFilter = null;
     _query = '';
+  _categoryFilter = null;
     _totalIncome = 0.0;
     _totalExpense = 0.0;
     _todayCount = 0;
@@ -530,6 +537,14 @@ class TransactionProvider with ChangeNotifier {
     if (_isThisMonth(updatedTxn.date)) _monthCount++;
 
     _all[index] = updatedTxn;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Set category filter (null clears)
+  void setCategoryFilter(String? category) {
+    if (_categoryFilter == category) return;
+    _categoryFilter = category?.isEmpty == true ? null : category;
     _applyFilters();
     notifyListeners();
   }

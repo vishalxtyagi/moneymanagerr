@@ -8,6 +8,7 @@ class StatisticCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   const StatisticCard({
     super.key,
@@ -15,6 +16,7 @@ class StatisticCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+  this.onTap,
   });
 
   @override
@@ -23,33 +25,43 @@ class StatisticCard extends StatelessWidget {
     final iconSize = responsive.fontSize(16);
     final spacing = responsive.spacing(scale: 0.5);
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: iconSize,
+          backgroundColor: color.withOpacity(0.1),
+          child: Icon(icon, color: color, size: iconSize),
+        ),
+        SizedBox(height: spacing),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: responsive.fontSize(16),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: responsive.fontSize(12),
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+
+    if (onTap == null) {
+      return AppCard(child: content);
+    }
+
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: iconSize,
-            backgroundColor: color.withOpacity(0.1),
-            child: Icon(icon, color: color, size: iconSize),
-          ),
-          SizedBox(height: spacing),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: responsive.fontSize(16),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: responsive.fontSize(12),
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: content,
       ),
     );
   }
