@@ -68,76 +68,74 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
           return Column(
             children: [
               // Calendar Widget
-              RepaintBoundary(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TableCalendar<TransactionModel>(
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
-                    focusedDay: _focusedDay,
-                    calendarFormat: _calendarFormat,
-                    eventLoader: (day) =>
-                        _getTransactionsForDay(day, transactions),
-                    startingDayOfWeek: StartingDayOfWeek.monday,
-                    selectedDayPredicate: (day) {
-                      return isSameDay(_selectedDay, day);
-                    },
-                    onDaySelected: (selectedDay, focusedDay) {
-                      if (!isSameDay(_selectedDay, selectedDay)) {
-                        setState(() {
-                          _selectedDay = selectedDay;
-                          _focusedDay = focusedDay;
-                        });
-                      }
-                    },
-                    onFormatChanged: (format) {
-                      if (_calendarFormat != format) {
-                        setState(() {
-                          _calendarFormat = format;
-                        });
-                      }
-                    },
-                    onPageChanged: (focusedDay) {
-                      _focusedDay = focusedDay;
-                    },
-                    calendarStyle: const CalendarStyle(
-                      outsideDaysVisible: false,
-                      weekendTextStyle: TextStyle(color: Colors.red),
-                      holidayTextStyle: TextStyle(color: Colors.red),
-                      selectedDecoration: BoxDecoration(
-                        color: Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: Color(0xFF81C784),
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: Color(0xFF2E7D32),
-                        shape: BoxShape.circle,
-                      ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: true,
-                      titleCentered: true,
-                      formatButtonShowsNext: false,
-                      formatButtonDecoration: BoxDecoration(
-                        color: Color(0xFF4CAF50),
-                        borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                      ),
-                      formatButtonTextStyle: TextStyle(
-                        color: Colors.white,
-                      ),
+                  ],
+                ),
+                child: TableCalendar<TransactionModel>(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  calendarFormat: _calendarFormat,
+                  eventLoader: (day) =>
+                      _getTransactionsForDay(day, transactions),
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  selectedDayPredicate: (day) {
+                    return isSameDay(_selectedDay, day);
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    if (!isSameDay(_selectedDay, selectedDay)) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    }
+                  },
+                  onFormatChanged: (format) {
+                    if (_calendarFormat != format) {
+                      setState(() {
+                        _calendarFormat = format;
+                      });
+                    }
+                  },
+                  onPageChanged: (focusedDay) {
+                    _focusedDay = focusedDay;
+                  },
+                  calendarStyle: const CalendarStyle(
+                    outsideDaysVisible: false,
+                    weekendTextStyle: TextStyle(color: Colors.red),
+                    holidayTextStyle: TextStyle(color: Colors.red),
+                    selectedDecoration: BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                    ),
+                    todayDecoration: BoxDecoration(
+                      color: Color(0xFF81C784),
+                      shape: BoxShape.circle,
+                    ),
+                    markerDecoration: BoxDecoration(
+                      color: Color(0xFF2E7D32),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: true,
+                    titleCentered: true,
+                    formatButtonShowsNext: false,
+                    formatButtonDecoration: BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                    ),
+                    formatButtonTextStyle: TextStyle(
+                      color: Colors.white,
                     ),
                   ),
                 ),

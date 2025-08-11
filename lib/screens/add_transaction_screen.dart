@@ -263,35 +263,33 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 children: [
                   // Transaction Type Selector (isolated rebuild)
                   const AppSimpleHeader(title: 'Transaction Type'),
-                  RepaintBoundary(
-                    child: ValueListenableBuilder<TransactionType>(
-                      valueListenable: _typeVN,
-                      builder: (context, type, _) {
-                        return AppTypeSelector<TransactionType>(
-                          selectedValue: type,
-                          values: const [
-                            TransactionType.expense,
-                            TransactionType.income,
-                          ],
-                          labelBuilder: (t) =>
-                              t == TransactionType.income ? 'Income' : 'Expense',
-                          iconBuilder: (t) =>
-                              t == TransactionType.income ? Icons.arrow_upward : Icons.arrow_downward,
-                          colorBuilder: (t) =>
-                              t == TransactionType.income ? AppColors.success : AppColors.error,
-                          onChanged: (newType) {
-                            final provider = context.read<CategoryProvider>();
-                            final list = newType == TransactionType.expense
-                                ? provider.expenseCategories
-                                : provider.incomeCategories;
-                            _typeVN.value = newType;
-                            _type = newType; // optional sync
-                            _categoryVN.value = list.isNotEmpty ? list.first.name : null;
-                            _category = _categoryVN.value; // optional sync
-                          },
-                        );
-                      },
-                    ),
+                  ValueListenableBuilder<TransactionType>(
+                    valueListenable: _typeVN,
+                    builder: (context, type, _) {
+                      return AppTypeSelector<TransactionType>(
+                        selectedValue: type,
+                        values: const [
+                          TransactionType.expense,
+                          TransactionType.income,
+                        ],
+                        labelBuilder: (t) =>
+                            t == TransactionType.income ? 'Income' : 'Expense',
+                        iconBuilder: (t) =>
+                            t == TransactionType.income ? Icons.arrow_upward : Icons.arrow_downward,
+                        colorBuilder: (t) =>
+                            t == TransactionType.income ? AppColors.success : AppColors.error,
+                        onChanged: (newType) {
+                          final provider = context.read<CategoryProvider>();
+                          final list = newType == TransactionType.expense
+                              ? provider.expenseCategories
+                              : provider.incomeCategories;
+                          _typeVN.value = newType;
+                          _type = newType; // optional sync
+                          _categoryVN.value = list.isNotEmpty ? list.first.name : null;
+                          _category = _categoryVN.value; // optional sync
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -395,30 +393,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   const SizedBox(height: 32),
 
                   // Save / Delete Buttons (enabled state reacts only to category changes)
-                  RepaintBoundary(
-                    child: Column(
-                      children: [
-                        ValueListenableBuilder<String?>(
-                          valueListenable: _categoryVN,
-                          builder: (context, selected, _) => AppButton(
-                            text: widget.transaction == null ? 'Add Transaction' : 'Update Transaction',
-                            onPressed: selected != null ? _submit : null,
-                            width: double.infinity,
-                            size: ButtonSize.lg,
-                            type: ButtonType.primary,
-                          ),
+                  Column(
+                    children: [
+                      ValueListenableBuilder<String?>(
+                        valueListenable: _categoryVN,
+                        builder: (context, selected, _) => AppButton(
+                          text: widget.transaction == null ? 'Add Transaction' : 'Update Transaction',
+                          onPressed: selected != null ? _submit : null,
+                          width: double.infinity,
+                          size: ButtonSize.lg,
+                          type: ButtonType.primary,
                         ),
-                        const SizedBox(height: 10),
-                        if (widget.transaction != null)
-                          AppButton(
-                            text: 'Delete Transaction',
-                            onPressed: _deleteTransaction,
-                            width: double.infinity,
-                            size: ButtonSize.lg,
-                            type: ButtonType.error,
-                          ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (widget.transaction != null)
+                        AppButton(
+                          text: 'Delete Transaction',
+                          onPressed: _deleteTransaction,
+                          width: double.infinity,
+                          size: ButtonSize.lg,
+                          type: ButtonType.error,
+                        ),
+                    ],
                   ),
                 ],
               ),

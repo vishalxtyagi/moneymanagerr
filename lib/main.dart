@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'core/constants/themes.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
@@ -20,6 +21,7 @@ void main() async {
     final notificationService = NotificationService();
     await notificationService.initialize();
 
+    debugRepaintRainbowEnabled = true;
     runApp(const MoneyManagerApp());
   } catch (e) {
     debugPrint('App initialization failed: $e');

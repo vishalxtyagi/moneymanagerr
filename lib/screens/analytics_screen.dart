@@ -156,7 +156,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   Icons.arrow_downward, responsive)),
           SizedBox(width: responsive.spacing()),
           Expanded(
-              child: _buildSummaryCard('Consumption Rate', consumptionRate,
+              child: _buildSummaryCard('Spend %', consumptionRate,
                   Colors.orange, Icons.trending_up, responsive,
                   isSavingsRate: true)),
         ],
@@ -187,7 +187,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       Icons.arrow_downward, responsive)),
               SizedBox(width: responsive.spacing()),
               Expanded(
-                  child: _buildSummaryCard('Consumption Rate', consumptionRate,
+                  child: _buildSummaryCard('Spend %', consumptionRate,
                       Colors.orange, Icons.trending_up, responsive,
                       isSavingsRate: true)),
             ],
@@ -204,16 +204,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       children: [
         Expanded(
           flex: 1,
-          child: RepaintBoundary(
-            child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
-          ),
+          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
         ),
         SizedBox(width: responsive.spacing(scale: 1.5)),
         Expanded(
           flex: 2,
-          child: RepaintBoundary(
-            child: _buildSpendingTrendChart(timeSeriesData, responsive),
-          ),
+          child: _buildSpendingTrendChart(timeSeriesData, responsive),
         ),
       ],
     );
@@ -223,13 +219,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return Column(
       children: [
-        RepaintBoundary(
-          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
-        ),
+        _buildExpenseBreakdownChart(categoryExpenses, responsive),
         SizedBox(height: responsive.spacing(scale: 1.5)),
-        RepaintBoundary(
-          child: _buildSpendingTrendChart(timeSeriesData, responsive),
-        ),
+        _buildSpendingTrendChart(timeSeriesData, responsive),
       ],
     );
   }
@@ -256,7 +248,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 title,
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: responsive.fontSize(12),
+                  fontSize: responsive.fontSize(13),
                   fontWeight: FontWeight.w500,
                 ),
               ),

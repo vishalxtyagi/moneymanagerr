@@ -32,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    // Remove duplicate fetch: TransactionProvider.fetch is already triggered by auth changes
     final categoryProvider =
         Provider.of<CategoryProvider>(context, listen: false);
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
@@ -66,12 +65,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     // Use lightweight totals to build analytics for the card
                     Selector<TransactionProvider, (double,double)>(
                       selector: (_, p) => (p.totalIncome, p.totalExpense),
-                      builder: (_, totals, __) => RepaintBoundary(
-                        child: BalanceCard(
-                          analytics: AnalyticsModel.fromTotals(
-                            income: totals.$1,
-                            expense: totals.$2,
-                          ),
+                      builder: (_, totals, __) => BalanceCard(
+                        analytics: AnalyticsModel.fromTotals(
+                          income: totals.$1,
+                          expense: totals.$2,
                         ),
                       ),
                     ),

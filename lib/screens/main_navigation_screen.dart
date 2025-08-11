@@ -64,23 +64,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Scaffold(
       body: Row(children: [
         if (!isMobile)
-          RepaintBoundary(
-            child: _RailNavigation(
-              currentIndex: _currentIndex,
-              destinations: _navItems,
-              onDestinationSelected: _onDestinationSelected,
-            ),
+          _RailNavigation(
+            currentIndex: _currentIndex,
+            destinations: _navItems,
+            onDestinationSelected: _onDestinationSelected,
           ),
-        Expanded(child: IndexedStack(index: _currentIndex, children: _screens))
+        Expanded(child: RepaintBoundary(child: IndexedStack(index: _currentIndex, children: _screens)))
       ]),
       bottomNavigationBar: isMobile
-          ? RepaintBoundary(
-              child: _BottomNavigation(
-                currentIndex: _currentIndex,
-                destinations: _navItems,
-                onDestinationSelected: _onDestinationSelected,
-              ),
-            )
+          ? _BottomNavigation(
+            currentIndex: _currentIndex,
+            destinations: _navItems,
+            onDestinationSelected: _onDestinationSelected,
+          )
           : null,
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.of(context).push(
