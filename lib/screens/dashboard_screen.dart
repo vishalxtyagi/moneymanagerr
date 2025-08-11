@@ -56,9 +56,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Selector<AuthProvider, AuthProvider>(
-                      selector: (_, a) => a,
-                      builder: (context, authProvider, _) => _buildHeader(
+                    Consumer<AuthProvider>(
+                      builder: (context, authProvider, _) =>
+                          _buildHeader(
                           context, authProvider, responsive),
                     ),
                     SizedBox(height: responsive.spacing(scale: 1.5)),

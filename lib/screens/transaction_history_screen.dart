@@ -134,8 +134,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             builder: (_, provider, __) {
               final hasActiveFilters =
                   provider.filterType != TransactionType.all ||
-                      provider.filterRange != null ||
-                      provider.searchQuery.isNotEmpty;
+                      provider.filterRange != null;
               return Row(children: [
                 if (hasActiveFilters)
                   IconButton(
