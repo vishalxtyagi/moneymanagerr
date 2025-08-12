@@ -4,25 +4,6 @@ import 'package:moneymanager/core/constants/styles.dart';
 import 'package:flutter/services.dart';
 
 class AppTextField extends StatelessWidget {
-  final String label;
-  final String? hint;
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
-  final int? maxLines;
-  final int? maxLength;
-  final bool enabled;
-  final bool readOnly;
-  final VoidCallback? onTap;
-  // New: allow providing a literal value instead of a controller (avoids rebuild-time controllers)
-  final String? initialValue;
-  // New: allow input formatters (e.g., currency/decimal constraints)
-  final List<TextInputFormatter>? inputFormatters;
-
   const AppTextField({
     super.key,
     required this.label,
@@ -43,13 +24,66 @@ class AppTextField extends StatelessWidget {
     this.inputFormatters,
   });
 
+  final String label;
+  final String? hint;
+  final TextEditingController? controller;
+  final String? Function(String?)? validator;
+  final void Function(String)? onChanged;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final int? maxLines;
+  final int? maxLength;
+  final bool enabled;
+  final bool readOnly;
+  final VoidCallback? onTap;
+  final String? initialValue;
+  final List<TextInputFormatter>? inputFormatters;
+
   @override
   Widget build(BuildContext context) {
+    // Pre-calculate values to avoid computation in build
     final borderRadius = BorderRadius.circular(AppStyles.borderRadius);
+    final fillColor = enabled ? AppColors.surface : AppColors.scaffoldBackground;
+    
+    // Pre-create input decoration to avoid recreation
+    final inputDecoration = InputDecoration(
+      hintText: hint,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: AppStyles.sm,
+        horizontal: AppStyles.sm,
+      ),
+      filled: true,
+      fillColor: fillColor,
+      border: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(color: AppColors.textDisabled),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Optimized label with cached style
         Text(
           label,
           style: const TextStyle(
@@ -59,9 +93,10 @@ class AppTextField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        
+        // Optimized text form field
+        _CustomTextFormField(
           controller: controller,
-          // Only set initialValue when no controller is provided
           initialValue: controller == null ? initialValue : null,
           validator: validator,
           onChanged: onChanged,
@@ -73,40 +108,61 @@ class AppTextField extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           inputFormatters: inputFormatters,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: AppStyles.sm,
-              horizontal: AppStyles.sm,
-            ),
-            filled: true,
-            fillColor:
-                enabled ? AppColors.surface : AppColors.scaffoldBackground,
-            border: OutlineInputBorder(
-              borderRadius: borderRadius,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: borderRadius,
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: borderRadius,
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: borderRadius,
-              borderSide: const BorderSide(color: AppColors.textDisabled),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: borderRadius,
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
-            ),
-          ),
+          decoration: inputDecoration,
         ),
       ],
+    );
+  }
+}
+
+// Optimized text form field component
+class _CustomTextFormField extends StatelessWidget {
+  const _CustomTextFormField({
+    required this.controller,
+    required this.initialValue,
+    required this.validator,
+    required this.onChanged,
+    required this.keyboardType,
+    required this.obscureText,
+    required this.maxLines,
+    required this.maxLength,
+    required this.enabled,
+    required this.readOnly,
+    required this.onTap,
+    required this.inputFormatters,
+    required this.decoration,
+  });
+
+  final TextEditingController? controller;
+  final String? initialValue;
+  final String? Function(String?)? validator;
+  final void Function(String)? onChanged;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final int? maxLines;
+  final int? maxLength;
+  final bool enabled;
+  final bool readOnly;
+  final VoidCallback? onTap;
+  final List<TextInputFormatter>? inputFormatters;
+  final InputDecoration decoration;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      initialValue: initialValue,
+      validator: validator,
+      onChanged: onChanged,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      enabled: enabled,
+      readOnly: readOnly,
+      onTap: onTap,
+      inputFormatters: inputFormatters,
+      decoration: decoration,
     );
   }
 }

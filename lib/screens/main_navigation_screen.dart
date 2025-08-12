@@ -42,17 +42,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         label: 'Settings'),
   ];
 
-  void _onDestinationSelected(int index) =>
+  void _onDestinationSelected(int index) {
+    if (index != _currentIndex) {
       setState(() => _currentIndex = index);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _screens = const [
-      // Preserve state and scroll positions across tabs
       DashboardScreen(key: PageStorageKey('DashboardScreen')),
       AnalyticsScreen(key: PageStorageKey('AnalyticsScreen')),
-      SizedBox.shrink(key: PageStorageKey('AddPlaceholder')),
+      AddTransactionScreen(key: PageStorageKey('AddTransactionScreen')),
       CalendarViewScreen(key: PageStorageKey('CalendarViewScreen')),
       SettingsScreen(key: PageStorageKey('SettingsScreen')),
     ];
@@ -60,17 +62,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveUtil.of(context).isMobile;
+    final responsive = ResponsiveUtil.of(context);
+    final isMobile = responsive.isMobile;
+    
     return Scaffold(
-      body: Row(children: [
-        if (!isMobile)
-          _RailNavigation(
-            currentIndex: _currentIndex,
-            destinations: _navItems,
-            onDestinationSelected: _onDestinationSelected,
+      body: Row(
+        children: [
+          if (!isMobile)
+            _RailNavigation(
+              currentIndex: _currentIndex,
+              destinations: _navItems,
+              onDestinationSelected: _onDestinationSelected,
+            ),
+          Expanded(
+            child: RepaintBoundary(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _screens,
+              ),
+            ),
           ),
-        Expanded(child: RepaintBoundary(child: IndexedStack(index: _currentIndex, children: _screens)))
-      ]),
+        ],
+      ),
       bottomNavigationBar: isMobile
           ? _BottomNavigation(
             currentIndex: _currentIndex,

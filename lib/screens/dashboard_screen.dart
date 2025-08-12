@@ -32,90 +32,149 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final categoryProvider =
-          Provider.of<CategoryProvider>(context, listen: false);
-      final userId =
-          Provider.of<AuthProvider>(context, listen: false).user?.uid;
-      if (userId != null) {
-        await categoryProvider.load(userId);
-      }
-    });
+    // Defer category loading to avoid blocking initial render
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCategories());
+  }
+
+  Future<void> _loadCategories() async {
+    if (!mounted) return;
+    
+    final categoryProvider = context.read<CategoryProvider>();
+    final userId = context.read<AuthProvider>().user?.uid;
+    
+    if (userId != null) {
+      await categoryProvider.load(userId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // for keep alive
     final responsive = ResponsiveUtil.of(context);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFB8E6B8),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header + Balance section
-              Padding(
-                padding: responsive.screenPadding(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Consumer<AuthProvider>(
-                      builder: (context, authProvider, _) =>
-                          _buildHeader(
-                          context, authProvider, responsive),
-                    ),
-                    SizedBox(height: responsive.spacing(scale: 1.5)),
-                    // Use lightweight totals to build analytics for the card
-                    Selector<TransactionProvider, (double,double)>(
-                      selector: (_, p) => (p.totalIncome, p.totalExpense),
-                      builder: (_, totals, __) => BalanceCard(
-                        analytics: AnalyticsModel.fromTotals(
-                          income: totals.$1,
-                          expense: totals.$2,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: responsive.spacing()),
-                  ],
-                ),
-              ),
-
+              // Header + Balance section with const colors
+              _HeaderSection(responsive: responsive),
+              
               // Content Section
-              Container(
-                color: Colors.grey[100]!,
-                padding: responsive.screenPadding(),
-                child: Column(
-                  children: [
-                    // Statistics Row: use provider counters
-                    Selector<TransactionProvider, (int,int,String)>(
-                      selector: (_, p) {
-                        final top = p.getTopCategories(count: 1);
-                        final topName = top.isNotEmpty ? top.first.key : 'None';
-                        return (p.todayCount, p.monthCount, topName);
-                      },
-                      builder: (context, tuple, _) => _buildStatisticsRowFrom(
-                          tuple.$1, tuple.$2, tuple.$3, responsive),
-                    ),
-                    SizedBox(height: responsive.spacing()),
-                    // Recent Transactions: only 5 items
-                    Selector<TransactionProvider, List<dynamic>>(
-                      selector: (_, p) => p.all.take(5).toList(),
-                      builder: (context, recentTransactions, _) =>
-                          _buildRecentTransactions(
-                              recentTransactions, context, responsive),
-                    ),
-                  ],
-                ),
-              ),
+              _ContentSection(responsive: responsive),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildHeader(BuildContext context, AuthProvider authProvider,
-      ResponsiveUtil responsive) {
+class _HeaderSection extends StatelessWidget {
+  const _HeaderSection({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFB8E6B8),
+      padding: responsive.screenPadding(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, _) => _DashboardHeader(
+              authProvider: authProvider,
+              responsive: responsive,
+            ),
+          ),
+          SizedBox(height: responsive.spacing(scale: 1.5)),
+          // Optimized balance card with minimal rebuild scope
+          Selector<TransactionProvider, (double, double)>(
+            selector: (_, provider) => (provider.totalIncome, provider.totalExpense),
+            builder: (_, totals, __) => BalanceCard(
+              analytics: AnalyticsModel.fromTotals(
+                income: totals.$1,
+                expense: totals.$2,
+              ),
+            ),
+          ),
+          SizedBox(height: responsive.spacing()),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContentSection extends StatelessWidget {
+  const _ContentSection({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.grey[100]!,
+      padding: responsive.screenPadding(),
+      child: Column(
+        children: [
+          // Statistics Row with optimized selector
+          Selector<TransactionProvider, _StatisticsData>(
+            selector: (_, provider) {
+              final topCategories = provider.getTopCategories(count: 1);
+              return _StatisticsData(
+                todayCount: provider.todayCount,
+                monthCount: provider.monthCount,
+                topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
+              );
+            },
+            builder: (context, stats, _) => _StatisticsRow(
+              stats: stats,
+              responsive: responsive,
+            ),
+          ),
+          SizedBox(height: responsive.spacing()),
+          // Recent Transactions with limited items
+          Selector<TransactionProvider, List<dynamic>>(
+            selector: (_, provider) => provider.all.take(5).toList(),
+            builder: (context, recentTransactions, _) => _RecentTransactionsSection(
+              transactions: recentTransactions,
+              responsive: responsive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Helper data classes for optimized selectors
+class _StatisticsData {
+  final int todayCount;
+  final int monthCount;
+  final String topCategoryName;
+
+  const _StatisticsData({
+    required this.todayCount,
+    required this.monthCount,
+    required this.topCategoryName,
+  });
+}
+
+// Optimized header widget
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({
+    required this.authProvider,
+    required this.responsive,
+  });
+
+  final AuthProvider authProvider;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -156,112 +215,124 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
   }
+}
 
-  // New helper to render statistics from precomputed tuple
-  Widget _buildStatisticsRowFrom(
-      int todayTransactions, int thisMonthTransactions, String topCategoryName,
-      ResponsiveUtil responsive) {
-    final stats = [
-      ('Today', '$todayTransactions', Icons.today),
-      ('This Month', '$thisMonthTransactions', Icons.calendar_month),
-      ('Top Category', topCategoryName, Icons.category),
+// Optimized statistics row widget
+class _StatisticsRow extends StatelessWidget {
+  const _StatisticsRow({
+    required this.stats,
+    required this.responsive,
+  });
+
+  final _StatisticsData stats;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    const spacing = SizedBox(width: 12);
+    
+    final cards = [
+      StatisticCard(
+        title: 'Today',
+        value: '${stats.todayCount}',
+        icon: Icons.today,
+        color: AppColors.primary,
+        onTap: () => _navigateToTodayTransactions(context),
+      ),
+      StatisticCard(
+        title: 'This Month',
+        value: '${stats.monthCount}',
+        icon: Icons.calendar_month,
+        color: AppColors.primary,
+        onTap: () => _navigateToMonthTransactions(context),
+      ),
+      StatisticCard(
+        title: 'Top Category',
+        value: stats.topCategoryName,
+        icon: Icons.category,
+        color: AppColors.primary,
+        onTap: () => _navigateToTopCategory(context, stats.topCategoryName),
+      ),
     ];
 
-      // Helper to map by index to onTap filters
-      List<Widget> buildCards() {
-        return [
-          StatisticCard(
-            title: stats[0].$1,
-            value: stats[0].$2,
-            icon: stats[0].$3,
-            color: AppColors.primary,
-            onTap: () {
-              // Today filter: set date range to today
-              final now = DateTime.now();
-              final start = DateTime(now.year, now.month, now.day);
-              final end = start; // single day
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TransactionHistoryScreen(
-                    initialRange: DateTimeRange(start: start, end: end),
-                    ephemeralFilters: true,
-                  ),
-                ),
-              );
-            },
-          ),
-          StatisticCard(
-            title: stats[1].$1,
-            value: stats[1].$2,
-            icon: stats[1].$3,
-            color: AppColors.primary,
-            onTap: () {
-              // This month filter: range is first day to today
-              final now = DateTime.now();
-              final start = DateTime(now.year, now.month, 1);
-              final end = DateTime(now.year, now.month, now.day);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TransactionHistoryScreen(
-                    initialRange: DateTimeRange(start: start, end: end),
-                    ephemeralFilters: true,
-                  ),
-                ),
-              );
-            },
-          ),
-          StatisticCard(
-            title: stats[2].$1,
-            value: stats[2].$2,
-            icon: stats[2].$3,
-            color: AppColors.primary,
-            onTap: () {
-              final topName = topCategoryName;
-              if (topName == 'None') return;
-              // Open history filtered by expense type + that category (assuming top is expense)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TransactionHistoryScreen(
-                    initialType: TransactionType.expense,
-                    initialCategory: topName,
-                    ephemeralFilters: true,
-                  ),
-                ),
-              );
-            },
-          ),
-        ];
-      }
-
-      final cards = buildCards();
-      if (responsive.isDesktop) {
-        return Row(
-          children: cards
-              .map((c) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: c,
-                    ),
-                  ))
-              .toList(),
-        );
-      }
+    if (responsive.isDesktop) {
       return Row(
         children: [
-          Expanded(child: cards[0]),
-          const SizedBox(width: 12),
-          Expanded(child: cards[1]),
-          const SizedBox(width: 12),
-          Expanded(child: cards[2]),
+          for (int i = 0; i < cards.length; i++) ...[
+            Expanded(child: cards[i]),
+            if (i < cards.length - 1) spacing,
+          ],
         ],
       );
+    }
+    
+    return Row(
+      children: [
+        Expanded(child: cards[0]),
+        spacing,
+        Expanded(child: cards[1]),
+        spacing,
+        Expanded(child: cards[2]),
+      ],
+    );
   }
 
-  Widget _buildRecentTransactions(List<dynamic> recentTransactions,
-      BuildContext context, ResponsiveUtil responsive) {
+  void _navigateToTodayTransactions(BuildContext context) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionHistoryScreen(
+          initialRange: DateTimeRange(start: start, end: start),
+          ephemeralFilters: true,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToMonthTransactions(BuildContext context) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month + 1, 0);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionHistoryScreen(
+          initialRange: DateTimeRange(start: start, end: end),
+          ephemeralFilters: true,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToTopCategory(BuildContext context, String categoryName) {
+    if (categoryName != 'None') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TransactionHistoryScreen(
+            initialCategory: categoryName,
+            ephemeralFilters: true,
+          ),
+        ),
+      );
+    }
+  }
+}
+
+// Optimized recent transactions section
+class _RecentTransactionsSection extends StatelessWidget {
+  const _RecentTransactionsSection({
+    required this.transactions,
+    required this.responsive,
+  });
+
+  final List<dynamic> transactions;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,14 +340,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           AppSectionHeader(
             title: 'Recent Transactions',
             action: TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TransactionHistoryScreen(),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TransactionHistoryScreen(),
+                ),
+              ),
               child: Text(
                 'View All',
                 style: TextStyle(
@@ -287,36 +356,32 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          if (recentTransactions.isEmpty)
+          if (transactions.isEmpty)
             const AppEmptyState(
               icon: Icons.receipt_long,
               title: 'No transactions yet',
               subtitle: 'Start by adding your first transaction',
             )
           else
-            Column(
-              children: recentTransactions
-                  .map((transaction) => Selector<CategoryProvider, dynamic>(
-                        selector: (context, provider) => provider
-                            .getCategoryByName(transaction.category,
-                                isIncome: transaction.type ==
-                                    TransactionType.income),
-                        builder: (_, category, __) => TransactionItem(
-                          transaction: transaction,
-                          category: category,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddTransactionScreen(
-                                  transaction: transaction,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ))
-                  .toList(),
+            ...transactions.map((transaction) => 
+              Selector<CategoryProvider, dynamic>(
+                selector: (_, provider) => provider.getCategoryByName(
+                  transaction.category,
+                  isIncome: transaction.type == TransactionType.income,
+                ),
+                builder: (_, category, __) => TransactionItem(
+                  transaction: transaction,
+                  category: category,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddTransactionScreen(
+                        transaction: transaction,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
         ],
       ),

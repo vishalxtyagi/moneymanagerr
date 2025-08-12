@@ -49,14 +49,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   void initState() {
     super.initState();
 
-    // Load categories for the current user
-    final categoryProvider =
-        Provider.of<CategoryProvider>(context, listen: false);
-    final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
-    if (userId != null) {
-      categoryProvider.load(userId);
-    }
-
+    // Initialize transaction values if editing
     if (widget.transaction != null) {
       _type = widget.transaction!.type;
       _category = widget.transaction!.category;
@@ -66,10 +59,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _noteController.text = widget.transaction!.note ?? '';
     }
 
-    // Init notifiers from current state
+    // Initialize notifiers
     _typeVN = ValueNotifier<TransactionType>(_type);
     _categoryVN = ValueNotifier<String?>(_category);
     _dateVN = ValueNotifier<DateTime>(_date);
+
+    // Load categories efficiently
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final categoryProvider = context.read<CategoryProvider>();
+    final userId = context.read<AuthProvider>().user?.uid;
+    
+    if (userId != null) {
+      await categoryProvider.load(userId);
+    }
   }
 
   @override

@@ -4,14 +4,6 @@ import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 
 class AppButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final ButtonType type;
-  final ButtonSize size;
-  final IconData? icon;
-  final bool isLoading;
-  final double? width;
-
   const AppButton({
     super.key,
     required this.text,
@@ -23,60 +15,109 @@ class AppButton extends StatelessWidget {
     this.width,
   });
 
+  final String text;
+  final VoidCallback? onPressed;
+  final ButtonType type;
+  final ButtonSize size;
+  final IconData? icon;
+  final bool isLoading;
+  final double? width;
+
   @override
   Widget build(BuildContext context) {
+    // Pre-calculate values to avoid lookups in build
     final dim = _buttonDimensions[size]!;
     final color = _buttonColors[type]!;
     final showBorder = type == ButtonType.outlined;
+    
+    // Pre-create button style to avoid recreation
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: color.bg,
+      foregroundColor: color.fg,
+      elevation: showBorder ? 0 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+        side: showBorder
+            ? const BorderSide(color: AppColors.primary)
+            : BorderSide.none,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: dim.horizontalPadding,
+        vertical: dim.verticalPadding,
+      ),
+    );
 
     return SizedBox(
       width: width,
       height: dim.height,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color.bg,
-          foregroundColor: color.fg,
-          elevation: showBorder ? 0 : 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-            side: showBorder
-                ? const BorderSide(color: AppColors.primary)
-                : BorderSide.none,
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: dim.horizontalPadding,
-            vertical: dim.verticalPadding,
-          ),
-        ),
-        child: isLoading
-            ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color.fg,
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Icon(icon, size: dim.iconSize, color: color.fg),
-                    ),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: dim.fontSize,
-                      fontWeight: FontWeight.w600,
-                      color: color.fg,
-                    ),
-                  ),
-                ],
+        style: buttonStyle,
+        child: isLoading 
+            ? _LoadingIndicator(color: color.fg)
+            : _ButtonContent(
+                text: text,
+                icon: icon,
+                dim: dim,
+                color: color,
               ),
       ),
+    );
+  }
+}
+
+// Optimized loading indicator component
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator({required this.color});
+  
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 20,
+      width: 20,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: color,
+      ),
+    );
+  }
+}
+
+// Optimized button content component
+class _ButtonContent extends StatelessWidget {
+  const _ButtonContent({
+    required this.text,
+    required this.icon,
+    required this.dim,
+    required this.color,
+  });
+
+  final String text;
+  final IconData? icon;
+  final _ButtonDimensions dim;
+  final _ButtonColors color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Icon(icon, size: dim.iconSize, color: color.fg),
+          ),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: dim.fontSize,
+            fontWeight: FontWeight.w600,
+            color: color.fg,
+          ),
+        ),
+      ],
     );
   }
 }

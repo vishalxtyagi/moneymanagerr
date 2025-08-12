@@ -5,15 +5,24 @@ import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/responsive_util.dart';
 
 class BalanceCard extends StatelessWidget {
-  final AnalyticsModel analytics;
-
   const BalanceCard({super.key, required this.analytics});
+
+  final AnalyticsModel analytics;
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
+    
+    // Pre-calculate values to avoid computation in build
     final padding = responsive.spacing(scale: 1.5);
     final radius = responsive.spacing(scale: 1.25);
+    final balanceFontSize = responsive.fontSize(36);
+    final iconSize = responsive.fontSize(16);
+    
+    // Pre-format currency strings
+    final balanceText = CurrencyUtil.format(analytics.balance);
+    final expenseText = CurrencyUtil.format(analytics.expense);
+    final incomeText = CurrencyUtil.format(analytics.income);
 
     return Card(
       elevation: 8,
@@ -27,108 +36,155 @@ class BalanceCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Balance',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: analytics.consumptionData.color.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      analytics.consumptionData.text,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+              // Header with const styling
+              _BalanceHeader(
+                consumptionData: analytics.consumptionData,
+                responsive: responsive,
               ),
 
               SizedBox(height: responsive.spacing(scale: 0.75)),
 
-              // Balance
+              // Balance amount with optimized text
               Text(
-                CurrencyUtil.format(analytics.balance),
+                balanceText,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: responsive.fontSize(36),
+                  fontSize: balanceFontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
               SizedBox(height: responsive.spacing(scale: 1.25)),
 
-              // Income & Expense Row
-              Row(
-                children: [
-                  // Expense
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.arrow_downward,
-                                color: Colors.white,
-                                size: responsive.fontSize(16)),
-                            SizedBox(width: responsive.spacing(scale: 0.25)),
-                            Text('Expense', style: AppStyles.labelStyle),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          CurrencyUtil.format(analytics.expense),
-                          style: AppStyles.amountStyle,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(width: responsive.spacing(scale: 1.25)),
-
-                  // Income
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.arrow_upward,
-                                color: Colors.white,
-                                size: responsive.fontSize(16)),
-                            SizedBox(width: responsive.spacing(scale: 0.25)),
-                            Text('Income', style: AppStyles.labelStyle),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          CurrencyUtil.format(analytics.income),
-                          style: AppStyles.amountStyle,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              // Income & Expense Row with optimized layout
+              _IncomeExpenseRow(
+                expenseText: expenseText,
+                incomeText: incomeText,
+                iconSize: iconSize,
+                responsive: responsive,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// Optimized header component
+class _BalanceHeader extends StatelessWidget {
+  const _BalanceHeader({
+    required this.consumptionData,
+    required this.responsive,
+  });
+
+  final ConsumptionData consumptionData;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Total Balance',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: consumptionData.color.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            consumptionData.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Optimized income/expense row component
+class _IncomeExpenseRow extends StatelessWidget {
+  const _IncomeExpenseRow({
+    required this.expenseText,
+    required this.incomeText,
+    required this.iconSize,
+    required this.responsive,
+  });
+
+  final String expenseText;
+  final String incomeText;
+  final double iconSize;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Expense section
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.arrow_downward,
+                    color: Colors.white,
+                    size: iconSize,
+                  ),
+                  SizedBox(width: responsive.spacing(scale: 0.25)),
+                  const Text('Expense', style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                expenseText,
+                style: AppStyles.amountStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(width: responsive.spacing(scale: 1.25)),
+
+        // Income section
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.arrow_upward,
+                    color: Colors.white,
+                    size: iconSize,
+                  ),
+                  SizedBox(width: responsive.spacing(scale: 0.25)),
+                  const Text('Income', style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                incomeText,
+                style: AppStyles.amountStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
