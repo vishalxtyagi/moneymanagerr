@@ -91,7 +91,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onDestinationSelected: _onDestinationSelected,
           )
           : null,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: isMobile ? FloatingActionButton(
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => const AddTransactionScreen(),
@@ -99,7 +99,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         backgroundColor: AppColors.primary,
         child: const Icon(Iconsax.add_copy),
-      ),
+      ) : null,
       floatingActionButtonLocation:
           isMobile ? FloatingActionButtonLocation.centerDocked : null,
     );
