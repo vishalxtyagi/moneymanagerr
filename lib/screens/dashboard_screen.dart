@@ -32,12 +32,15 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    final categoryProvider =
-        Provider.of<CategoryProvider>(context, listen: false);
-    final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
-    if (userId != null) {
-      categoryProvider.load(userId);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final categoryProvider =
+          Provider.of<CategoryProvider>(context, listen: false);
+      final userId =
+          Provider.of<AuthProvider>(context, listen: false).user?.uid;
+      if (userId != null) {
+        await categoryProvider.load(userId);
+      }
+    });
   }
 
   @override

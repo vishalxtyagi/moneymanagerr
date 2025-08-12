@@ -4,37 +4,31 @@ import 'package:moneymanager/core/models/category_model.dart';
 
 class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String? _userId;
 
-  List<CategoryModel> _expenseCategories =
-      List.from(CategoryModel.defaultExpenseCategories);
-  List<CategoryModel> _incomeCategories =
-      List.from(CategoryModel.defaultIncomeCategories);
+  List<CategoryModel> _expenseCategories = List.from(CategoryModel.defaultExpenseCategories);
+  List<CategoryModel> _incomeCategories = List.from(CategoryModel.defaultIncomeCategories);
 
-  List<CategoryModel> get expenseCategories =>
-      List.unmodifiable(_expenseCategories);
-
-  List<CategoryModel> get incomeCategories =>
-      List.unmodifiable(_incomeCategories);
+  List<CategoryModel> get expenseCategories => _expenseCategories;
+  List<CategoryModel> get incomeCategories => _incomeCategories;
 
   Future<void> load(String userId) async {
+    _userId = userId;
     try {
-      final settingsRef =
-          _firestore.collection('users').doc(userId).collection('settings');
+      final settingsRef = _firestore.collection('users').doc(userId).collection('settings');
 
-      final expenseSnap = await settingsRef.doc('expense_categories').get();
-      final incomeSnap = await settingsRef.doc('income_categories').get();
+      final [expenseSnap, incomeSnap] = await Future.wait([
+        settingsRef.doc('expense_categories').get(),
+        settingsRef.doc('income_categories').get(),
+      ]);
 
-      if (expenseSnap.exists) {
-        final data = expenseSnap.data()!;
-        final rawList = List<Map<String, dynamic>>.from(data['categories']);
-        _expenseCategories = rawList.map(CategoryModel.fromMap).toList();
-      }
+      _expenseCategories = expenseSnap.exists
+          ? (expenseSnap.data()!['categories'] as List).map((e) => CategoryModel.fromMap(e)).toList()
+          : List.from(CategoryModel.defaultExpenseCategories);
 
-      if (incomeSnap.exists) {
-        final data = incomeSnap.data()!;
-        final rawList = List<Map<String, dynamic>>.from(data['categories']);
-        _incomeCategories = rawList.map(CategoryModel.fromMap).toList();
-      }
+      _incomeCategories = incomeSnap.exists
+          ? (incomeSnap.data()!['categories'] as List).map((e) => CategoryModel.fromMap(e)).toList()
+          : List.from(CategoryModel.defaultIncomeCategories);
 
       notifyListeners();
     } catch (e) {
@@ -43,41 +37,51 @@ class CategoryProvider with ChangeNotifier {
   }
 
   Future<void> add(String userId, CategoryModel item) async {
-    final targetList = item.isIncome ? _incomeCategories : _expenseCategories;
-    if (targetList.any((c) => c.name == item.name)) return;
+    final list = item.isIncome ? _incomeCategories : _expenseCategories;
+    if (list.any((c) => c.name == item.name)) return;
 
-    targetList.add(item);
-    await _saveCategories(userId, item.isIncome);
+    list.add(item);
+    _save(item.isIncome);
     notifyListeners();
   }
 
   Future<void> remove(String userId, CategoryModel item) async {
-    final targetList = item.isIncome ? _incomeCategories : _expenseCategories;
-    targetList.removeWhere((c) => c.name == item.name);
-    await _saveCategories(userId, item.isIncome);
+    final list = item.isIncome ? _incomeCategories : _expenseCategories;
+    list.removeWhere((c) => c.name == item.name);
+    _save(item.isIncome);
     notifyListeners();
   }
 
-  Future<void> _saveCategories(String userId, bool isIncome) async {
-    final targetList = isIncome ? _incomeCategories : _expenseCategories;
-    final path = isIncome ? 'income_categories' : 'expense_categories';
+  CategoryModel getCategoryByName(String name, {required bool isIncome}) {
+    final list = isIncome ? _incomeCategories : _expenseCategories;
 
-    try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('settings')
-          .doc(path)
-          .set({'categories': targetList.map((e) => e.toMap()).toList()});
-    } catch (e) {
-      debugPrint('Error saving $path: $e');
+    var category = list.cast<CategoryModel?>().firstWhere(
+            (c) => c?.name == name,
+        orElse: () => null
+    );
+
+    if (category == null) {
+      category = CategoryModel.withFallback(name: name, isIncome: isIncome);
+      list.add(category);
+      _save(isIncome);
+      notifyListeners();
     }
+
+    return category;
   }
 
-  CategoryModel getCategoryByName(String name, {required bool isIncome}) {
-    final targetList = isIncome ? _incomeCategories : _expenseCategories;
-    return targetList.firstWhere((c) => c.name == name,
-        orElse: () =>
-            CategoryModel.withFallback(name: name, isIncome: isIncome));
+  void _save(bool isIncome) {
+    if (_userId == null) return;
+
+    final list = isIncome ? _incomeCategories : _expenseCategories;
+    final doc = isIncome ? 'income_categories' : 'expense_categories';
+
+    _firestore
+        .collection('users')
+        .doc(_userId!)
+        .collection('settings')
+        .doc(doc)
+        .set({'categories': list.map((e) => e.toMap()).toList()})
+        .catchError((e) => debugPrint('Save error: $e'));
   }
 }
