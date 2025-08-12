@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -24,6 +23,10 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
+  // Cache for expensive computations
+  final Map<String, List<TransactionModel>> _transactionCache = {};
+  final Map<String, double> _totalCache = {};
+
   @override
   bool get wantKeepAlive => true;
 
@@ -35,20 +38,41 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
 
   List<TransactionModel> _getTransactionsForDay(
       DateTime day, List<TransactionModel> transactions) {
-    return transactions.where((transaction) {
+    final key = DateFormat('yyyy-MM-dd').format(day);
+    if (_transactionCache.containsKey(key)) {
+      return _transactionCache[key]!;
+    }
+    
+    final dayTransactions = transactions.where((transaction) {
       return isSameDay(transaction.date, day);
     }).toList();
+    
+    _transactionCache[key] = dayTransactions;
+    return dayTransactions;
   }
 
   double _getTotalForDay(DateTime day, List<TransactionModel> transactions) {
+    final key = DateFormat('yyyy-MM-dd').format(day);
+    if (_totalCache.containsKey(key)) {
+      return _totalCache[key]!;
+    }
+    
     final dayTransactions = _getTransactionsForDay(day, transactions);
-    return dayTransactions.fold(0.0, (total, transaction) {
+    final total = dayTransactions.fold(0.0, (total, transaction) {
       if (transaction.type == TransactionType.expense) {
         return total - transaction.amount;
       } else {
         return total + transaction.amount;
       }
     });
+    
+    _totalCache[key] = total;
+    return total;
+  }
+
+  void _clearCache() {
+    _transactionCache.clear();
+    _totalCache.clear();
   }
 
   @override
@@ -65,206 +89,319 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
               ? _getTransactionsForDay(_selectedDay!, transactions)
               : <TransactionModel>[];
 
+          // Clear cache when transactions change
+          if (transactions.isNotEmpty) {
+            _clearCache();
+          }
+
           return Column(
             children: [
-              // Calendar Widget
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TableCalendar<TransactionModel>(
-                  firstDay: DateTime.utc(2020, 1, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
-                  focusedDay: _focusedDay,
-                  calendarFormat: _calendarFormat,
-                  eventLoader: (day) =>
-                      _getTransactionsForDay(day, transactions),
-                  startingDayOfWeek: StartingDayOfWeek.monday,
-                  selectedDayPredicate: (day) {
-                    return isSameDay(_selectedDay, day);
-                  },
-                  onDaySelected: (selectedDay, focusedDay) {
-                    if (!isSameDay(_selectedDay, selectedDay)) {
-                      setState(() {
-                        _selectedDay = selectedDay;
-                        _focusedDay = focusedDay;
-                      });
-                    }
-                  },
-                  onFormatChanged: (format) {
-                    if (_calendarFormat != format) {
-                      setState(() {
-                        _calendarFormat = format;
-                      });
-                    }
-                  },
-                  onPageChanged: (focusedDay) {
+              // Optimized Calendar Widget
+              _CalendarWidget(
+                focusedDay: _focusedDay,
+                selectedDay: _selectedDay,
+                calendarFormat: _calendarFormat,
+                transactions: transactions,
+                onDaySelected: (selectedDay, focusedDay) {
+                  if (!isSameDay(_selectedDay, selectedDay)) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+                  }
+                },
+                onFormatChanged: (format) {
+                  if (_calendarFormat != format) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
+                },
+                onPageChanged: (focusedDay) {
+                  setState(() {
                     _focusedDay = focusedDay;
-                  },
-                  calendarStyle: const CalendarStyle(
-                    outsideDaysVisible: false,
-                    weekendTextStyle: TextStyle(color: Colors.red),
-                    holidayTextStyle: TextStyle(color: Colors.red),
-                    selectedDecoration: BoxDecoration(
-                      color: Color(0xFF4CAF50),
-                      shape: BoxShape.circle,
-                    ),
-                    todayDecoration: BoxDecoration(
-                      color: Color(0xFF81C784),
-                      shape: BoxShape.circle,
-                    ),
-                    markerDecoration: BoxDecoration(
-                      color: Color(0xFF2E7D32),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  headerStyle: const HeaderStyle(
-                    formatButtonVisible: true,
-                    titleCentered: true,
-                    formatButtonShowsNext: false,
-                    formatButtonDecoration: BoxDecoration(
-                      color: Color(0xFF4CAF50),
-                      borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                    ),
-                    formatButtonTextStyle: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                  });
+                },
+                getTransactionsForDay: _getTransactionsForDay,
               ),
 
-              // Date Summary
-              if (_selectedDay != null)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        DateFormat('EEEE, MMMM d, y').format(_selectedDay!),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total for day:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            CurrencyUtil.format(
-                                _getTotalForDay(_selectedDay!, transactions)),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: _getTotalForDay(
-                                          _selectedDay!, transactions) >=
-                                      0
-                                  ? const Color(0xFF4CAF50)
-                                  : Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${selectedDayTransactions.length} transaction${selectedDayTransactions.length != 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Transactions List
+              // Optimized Selected Day Section
               Expanded(
-                child: selectedDayTransactions.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.event_note,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No transactions for this day',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: selectedDayTransactions.length,
-                        itemBuilder: (context, index) {
-                          final transaction = selectedDayTransactions[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: Selector<CategoryProvider, dynamic>(
-                              selector: (_, provider) => provider
-                                  .getCategoryByName(transaction.category,
-                                      isIncome: transaction.type ==
-                                          TransactionType.income),
-                              builder: (_, category, __) => TransactionItem(
-                                transaction: transaction,
-                                category: category,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AddTransactionScreen(
-                                        transaction: transaction,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                child: _SelectedDaySection(
+                  selectedDay: _selectedDay,
+                  transactions: selectedDayTransactions,
+                  allTransactions: transactions,
+                  getTotalForDay: _getTotalForDay,
+                ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+// Optimized Calendar Widget Component
+class _CalendarWidget extends StatelessWidget {
+  const _CalendarWidget({
+    required this.focusedDay,
+    required this.selectedDay,
+    required this.calendarFormat,
+    required this.transactions,
+    required this.onDaySelected,
+    required this.onFormatChanged,
+    required this.onPageChanged,
+    required this.getTransactionsForDay,
+  });
+
+  final DateTime focusedDay;
+  final DateTime? selectedDay;
+  final CalendarFormat calendarFormat;
+  final List<TransactionModel> transactions;
+  final Function(DateTime, DateTime) onDaySelected;
+  final Function(CalendarFormat) onFormatChanged;
+  final Function(DateTime) onPageChanged;
+  final List<TransactionModel> Function(DateTime, List<TransactionModel>) getTransactionsForDay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TableCalendar<TransactionModel>(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: focusedDay,
+        calendarFormat: calendarFormat,
+        eventLoader: (day) => getTransactionsForDay(day, transactions),
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+        onDaySelected: onDaySelected,
+        onFormatChanged: onFormatChanged,
+        onPageChanged: onPageChanged,
+        calendarStyle: const CalendarStyle(
+          outsideDaysVisible: false,
+          weekendTextStyle: TextStyle(color: Colors.red),
+          holidayTextStyle: TextStyle(color: Colors.red),
+          selectedDecoration: BoxDecoration(
+            color: Color(0xFF4CAF50),
+            shape: BoxShape.circle,
+          ),
+          todayDecoration: BoxDecoration(
+            color: Color(0xFF81C784),
+            shape: BoxShape.circle,
+          ),
+          markerDecoration: BoxDecoration(
+            color: Color(0xFF2E7D32),
+            shape: BoxShape.circle,
+          ),
+          markersMaxCount: 4,
+          canMarkersOverflow: false,
+        ),
+        headerStyle: const HeaderStyle(
+          formatButtonVisible: true,
+          titleCentered: true,
+          formatButtonShowsNext: false,
+          formatButtonDecoration: BoxDecoration(
+            color: Color(0xFF4CAF50),
+            borderRadius: BorderRadius.all(Radius.circular(12.0)),
+          ),
+          formatButtonTextStyle: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+// Optimized Selected Day Section Component
+class _SelectedDaySection extends StatelessWidget {
+  const _SelectedDaySection({
+    required this.selectedDay,
+    required this.transactions,
+    required this.allTransactions,
+    required this.getTotalForDay,
+  });
+
+  final DateTime? selectedDay;
+  final List<TransactionModel> transactions;
+  final List<TransactionModel> allTransactions;
+  final double Function(DateTime, List<TransactionModel>) getTotalForDay;
+
+  @override
+  Widget build(BuildContext context) {
+    if (selectedDay == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        // Selected Day Info
+        _DayInfoHeader(
+          selectedDay: selectedDay!,
+          totalForDay: getTotalForDay(selectedDay!, allTransactions),
+          transactionCount: transactions.length,
+        ),
+        
+        // Transactions List
+        Expanded(
+          child: transactions.isEmpty
+              ? const _EmptyDayState()
+              : _TransactionsList(transactions: transactions),
+        ),
+      ],
+    );
+  }
+}
+
+// Day Info Header Component
+class _DayInfoHeader extends StatelessWidget {
+  const _DayInfoHeader({
+    required this.selectedDay,
+    required this.totalForDay,
+    required this.transactionCount,
+  });
+
+  final DateTime selectedDay;
+  final double totalForDay;
+  final int transactionCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            DateFormat('EEEE, MMMM d, y').format(selectedDay),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total for day:',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                CurrencyUtil.format(totalForDay),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: totalForDay >= 0 ? const Color(0xFF4CAF50) : Colors.red,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$transactionCount transaction${transactionCount != 1 ? 's' : ''}',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Empty Day State Component
+class _EmptyDayState extends StatelessWidget {
+  const _EmptyDayState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_note,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No transactions for this day',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Transactions List Component
+class _TransactionsList extends StatelessWidget {
+  const _TransactionsList({required this.transactions});
+
+  final List<TransactionModel> transactions;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: transactions.length,
+      itemBuilder: (context, index) {
+        final transaction = transactions[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Selector<CategoryProvider, dynamic>(
+            selector: (_, provider) => provider.getCategoryByName(
+              transaction.category,
+              isIncome: transaction.type == TransactionType.income,
+            ),
+            builder: (_, category, __) => TransactionItem(
+              transaction: transaction,
+              category: category,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionScreen(
+                    transaction: transaction,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

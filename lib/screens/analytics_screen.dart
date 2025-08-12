@@ -23,8 +23,12 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen>
     with AutomaticKeepAliveClientMixin {
   int _touchedIndex = -1;
+  late final DateTimeRange _defaultDateRange;
   DateTimeRange? _selectedDateRange;
   bool _showAllCategories = false;
+
+  // Pre-computed date labels to avoid computation in build
+  late final Map<String, DateTimeRange> _quickDateRanges;
 
   @override
   bool get wantKeepAlive => true;
@@ -32,18 +36,46 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   @override
   void initState() {
     super.initState();
-    // Set default date range to current month
+    // Pre-compute date ranges once
     final now = DateTime.now();
-    _selectedDateRange = DateTimeRange(
+    _defaultDateRange = DateTimeRange(
       start: DateTime(now.year, now.month, 1),
       end: DateTime(now.year, now.month + 1, 0),
     );
+    _selectedDateRange = _defaultDateRange;
+
+    // Pre-compute quick date range options
+    _quickDateRanges = _buildQuickDateRanges(now);
+  }
+
+  Map<String, DateTimeRange> _buildQuickDateRanges(DateTime now) {
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfYear = DateTime(now.year, 1, 1);
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthEnd = DateTime(now.year, now.month, 0);
+    
+    return {
+      'This Month': DateTimeRange(
+        start: startOfMonth,
+        end: now,
+      ),
+      'Last Month': DateTimeRange(
+        start: lastMonthStart,
+        end: lastMonthEnd,
+      ),
+      'This Year': DateTimeRange(
+        start: startOfYear,
+        end: now,
+      ),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // for keep alive
     final responsive = ResponsiveUtil.of(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -56,9 +88,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         elevation: 0,
         actions: [
           Padding(
-            padding: EdgeInsets.only(
-              right: responsive.spacing(),
-            ),
+            padding: EdgeInsets.only(right: responsive.spacing()),
             child: Material(
               borderRadius: BorderRadius.circular(8),
               child: Ink(
@@ -70,13 +100,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => _showDateRangeOptions(responsive),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.date_range,
-                            size: 18, color: Colors.black),
+                        const Icon(Icons.date_range, size: 18, color: Colors.black),
                         const SizedBox(width: 6),
                         Text(
                           _getDateRangeLabel(),
@@ -86,8 +114,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down,
-                            size: 16, color: Colors.black),
+                        const Icon(Icons.arrow_drop_down, size: 16, color: Colors.black),
                       ],
                     ),
                   ),
@@ -99,16 +126,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final balance =
-              transactionProvider.getBalance(range: _selectedDateRange);
-          final income =
-              transactionProvider.getTotalIncome(range: _selectedDateRange);
-          final expense =
-              transactionProvider.getTotalExpense(range: _selectedDateRange);
-          final categoryExpenses = transactionProvider.getExpensesByCategory(
-              range: _selectedDateRange);
+          final balance = transactionProvider.getBalance(range: _selectedDateRange);
+          final income = transactionProvider.getTotalIncome(range: _selectedDateRange);
+          final expense = transactionProvider.getTotalExpense(range: _selectedDateRange);
+          final categoryExpenses = transactionProvider.getExpensesByCategory(range: _selectedDateRange);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
-          // final consumptionRate = transactionProvider.getConsumptionRate(range: _selectedDateRange);
 
           return responsive.constrain(
             SingleChildScrollView(
@@ -116,17 +138,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               child: Column(
                 children: [
                   // Summary Cards Row
-                  _buildSummarySection(balance, income, expense, 0,
-                      responsive), //consumptionRate),
+                  _buildSummarySection(balance, income, expense, 0, responsive),
                   SizedBox(height: responsive.spacing(scale: 1.5)),
 
                   // Charts Section
                   if (responsive.isDesktop)
-                    _buildDesktopLayout(
-                        categoryExpenses, timeSeriesData, responsive)
+                    _buildDesktopLayout(categoryExpenses, timeSeriesData, responsive)
                   else
-                    _buildMobileLayout(
-                        categoryExpenses, timeSeriesData, responsive),
+                    _buildMobileLayout(categoryExpenses, timeSeriesData, responsive),
                 ],
               ),
             ),
@@ -138,29 +157,48 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   Widget _buildSummarySection(double balance, double income, double expense,
       double consumptionRate, ResponsiveUtil responsive) {
+    const spacing = SizedBox(width: 12);
+    const verticalSpacing = SizedBox(height: 12);
+    
+    final summaryCards = [
+      _buildSummaryCard(
+        'Balance',
+        balance,
+        balance >= 0 ? Colors.green : Colors.red,
+        Icons.account_balance_wallet,
+        responsive,
+      ),
+      _buildSummaryCard(
+        'Income',
+        income,
+        Colors.green,
+        Icons.arrow_upward,
+        responsive,
+      ),
+      _buildSummaryCard(
+        'Expense',
+        expense,
+        Colors.red,
+        Icons.arrow_downward,
+        responsive,
+      ),
+      _buildSummaryCard(
+        'Spend %',
+        consumptionRate,
+        Colors.orange,
+        Icons.trending_up,
+        responsive,
+        isSavingsRate: true,
+      ),
+    ];
+
     if (responsive.isDesktop) {
       return Row(
         children: [
-          Expanded(
-              child: _buildSummaryCard(
-                  'Balance',
-                  balance,
-                  balance >= 0 ? Colors.green : Colors.red,
-                  Icons.account_balance_wallet,
-                  responsive)),
-          SizedBox(width: responsive.spacing()),
-          Expanded(
-              child: _buildSummaryCard('Income', income, Colors.green,
-                  Icons.arrow_upward, responsive)),
-          SizedBox(width: responsive.spacing()),
-          Expanded(
-              child: _buildSummaryCard('Expense', expense, Colors.red,
-                  Icons.arrow_downward, responsive)),
-          SizedBox(width: responsive.spacing()),
-          Expanded(
-              child: _buildSummaryCard('Spend %', consumptionRate,
-                  Colors.orange, Icons.trending_up, responsive,
-                  isSavingsRate: true)),
+          for (int i = 0; i < summaryCards.length; i++) ...[
+            Expanded(child: summaryCards[i]),
+            if (i < summaryCards.length - 1) spacing,
+          ],
         ],
       );
     } else {
@@ -168,30 +206,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         children: [
           Row(
             children: [
-              Expanded(
-                  child: _buildSummaryCard(
-                      'Balance',
-                      balance,
-                      balance >= 0 ? Colors.green : Colors.red,
-                      Icons.account_balance_wallet,
-                      responsive)),
-              SizedBox(width: responsive.spacing()),
-              Expanded(
-                  child: _buildSummaryCard('Income', income, Colors.green,
-                      Icons.arrow_upward, responsive)),
+              Expanded(child: summaryCards[0]),
+              spacing,
+              Expanded(child: summaryCards[1]),
             ],
           ),
-          SizedBox(height: responsive.spacing()),
+          verticalSpacing,
           Row(
             children: [
-              Expanded(
-                  child: _buildSummaryCard('Expense', expense, Colors.red,
-                      Icons.arrow_downward, responsive)),
-              SizedBox(width: responsive.spacing()),
-              Expanded(
-                  child: _buildSummaryCard('Spend %', consumptionRate,
-                      Colors.orange, Icons.trending_up, responsive,
-                      isSavingsRate: true)),
+              Expanded(child: summaryCards[2]),
+              spacing,
+              Expanded(child: summaryCards[3]),
             ],
           ),
         ],
@@ -710,7 +735,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Color _stableCategoryColor(String name, Color fallback) {
     // Use palette from CategoryUtil and pick by hash so it stays stable across rebuilds
     try {
-      final palette = CategoryUtil.categoryColors;
+      const palette = CategoryUtil.categoryColors;
       if (palette.isEmpty) return fallback;
       final hash = name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
       return palette[hash % palette.length];
@@ -873,6 +898,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildDateRangeBottomSheet(ResponsiveUtil responsive) {
+    // Create quick option widgets from pre-computed ranges
+    final quickOptions = _quickDateRanges.entries.map((entry) {
+      final icon = _getIconForDateRange(entry.key);
+      return _buildDateOption(entry.key, icon, entry.key, responsive);
+    }).toList();
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -905,24 +936,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           ],
           const SizedBox(height: 20),
 
-          // Quick options
-          _buildDateOption(
-              'This Month', Icons.calendar_month, 'This Month', responsive),
-          _buildDateOption(
-              'Last Month', Icons.calendar_today, 'Last Month', responsive),
-          _buildDateOption(
-              'This Year', Icons.calendar_view_month, 'This Year', responsive),
+          // Quick options from pre-computed ranges
+          ...quickOptions,
 
           const Divider(height: 30),
 
           // Custom range option
-          _buildDateOption(
-              'Custom Range', Icons.edit_calendar, 'custom', responsive),
-
-          const SizedBox(height: 10),
+          _buildDateOption('Custom Range', Icons.date_range, 'custom', responsive),
         ],
       ),
     );
+  }
+
+  IconData _getIconForDateRange(String rangeName) {
+    switch (rangeName) {
+      case 'This Month':
+        return Icons.calendar_month;
+      case 'Last Month':
+        return Icons.calendar_today;
+      case 'This Year':
+        return Icons.calendar_view_month;
+      default:
+        return Icons.calendar_today;
+    }
   }
 
   Widget _buildDateOption(
@@ -1047,33 +1083,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   void _setQuickDateRange(String type) {
-    final now = DateTime.now();
-    DateTimeRange? newRange;
-
-    switch (type) {
-      case 'This Month':
-        newRange = DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: DateTime(now.year, now.month + 1, 0),
-        );
-        break;
-
-      case 'Last Month':
-        final lastMonth = DateTime(now.year, now.month - 1, 1);
-        newRange = DateTimeRange(
-          start: lastMonth,
-          end: DateTime(now.year, now.month, 0),
-        );
-        break;
-
-      case 'This Year':
-        newRange = DateTimeRange(
-          start: DateTime(now.year, 1, 1),
-          end: DateTime(now.year, 12, 31),
-        );
-        break;
-    }
-
+    final newRange = _quickDateRanges[type];
     if (newRange != null) {
       setState(() {
         _selectedDateRange = newRange;
@@ -1086,34 +1096,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
     final start = _selectedDateRange!.start;
     final end = _selectedDateRange!.end;
-    final now = DateTime.now();
 
-    // Check for common ranges
-    final thisMonth = DateTimeRange(
-      start: DateTime(now.year, now.month, 1),
-      end: DateTime(now.year, now.month + 1, 0),
-    );
-
-    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0);
-
-    final thisYear = DateTimeRange(
-      start: DateTime(now.year, 1, 1),
-      end: DateTime(now.year, 12, 31),
-    );
-
-    if (_datesEqual(start, thisMonth.start) &&
-        _datesEqual(end, thisMonth.end)) {
-      return 'This Month';
-    } else if (_datesEqual(start, lastMonthStart) &&
-        _datesEqual(end, lastMonthEnd)) {
-      return 'Last Month';
-    } else if (_datesEqual(start, thisYear.start) &&
-        _datesEqual(end, thisYear.end)) {
-      return 'This Year';
+    // Check for common ranges using pre-computed ranges
+    for (final entry in _quickDateRanges.entries) {
+      if (entry.value.start.isAtSameMomentAs(start) && 
+          entry.value.end.isAtSameMomentAs(end)) {
+        return entry.key;
+      }
     }
-    // Custom selection: show explicit full dates
-    return _formatFullRange(_selectedDateRange!);
+
+    // Custom range format
+    final formatter = DateFormat('MMM d');
+    return '${formatter.format(start)} - ${formatter.format(end)}';
   }
 
   bool _datesEqual(DateTime date1, DateTime date2) {
