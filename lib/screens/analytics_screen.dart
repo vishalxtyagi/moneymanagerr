@@ -49,7 +49,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Map<String, DateTimeRange> _buildQuickDateRanges(DateTime now) {
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final startOfMonth = DateTime(now.year, now.month, 1);
     final startOfYear = DateTime(now.year, 1, 1);
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
@@ -596,7 +595,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           maxX: (total - 1).toDouble(),
                           minY: minY,
                           maxY: maxY,
-                          lineTouchData: LineTouchData(enabled: false),
+                          lineTouchData: const LineTouchData(enabled: false),
                           gridData: const FlGridData(show: true),
                           extraLinesData: ExtraLinesData(
                             horizontalLines: [

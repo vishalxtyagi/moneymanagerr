@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/core/utils/notifier_utils.dart';
 import 'package:moneymanager/screens/settings/category_manager_screen.dart';
 import 'package:moneymanager/screens/settings/notification_manager_screen.dart';
 import 'package:provider/provider.dart';
@@ -11,10 +12,14 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  // Use ValueNotifiers for efficient rebuilds
-  late final ValueNotifier<bool> _notificationsEnabled;
-  late final ValueNotifier<bool> _autoCategorize;
+class _SettingsScreenState extends State<SettingsScreen> 
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  // Use CachedValueNotifiers for efficient rebuilds
+  late final CachedValueNotifier<bool> _notificationsEnabled;
+  late final CachedValueNotifier<bool> _autoCategorize;
   
   // Constants to avoid repeated computations
   static const double _lowThresholdAmount = 100.0;
@@ -22,8 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _notificationsEnabled = ValueNotifier(true);
-    _autoCategorize = ValueNotifier(true);
+    _notificationsEnabled = CachedValueNotifier(true);
+    _autoCategorize = CachedValueNotifier(true);
   }
 
   @override
@@ -35,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // for keep alive
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -58,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ValueListenableBuilder<bool>(
                   valueListenable: _notificationsEnabled,
                   builder: (context, enabled, _) => enabled
-                      ? _LowThresholdTile(threshold: _lowThresholdAmount)
+                      ? const _LowThresholdTile(threshold: _lowThresholdAmount)
                       : const SizedBox.shrink(),
                 ),
               ],

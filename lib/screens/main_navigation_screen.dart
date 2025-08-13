@@ -15,14 +15,25 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> 
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  
+  // Pre-built screens with PageStorageKey for state preservation
+  static const List<Widget> _screens = [
+    DashboardScreen(key: PageStorageKey('DashboardScreen')),
+    AnalyticsScreen(key: PageStorageKey('AnalyticsScreen')),
+    AddTransactionScreen(key: PageStorageKey('AddTransactionScreen')),
+    CalendarViewScreen(key: PageStorageKey('CalendarViewScreen')),
+    SettingsScreen(key: PageStorageKey('SettingsScreen')),
+  ];
 
-  late final List<Widget> _screens;
-
+  // Cached navigation items
   static const List<_NavItem> _navItems = [
     _NavItem(
-        icon: Iconsax.home_2_copy, selectedIcon: Iconsax.home_2, label: 'Home'),
+        icon: Iconsax.home_2_copy, 
+        selectedIcon: Iconsax.home_2, 
+        label: 'Home'),
     _NavItem(
         icon: Iconsax.chart_2_copy,
         selectedIcon: Iconsax.chart_21,
@@ -46,18 +57,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (index != _currentIndex) {
       setState(() => _currentIndex = index);
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = const [
-      DashboardScreen(key: PageStorageKey('DashboardScreen')),
-      AnalyticsScreen(key: PageStorageKey('AnalyticsScreen')),
-      AddTransactionScreen(key: PageStorageKey('AddTransactionScreen')),
-      CalendarViewScreen(key: PageStorageKey('CalendarViewScreen')),
-      SettingsScreen(key: PageStorageKey('SettingsScreen')),
-    ];
   }
 
   @override

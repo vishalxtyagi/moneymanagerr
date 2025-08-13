@@ -4,10 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/models/transaction_model.dart';
+import 'package:moneymanager/core/utils/notifier_utils.dart';
 import 'dart:collection';
 import 'dart:async';
 
-class TransactionProvider with ChangeNotifier {
+class TransactionProvider with ChangeNotifier, NotifierMixin {
   final _firestore = FirebaseFirestore.instance;
 
   // Typed collection reference with converter
@@ -213,10 +214,13 @@ class TransactionProvider with ChangeNotifier {
             break;
         }
       }
-      _sortAll();
-      _recomputeAggregatesAndCounters();
-      _applyFilters();
-      notifyListeners();
+      
+      // Batch all updates to reduce rebuilds
+      batchUpdate(() {
+        _sortAll();
+        _recomputeAggregatesAndCounters();
+        _applyFilters();
+      });
     }, onError: (e) {
       debugPrint('Dashboard stream error: $e');
     });
@@ -232,16 +236,17 @@ class TransactionProvider with ChangeNotifier {
           .limit(200)
           .get();
 
-      _all
-        ..clear()
-        ..addAll(snapshot.docs.map((d) => d.data()));
+      batchUpdate(() {
+        _all
+          ..clear()
+          ..addAll(snapshot.docs.map((d) => d.data()));
 
-      _lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
-      _hasMore = snapshot.docs.length == 200;
+        _lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+        _hasMore = snapshot.docs.length == 200;
 
-      _recomputeAggregatesAndCounters();
-      _applyFilters();
-      notifyListeners();
+        _recomputeAggregatesAndCounters();
+        _applyFilters();
+      });
     } catch (e) {
       debugPrint('Fetch Error: $e');
       rethrow;

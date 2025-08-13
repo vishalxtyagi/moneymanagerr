@@ -21,6 +21,8 @@ class TransactionItem extends StatelessWidget {
   final CategoryModel category;
   final VoidCallback? onTap;
 
+  static final _dateFormatter = DateFormat('MMM dd');
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
@@ -32,7 +34,7 @@ class TransactionItem extends StatelessWidget {
     final secondaryFontSize = responsive.fontSize(12);
     
     // Pre-format date and amount strings
-    final dateText = DateFormat('MMM dd').format(transaction.date);
+    final dateText = _dateFormatter.format(transaction.date);
     final amountText = CurrencyUtil.formatSigned(transaction.amount, transaction.type);
     
     // Pre-determine colors

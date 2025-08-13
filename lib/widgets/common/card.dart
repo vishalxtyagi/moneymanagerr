@@ -26,28 +26,31 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveUtil.of(context);
-    final radius =
-        borderRadius ?? BorderRadius.circular(responsive.spacing(scale: 0.8));
+    
+    final radius = borderRadius ?? BorderRadius.circular(responsive.spacing(scale: 0.8));
     final contentPadding = padding ?? responsive.screenPadding();
+    final cardColor = color ?? AppColors.card;
+    final cardElevation = elevation ?? AppStyles.elevation;
 
     final cardContent = Card(
-      color: color ?? AppColors.card,
-      elevation: elevation ?? AppStyles.elevation,
+      color: cardColor,
+      elevation: cardElevation,
       margin: margin,
       shape: RoundedRectangleBorder(borderRadius: radius),
-      child: Padding(padding: contentPadding, child: child),
+      child: Padding(
+        padding: contentPadding,
+        child: child,
+      ),
     );
 
-    return onTap == null
-        ? cardContent
-        : Material(
-            color: Colors.transparent,
-            borderRadius: radius,
-            child: InkWell(
-              borderRadius: radius,
-              onTap: onTap,
-              child: cardContent,
-            ),
-          );
+    if (onTap == null) {
+      return cardContent;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: radius,
+      child: cardContent,
+    );
   }
 }

@@ -119,40 +119,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     super.dispose();
   }
 
-  Future<void> _selectDateRange(BuildContext context,
-      [StateSetter? modalSetState]) async {
-    final provider = context.read<TransactionProvider>();
-    final currentRange = provider.filterRange;
-    
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      initialDateRange: currentRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4CAF50),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null && picked != currentRange) {
-      if (!mounted) return;
-      modalSetState?.call(() {});
-      provider.setRangeFilter(picked);
-    }
-  }
-
-  void _clearDateFilter([StateSetter? modalSetState]) {
-    modalSetState?.call(() {});
-    context.read<TransactionProvider>().setRangeFilter(null);
-  }
-
   void _clearAllFilters() {
     _searchController.clear();
     final provider = context.read<TransactionProvider>();
