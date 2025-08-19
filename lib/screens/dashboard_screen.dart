@@ -16,6 +16,63 @@ import 'package:moneymanager/widgets/header/section_header.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:provider/provider.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
+
+// Precomputed values for performance
+class _DashboardConstants {
+  static final DateTime _now = DateTime.now();
+  static final String greeting = _getGreetingForHour(_now.hour);
+  static final String formattedDate = DateFormat('EEEE, MMMM dd, yyyy').format(_now);
+  static final String shortFormattedDate = DateFormat('EEEE, MMM d').format(_now);
+  
+  static String _getGreetingForHour(int hour) {
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  }
+  
+  static DateTimeRange get todayRange => DateTimeRange(
+    start: DateTime(_now.year, _now.month, _now.day),
+    end: DateTime(_now.year, _now.month, _now.day, 23, 59, 59),
+  );
+  
+  
+  static DateTimeRange get weekRange {
+    final startOfWeek = _now.subtract(Duration(days: _now.weekday - 1));
+    return DateTimeRange(
+      start: DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day),
+      end: _now,
+    );
+  }
+}
+
+// Navigation helper to reduce code duplication
+class _NavigationHelper {
+  static void navigateToHistory(BuildContext context, {
+    DateTimeRange? range,
+    String? category,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionHistoryScreen(
+          initialRange: range,
+          initialCategory: category,
+          ephemeralFilters: true,
+        ),
+      ),
+    );
+  }
+  
+  static void navigateToAddTransaction(BuildContext context, [dynamic transaction]) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddTransactionScreen(transaction: transaction),
+      ),
+    );
+  }
+}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -32,7 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    // Defer category loading to avoid blocking initial render
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCategories());
   }
 
@@ -49,20 +105,510 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // for keep alive
+    super.build(context);
     final responsive = ResponsiveUtil.of(context);
     
+    return responsive.isDesktop 
+        ? _DesktopLayout(responsive: responsive)
+        : _MobileLayout(responsive: responsive);
+  }
+}
+
+class _DesktopLayout extends StatelessWidget {
+  const _DesktopLayout({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
+        child: responsive.constrain(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _WelcomeSection(responsive: responsive),
+              SizedBox(height: responsive.spacing(scale: 1.5)),
+              
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _BalanceSection(responsive: responsive),
+                        SizedBox(height: responsive.spacing()),
+                        _QuickStatsGrid(responsive: responsive),
+                        SizedBox(height: responsive.spacing()),
+                        _InsightsCard(responsive: responsive)
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: responsive.spacing(scale: 1.5)),
+                  Expanded(
+                    flex: 3,
+                    child: _RecentTransactionsSection(responsive: responsive),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileLayout extends StatelessWidget {
+  const _MobileLayout({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFB8E6B8),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header + Balance section with const colors
               _HeaderSection(responsive: responsive),
-              
-              // Content Section
               _ContentSection(responsive: responsive),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeSection extends StatelessWidget {
+  const _WelcomeSection({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<AuthProvider, String?>(
+      selector: (_, provider) => provider.user?.displayName,
+      builder: (context, displayName, _) {
+        final firstName = displayName?.split(' ').first ?? 'User';
+        
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good ${_DashboardConstants.greeting}!',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: responsive.fontSize(16),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Welcome back, $firstName',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: responsive.fontSize(28),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _DashboardConstants.formattedDate,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: responsive.fontSize(14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _UserAvatar(responsive: responsive),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<AuthProvider, String?>(
+      selector: (_, provider) => provider.user?.photoURL,
+      builder: (context, photoURL, _) => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.2),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+        child: SizedBox(
+          width: 80,
+          height: 80,
+          child: photoURL != null ? ClipOval(
+            child: Image.network(
+              photoURL,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+            ),
+          ) :
+          Icon(
+          Iconsax.user,
+          color: Colors.grey.shade600,
+          size: 20,
+        )
+      ),
+    )
+    );
+  }
+}
+
+class _BalanceSection extends StatelessWidget {
+  const _BalanceSection({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<TransactionProvider, (double, double)>(
+      selector: (_, provider) => (provider.totalIncome, provider.totalExpense),
+      builder: (_, totals, __) => BalanceCard(
+        analytics: AnalyticsModel.fromTotals(
+          income: totals.$1,
+          expense: totals.$2,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickStatsGrid extends StatelessWidget {
+  const _QuickStatsGrid({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<TransactionProvider, _StatisticsData>(
+      selector: (_, provider) {
+        final topCategories = provider.getTopCategories(count: 1);
+        final balance = provider.getBalance();
+        final weekCount = _getWeekCount(provider);
+        final expenseRatio = _getExpenseRatio(provider);
+        
+        return _StatisticsData(
+          todayCount: provider.todayCount,
+          monthCount: provider.monthCount,
+          topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
+          balance: balance,
+          weekCount: weekCount,
+          expenseRatio: expenseRatio,
+        );
+      },
+      builder: (context, stats, _) {
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: responsive.spacing(),
+          crossAxisSpacing: responsive.spacing(),
+          childAspectRatio: 1.4,
+          children: [
+            StatisticCard(
+              title: 'Today',
+              value: '${stats.todayCount}',
+              icon: Iconsax.calendar_1,
+              color: Colors.blue,
+              onTap: () => _NavigationHelper.navigateToHistory(
+                context, 
+                range: _DashboardConstants.todayRange,
+              ),
+            ),
+            StatisticCard(
+              title: 'This Week',
+              value: '${stats.weekCount}',
+              icon: Iconsax.calendar_tick,
+              color: Colors.green,
+              onTap: () => _NavigationHelper.navigateToHistory(
+                context, 
+                range: _DashboardConstants.weekRange,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  int _getWeekCount(TransactionProvider provider) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final weekRange = DateTimeRange(
+      start: DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day),
+      end: now,
+    );
+    
+    return provider.all.where((txn) => 
+      !txn.date.isBefore(weekRange.start) && 
+      !txn.date.isAfter(weekRange.end)
+    ).length;
+  }
+
+  double _getExpenseRatio(TransactionProvider provider) {
+    if (provider.totalIncome == 0) return 0.0;
+    return (provider.totalExpense / provider.totalIncome) * 100;
+  }
+}
+
+class _RecentTransactionsSection extends StatelessWidget {
+  const _RecentTransactionsSection({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(
+            title: 'Recent Transactions',
+            action: TextButton.icon(
+              onPressed: () => _NavigationHelper.navigateToHistory(context),
+              icon: const Icon(Iconsax.arrow_right_3, size: 16),
+              label: const Text('View All'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: responsive.fontSize(14),
+                ),
+              ),
+            ),
+          ),
+          
+          Selector<TransactionProvider, List<dynamic>>(
+            selector: (_, provider) => provider.all.take(7).toList(),
+            builder: (context, recentTransactions, _) {
+              if (recentTransactions.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: AppEmptyState(
+                    icon: Iconsax.receipt_item,
+                    title: 'No transactions yet',
+                    subtitle: 'Start by adding your first transaction',
+                  ),
+                );
+              }
+              
+              return Column(
+                children: recentTransactions.map((transaction) => 
+                  Selector<CategoryProvider, dynamic>(
+                    selector: (_, provider) => provider.getCategoryByName(
+                      transaction.category,
+                      isIncome: transaction.type == TransactionType.income,
+                    ),
+                    builder: (_, category, __) => TransactionItem(
+                      transaction: transaction,
+                      category: category,
+                      onTap: () => _NavigationHelper.navigateToAddTransaction(
+                        context, 
+                        transaction,
+                      ),
+                    ),
+                  ),
+                ).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightsCard extends StatelessWidget {
+  const _InsightsCard({required this.responsive});
+  
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Insights',
+            style: TextStyle(
+              fontSize: responsive.fontSize(18),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: responsive.spacing()),
+          
+          Selector<TransactionProvider, _InsightData>(
+            selector: (_, provider) => _InsightData(
+              todayCount: provider.todayCount,
+              balance: provider.getBalance(),
+              topCategories: provider.getTopCategories(count: 1),
+            ),
+            builder: (context, data, _) {
+              final insights = _generateInsights(data);
+              
+              return Column(
+                children: insights.map((insight) => _InsightItem(
+                  insight: insight,
+                  responsive: responsive,
+                )).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_Insight> _generateInsights(_InsightData data) {
+    final insights = <_Insight>[];
+    
+    if (data.todayCount > 0) {
+      insights.add(_Insight(
+        icon: Iconsax.flash_1,
+        title: 'Active Day',
+        description: 'You have ${data.todayCount} transactions today',
+        color: Colors.green,
+      ));
+    }
+    
+    if (data.balance > 10000) {
+      insights.add(const _Insight(
+        icon: Iconsax.medal_star,
+        title: 'Great Balance',
+        description: 'Your balance looks healthy!',
+        color: Colors.blue,
+      ));
+    } else {
+      insights.add(
+        const _Insight(
+          icon: Iconsax.medal_star,
+          title: 'Low Balance',
+          description: 'Your balance is below average.',
+          color: Colors.red,
+        ),
+      );
+    }
+    
+    if (data.topCategories.isNotEmpty) {
+      insights.add(_Insight(
+        icon: Iconsax.category_2,
+        title: 'Top Spending',
+        description: 'Most spent on ${data.topCategories.first.key}',
+        color: Colors.orange,
+      ));
+    }
+    
+    if (insights.isEmpty) {
+      insights.add(const _Insight(
+        icon: Iconsax.info_circle,
+        title: 'Getting Started',
+        description: 'Add transactions to see insights',
+        color: Colors.grey,
+      ));
+    }
+    
+    return insights;
+  }
+}
+
+class _InsightItem extends StatelessWidget {
+  const _InsightItem({
+    required this.insight,
+    required this.responsive,
+  });
+  
+  final _Insight insight;
+  final ResponsiveUtil responsive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: insight.color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: insight.color.withOpacity(0.2)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: insight.color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Icon(insight.icon, color: insight.color, size: 20),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      insight.title,
+                      style: TextStyle(
+                        fontSize: responsive.fontSize(14),
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      insight.description,
+                      style: TextStyle(
+                        fontSize: responsive.fontSize(12),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -78,31 +624,61 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFB8E6B8),
-      padding: responsive.screenPadding(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, _) => _DashboardHeader(
-              authProvider: authProvider,
-              responsive: responsive,
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFFB8E6B8)),
+      child: Padding(
+        padding: responsive.screenPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Selector<AuthProvider, String?>(
+              selector: (_, provider) => provider.user?.displayName,
+              builder: (context, displayName, _) {
+                final firstName = displayName?.split(' ').first ?? 'User';
+                
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _DashboardConstants.shortFormattedDate,
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: responsive.fontSize(16),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Hello, $firstName!',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: responsive.fontSize(28),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Selector<AuthProvider, String?>(
+                      selector: (_, provider) => provider.user?.photoURL,
+                      builder: (context, photoURL, _) => CircleAvatar(
+                        radius: responsive.value(mobile: 20.0, tablet: 24.0, desktop: 28.0),
+                        backgroundImage: photoURL != null ? NetworkImage(photoURL) : null,
+                        child: photoURL == null 
+                            ? const Icon(Icons.person, color: Colors.white) 
+                            : null,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
-          // Optimized balance card with minimal rebuild scope
-          Selector<TransactionProvider, (double, double)>(
-            selector: (_, provider) => (provider.totalIncome, provider.totalExpense),
-            builder: (_, totals, __) => BalanceCard(
-              analytics: AnalyticsModel.fromTotals(
-                income: totals.$1,
-                expense: totals.$2,
-              ),
-            ),
-          ),
-          SizedBox(height: responsive.spacing()),
-        ],
+            SizedBox(height: responsive.spacing(scale: 1.5)),
+            _BalanceSection(responsive: responsive),
+            SizedBox(height: responsive.spacing()),
+          ],
+        ),
       ),
     );
   }
@@ -115,220 +691,105 @@ class _ContentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[100]!,
-      padding: responsive.screenPadding(),
-      child: Column(
-        children: [
-          // Statistics Row with optimized selector
-          Selector<TransactionProvider, _StatisticsData>(
-            selector: (_, provider) {
-              final topCategories = provider.getTopCategories(count: 1);
-              return _StatisticsData(
-                todayCount: provider.todayCount,
-                monthCount: provider.monthCount,
-                topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
-              );
-            },
-            builder: (context, stats, _) => _StatisticsRow(
-              stats: stats,
-              responsive: responsive,
-            ),
-          ),
-          SizedBox(height: responsive.spacing()),
-          // Recent Transactions with limited items
-          Selector<TransactionProvider, List<dynamic>>(
-            selector: (_, provider) => provider.all.take(5).toList(),
-            builder: (context, recentTransactions, _) => _RecentTransactionsSection(
-              transactions: recentTransactions,
-              responsive: responsive,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Helper data classes for optimized selectors
-class _StatisticsData {
-  final int todayCount;
-  final int monthCount;
-  final String topCategoryName;
-
-  const _StatisticsData({
-    required this.todayCount,
-    required this.monthCount,
-    required this.topCategoryName,
-  });
-}
-
-// Optimized header widget
-class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({
-    required this.authProvider,
-    required this.responsive,
-  });
-
-  final AuthProvider authProvider;
-  final ResponsiveUtil responsive;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return DecoratedBox(
+      decoration: BoxDecoration(color: Colors.grey[100]!),
+      child: Padding(
+        padding: responsive.screenPadding(),
+        child: Column(
           children: [
-            Text(
-              DateFormat('EEEE, MMM d').format(DateTime.now()),
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: responsive.fontSize(16),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Hello, ${authProvider.user?.displayName?.split(' ').first ?? 'User'}!',
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: responsive.fontSize(28),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            _StatisticsRow(responsive: responsive),
+            SizedBox(height: responsive.spacing()),
+            _RecentTransactionsMobile(responsive: responsive),
           ],
         ),
-        CircleAvatar(
-          radius: responsive.value(
-            mobile: 20.0,
-            tablet: 24.0,
-            desktop: 28.0,
-          ),
-          backgroundImage: authProvider.user?.photoURL != null
-              ? NetworkImage(authProvider.user!.photoURL!)
-              : null,
-          child: authProvider.user?.photoURL == null
-              ? const Icon(Icons.person, color: Colors.white)
-              : null,
-        ),
-      ],
+      ),
     );
   }
 }
 
-// Optimized statistics row widget
 class _StatisticsRow extends StatelessWidget {
-  const _StatisticsRow({
-    required this.stats,
-    required this.responsive,
-  });
-
-  final _StatisticsData stats;
+  const _StatisticsRow({required this.responsive});
+  
   final ResponsiveUtil responsive;
 
   @override
   Widget build(BuildContext context) {
-    const spacing = SizedBox(width: 12);
-    
-    final cards = [
-      StatisticCard(
-        title: 'Today',
-        value: '${stats.todayCount}',
-        icon: Icons.today,
-        color: AppColors.primary,
-        onTap: () => _navigateToTodayTransactions(context),
-      ),
-      StatisticCard(
-        title: 'This Month',
-        value: '${stats.monthCount}',
-        icon: Icons.calendar_month,
-        color: AppColors.primary,
-        onTap: () => _navigateToMonthTransactions(context),
-      ),
-      StatisticCard(
-        title: 'Top Category',
-        value: stats.topCategoryName,
-        icon: Icons.category,
-        color: AppColors.primary,
-        onTap: () => _navigateToTopCategory(context, stats.topCategoryName),
-      ),
-    ];
-
-    if (responsive.isDesktop) {
-      return Row(
-        children: [
-          for (int i = 0; i < cards.length; i++) ...[
-            Expanded(child: cards[i]),
-            if (i < cards.length - 1) spacing,
-          ],
-        ],
-      );
-    }
-    
-    return Row(
-      children: [
-        Expanded(child: cards[0]),
-        spacing,
-        Expanded(child: cards[1]),
-        spacing,
-        Expanded(child: cards[2]),
-      ],
-    );
-  }
-
-  void _navigateToTodayTransactions(BuildContext context) {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TransactionHistoryScreen(
-          initialRange: DateTimeRange(start: start, end: start),
-          ephemeralFilters: true,
-        ),
-      ),
-    );
-  }
-
-  void _navigateToMonthTransactions(BuildContext context) {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, 1);
-    final end = DateTime(now.year, now.month + 1, 0);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TransactionHistoryScreen(
-          initialRange: DateTimeRange(start: start, end: end),
-          ephemeralFilters: true,
-        ),
-      ),
-    );
-  }
-
-  void _navigateToTopCategory(BuildContext context, String categoryName) {
-    if (categoryName != 'None') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TransactionHistoryScreen(
-            initialCategory: categoryName,
-            ephemeralFilters: true,
+    return Selector<TransactionProvider, _StatisticsData>(
+      selector: (_, provider) {
+        final topCategories = provider.getTopCategories(count: 1);
+        final balance = provider.getBalance();
+        final weekCount = _getWeekCount(provider);
+        final expenseRatio = _getExpenseRatio(provider);
+        
+        return _StatisticsData(
+          todayCount: provider.todayCount,
+          monthCount: provider.monthCount,
+          topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
+          balance: balance,
+          weekCount: weekCount,
+          expenseRatio: expenseRatio,
+        );
+      },
+      builder: (context, stats, _) {
+        const spacing = SizedBox(width: 12);
+        
+        final cards = [
+          StatisticCard(
+            title: 'Today',
+            value: '${stats.todayCount}',
+            icon: Icons.today,
+            color: AppColors.primary,
+            onTap: () => _NavigationHelper.navigateToHistory(
+              context, 
+              range: _DashboardConstants.todayRange,
+            ),
           ),
-        ),
-      );
-    }
+          StatisticCard(
+            title: 'This Week',
+            value: '${stats.weekCount}',
+            icon: Icons.calendar_view_week,
+            color: AppColors.primary,
+            onTap: () => _NavigationHelper.navigateToHistory(
+              context, 
+              range: _DashboardConstants.weekRange,
+            ),
+          ),
+        ];
+        
+        return Row(
+          children: [
+            Expanded(child: cards[0]),
+            spacing,
+            Expanded(child: cards[1]),
+          ],
+        );
+      },
+    );
+  }
+
+  int _getWeekCount(TransactionProvider provider) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final weekRange = DateTimeRange(
+      start: DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day),
+      end: now,
+    );
+    
+    return provider.all.where((txn) => 
+      !txn.date.isBefore(weekRange.start) && 
+      !txn.date.isAfter(weekRange.end)
+    ).length;
+  }
+
+  double _getExpenseRatio(TransactionProvider provider) {
+    if (provider.totalIncome == 0) return 0.0;
+    return (provider.totalExpense / provider.totalIncome) * 100;
   }
 }
 
-// Optimized recent transactions section
-class _RecentTransactionsSection extends StatelessWidget {
-  const _RecentTransactionsSection({
-    required this.transactions,
-    required this.responsive,
-  });
-
-  final List<dynamic> transactions;
+class _RecentTransactionsMobile extends StatelessWidget {
+  const _RecentTransactionsMobile({required this.responsive});
+  
   final ResponsiveUtil responsive;
 
   @override
@@ -340,12 +801,7 @@ class _RecentTransactionsSection extends StatelessWidget {
           AppSectionHeader(
             title: 'Recent Transactions',
             action: TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TransactionHistoryScreen(),
-                ),
-              ),
+              onPressed: () => _NavigationHelper.navigateToHistory(context),
               child: Text(
                 'View All',
                 style: TextStyle(
@@ -356,35 +812,85 @@ class _RecentTransactionsSection extends StatelessWidget {
               ),
             ),
           ),
-          if (transactions.isEmpty)
-            const AppEmptyState(
-              icon: Icons.receipt_long,
-              title: 'No transactions yet',
-              subtitle: 'Start by adding your first transaction',
-            )
-          else
-            ...transactions.map((transaction) => 
-              Selector<CategoryProvider, dynamic>(
-                selector: (_, provider) => provider.getCategoryByName(
-                  transaction.category,
-                  isIncome: transaction.type == TransactionType.income,
-                ),
-                builder: (_, category, __) => TransactionItem(
-                  transaction: transaction,
-                  category: category,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddTransactionScreen(
-                        transaction: transaction,
+          
+          Selector<TransactionProvider, List<dynamic>>(
+            selector: (_, provider) => provider.all.take(5).toList(),
+            builder: (context, transactions, _) {
+              if (transactions.isEmpty) {
+                return const AppEmptyState(
+                  icon: Icons.receipt_long,
+                  title: 'No transactions yet',
+                  subtitle: 'Start by adding your first transaction',
+                );
+              }
+              
+              return Column(
+                children: transactions.map((transaction) => 
+                  Selector<CategoryProvider, dynamic>(
+                    selector: (_, provider) => provider.getCategoryByName(
+                      transaction.category,
+                      isIncome: transaction.type == TransactionType.income,
+                    ),
+                    builder: (_, category, __) => TransactionItem(
+                      transaction: transaction,
+                      category: category,
+                      onTap: () => _NavigationHelper.navigateToAddTransaction(
+                        context, 
+                        transaction,
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
+                ).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
+}
+
+// Helper data classes
+class _StatisticsData {
+  const _StatisticsData({
+    required this.todayCount,
+    required this.monthCount,
+    required this.topCategoryName,
+    required this.balance,
+    required this.weekCount,
+    required this.expenseRatio,
+  });
+  
+  final int todayCount;
+  final int monthCount;
+  final String topCategoryName;
+  final double balance;
+  final int weekCount;
+  final double expenseRatio;
+}
+
+class _InsightData {
+  const _InsightData({
+    required this.todayCount,
+    required this.balance,
+    required this.topCategories,
+  });
+  
+  final int todayCount;
+  final double balance;
+  final List<MapEntry<String, double>> topCategories;
+}
+
+class _Insight {
+  const _Insight({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+  
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
 }

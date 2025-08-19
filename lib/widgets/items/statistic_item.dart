@@ -49,12 +49,10 @@ class StatisticCard extends StatelessWidget {
       return AppCard(child: content);
     }
 
-    return AppCard(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: content,
-      ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AppCard(child: content),
     );
   }
 }
