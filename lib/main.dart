@@ -6,9 +6,10 @@ import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/category_provider.dart';
 import 'core/providers/transaction_provider.dart';
+import 'core/providers/analytics_provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth_screen.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/main_navigation_screen_optimized.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -45,6 +46,11 @@ class MoneyManagerApp extends StatelessWidget {
             return transaction ?? TransactionProvider();
           },
         ),
+        // Add Analytics Provider
+        ChangeNotifierProxyProvider<TransactionProvider, AnalyticsProvider>(
+          create: (context) => AnalyticsProvider(context.read<TransactionProvider>()),
+          update: (_, transaction, analytics) => analytics ?? AnalyticsProvider(transaction),
+        ),
       ],
       child: MaterialApp(
         title: 'Money Manager',
@@ -64,7 +70,7 @@ class _AuthChecker extends StatelessWidget {
     return Selector<AuthProvider, bool>(
       selector: (_, auth) => auth.isSignedIn,
       builder: (_, isSignedIn, __) =>
-          isSignedIn ? const MainNavigationScreen() : const AuthScreen(),
+          isSignedIn ? const MainNavigationScreenOptimized() : const AuthScreen(),
     );
   }
 }
