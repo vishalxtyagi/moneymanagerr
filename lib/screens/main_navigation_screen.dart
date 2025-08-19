@@ -67,7 +67,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Pre-calculated screen titles to avoid switch statement in build
   static const List<String> _screenTitles = [
     'Dashboard',
-    'Analytics', 
+    'Analytics',
+    'Add Transaction',
     'Calendar',
     'Settings',
   ];

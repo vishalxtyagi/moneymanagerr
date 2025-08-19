@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
+import 'package:moneymanager/widgets/common/card.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/models/transaction_model.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
+import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class CalendarViewScreen extends StatefulWidget {
@@ -78,8 +81,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // for keep alive
+    final responsive = ResponsiveUtil.of(context);
+    
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: responsive.isDesktop ? Colors.grey.shade50 : null,
+      appBar: responsive.isDesktop ? null : AppBar(
         title: const Text('Calendar View'),
       ),
       body: Consumer<TransactionProvider>(
@@ -94,50 +100,170 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
             _clearCache();
           }
 
-          return Column(
-            children: [
-              // Optimized Calendar Widget
-              _CalendarWidget(
-                focusedDay: _focusedDay,
-                selectedDay: _selectedDay,
-                calendarFormat: _calendarFormat,
-                transactions: transactions,
-                onDaySelected: (selectedDay, focusedDay) {
-                  if (!isSameDay(_selectedDay, selectedDay)) {
-                    setState(() {
-                      _selectedDay = selectedDay;
-                      _focusedDay = focusedDay;
-                    });
-                  }
-                },
-                onFormatChanged: (format) {
-                  if (_calendarFormat != format) {
-                    setState(() {
-                      _calendarFormat = format;
-                    });
-                  }
-                },
-                onPageChanged: (focusedDay) {
-                  setState(() {
-                    _focusedDay = focusedDay;
-                  });
-                },
-                getTransactionsForDay: _getTransactionsForDay,
-              ),
-
-              // Optimized Selected Day Section
-              Expanded(
-                child: _SelectedDaySection(
-                  selectedDay: _selectedDay,
-                  transactions: selectedDayTransactions,
-                  allTransactions: transactions,
-                  getTotalForDay: _getTotalForDay,
-                ),
-              ),
-            ],
-          );
+          return responsive.isDesktop
+              ? _buildDesktopLayout(transactions, selectedDayTransactions, responsive)
+              : _buildMobileLayout(transactions, selectedDayTransactions, responsive);
         },
       ),
+    );
+  }
+
+  Widget _buildDesktopLayout(
+    List<TransactionModel> transactions,
+    List<TransactionModel> selectedDayTransactions,
+    ResponsiveUtil responsive,
+  ) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
+      child: responsive.constrain(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main content - Two column layout
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column - Calendar and day summary
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      // Calendar Widget
+                      _CalendarWidget(
+                        focusedDay: _focusedDay,
+                        selectedDay: _selectedDay,
+                        calendarFormat: _calendarFormat,
+                        transactions: transactions,
+                        onDaySelected: (selectedDay, focusedDay) {
+                          if (!isSameDay(_selectedDay, selectedDay)) {
+                            setState(() {
+                              _selectedDay = selectedDay;
+                              _focusedDay = focusedDay;
+                            });
+                          }
+                        },
+                        onFormatChanged: (format) {
+                          if (_calendarFormat != format) {
+                            setState(() {
+                              _calendarFormat = format;
+                            });
+                          }
+                        },
+                        onPageChanged: (focusedDay) {
+                          setState(() {
+                            _focusedDay = focusedDay;
+                          });
+                        },
+                        getTransactionsForDay: _getTransactionsForDay,
+                        isDesktop: true,
+                      ),
+                      SizedBox(height: responsive.spacing()),
+                      
+                      // Day Summary Card
+                      if (_selectedDay != null)
+                        _DayInfoHeader(
+                          selectedDay: _selectedDay!,
+                          totalForDay: _getTotalForDay(_selectedDay!, transactions),
+                          transactionCount: selectedDayTransactions.length,
+                          isDesktop: true,
+                        ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(width: responsive.spacing(scale: 1.5)),
+                
+                // Right column - Transaction list
+                Expanded(
+                  flex: 3,
+                  child: AppCard(
+                    child: SizedBox(
+                      height: 600, // Fixed height for consistent layout
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section header
+                          Text(
+                            _selectedDay != null 
+                                ? 'Transactions for ${DateFormat('MMM d, y').format(_selectedDay!)}'
+                                : 'Select a date to view transactions',
+                            style: TextStyle(
+                              fontSize: responsive.fontSize(20),
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: responsive.spacing()),
+                          
+                          // Transaction list
+                          Expanded(
+                            child: selectedDayTransactions.isEmpty
+                                ? const _EmptyDayState(isDesktop: true)
+                                : _TransactionsList(
+                                    transactions: selectedDayTransactions,
+                                    isDesktop: true,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(
+    List<TransactionModel> transactions,
+    List<TransactionModel> selectedDayTransactions,
+    ResponsiveUtil responsive,
+  ) {
+    return Column(
+      children: [
+        // Optimized Calendar Widget
+        _CalendarWidget(
+          focusedDay: _focusedDay,
+          selectedDay: _selectedDay,
+          calendarFormat: _calendarFormat,
+          transactions: transactions,
+          onDaySelected: (selectedDay, focusedDay) {
+            if (!isSameDay(_selectedDay, selectedDay)) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+            }
+          },
+          onFormatChanged: (format) {
+            if (_calendarFormat != format) {
+              setState(() {
+                _calendarFormat = format;
+              });
+            }
+          },
+          onPageChanged: (focusedDay) {
+            setState(() {
+              _focusedDay = focusedDay;
+            });
+          },
+          getTransactionsForDay: _getTransactionsForDay,
+          isDesktop: false,
+        ),
+
+        // Optimized Selected Day Section
+        Expanded(
+          child: _SelectedDaySection(
+            selectedDay: _selectedDay,
+            transactions: selectedDayTransactions,
+            allTransactions: transactions,
+            getTotalForDay: _getTotalForDay,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -153,6 +279,7 @@ class _CalendarWidget extends StatelessWidget {
     required this.onFormatChanged,
     required this.onPageChanged,
     required this.getTransactionsForDay,
+    this.isDesktop = false,
   });
 
   final DateTime focusedDay;
@@ -163,12 +290,14 @@ class _CalendarWidget extends StatelessWidget {
   final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
   final List<TransactionModel> Function(DateTime, List<TransactionModel>) getTransactionsForDay;
+  final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: isDesktop ? BorderRadius.circular(12) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -269,17 +398,19 @@ class _DayInfoHeader extends StatelessWidget {
     required this.selectedDay,
     required this.totalForDay,
     required this.transactionCount,
+    this.isDesktop = false,
   });
 
   final DateTime selectedDay;
   final double totalForDay;
   final int transactionCount;
+  final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(isDesktop ? 0 : 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -297,9 +428,11 @@ class _DayInfoHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            DateFormat('EEEE, MMMM d, y').format(selectedDay),
-            style: const TextStyle(
-              fontSize: 18,
+            isDesktop 
+                ? DateFormat('EEEE, MMMM d, y').format(selectedDay)
+                : DateFormat('EEEE, MMMM d, y').format(selectedDay),
+            style: TextStyle(
+              fontSize: isDesktop ? 20 : 18,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -340,28 +473,33 @@ class _DayInfoHeader extends StatelessWidget {
 
 // Empty Day State Component
 class _EmptyDayState extends StatelessWidget {
-  const _EmptyDayState();
+  const _EmptyDayState({this.isDesktop = false});
+
+  final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_note,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No transactions for this day',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_note,
+              size: 64,
+              color: Colors.grey[400],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'No transactions for this day',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -369,39 +507,58 @@ class _EmptyDayState extends StatelessWidget {
 
 // Transactions List Component
 class _TransactionsList extends StatelessWidget {
-  const _TransactionsList({required this.transactions});
+  const _TransactionsList({
+    required this.transactions,
+    this.isDesktop = false,
+  });
 
   final List<TransactionModel> transactions;
+  final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: transactions.length,
-      itemBuilder: (context, index) {
-        final transaction = transactions[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Selector<CategoryProvider, dynamic>(
-            selector: (_, provider) => provider.getCategoryByName(
-              transaction.category,
-              isIncome: transaction.type == TransactionType.income,
-            ),
-            builder: (_, category, __) => TransactionItem(
-              transaction: transaction,
-              category: category,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddTransactionScreen(
-                    transaction: transaction,
+    return Container(
+      decoration: isDesktop ? BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ) : null,
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(horizontal: isDesktop ? 16 : 16),
+        itemCount: transactions.length,
+        itemBuilder: (context, index) {
+          final transaction = transactions[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            elevation: isDesktop ? 0 : 1,
+            child: Selector<CategoryProvider, dynamic>(
+              selector: (_, provider) => provider.getCategoryByName(
+                transaction.category,
+                isIncome: transaction.type == TransactionType.income,
+              ),
+              builder: (_, category, __) => TransactionItem(
+                transaction: transaction,
+                category: category,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddTransactionScreen(
+                      transaction: transaction,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

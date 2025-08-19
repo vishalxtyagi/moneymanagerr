@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/constants/themes.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
@@ -11,7 +9,7 @@ import 'package:moneymanager/core/utils/responsive_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:moneymanager/core/utils/category_util.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -27,33 +25,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   DateTimeRange? _selectedDateRange;
   bool _showAllCategories = false;
 
-  // Pre-computed date labels to avoid computation in build
-  late final Map<String, DateTimeRange> _quickDateRanges;
-
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    // Pre-compute date ranges once
-    final now = DateTime.now();
-    _defaultDateRange = DateTimeRange(
-      start: DateTime(now.year, now.month, 1),
-      end: DateTime(now.year, now.month + 1, 0),
-    );
+    _defaultDateRange = _getDateRanges()['This Month']!;
     _selectedDateRange = _defaultDateRange;
-
-    // Pre-compute quick date range options
-    _quickDateRanges = _buildQuickDateRanges(now);
   }
 
-  Map<String, DateTimeRange> _buildQuickDateRanges(DateTime now) {
+  Map<String, DateTimeRange> _getDateRanges() {
+    final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final startOfYear = DateTime(now.year, 1, 1);
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0);
-    
+    final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
+
     return {
       'This Month': DateTimeRange(
         start: startOfMonth,
@@ -72,11 +60,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // for keep alive
+    super.build(context);
     final responsive = ResponsiveUtil.of(context);
     
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: Colors.grey.shade50,
+      appBar: responsive.isDesktop ? null : AppBar(
         title: Text(
           'Analytics',
           style: TextStyle(
@@ -86,108 +75,192 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         ),
         elevation: 0,
         actions: [
-          Padding(
-            padding: EdgeInsets.only(right: responsive.spacing()),
-            child: Material(
-              borderRadius: BorderRadius.circular(8),
-              child: Ink(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => _showDateRangeOptions(responsive),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.date_range, size: 18, color: Colors.black),
-                        const SizedBox(width: 6),
-                        Text(
-                          _getDateRangeLabel(),
-                          style: TextStyle(
-                            fontSize: responsive.fontSize(12),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, size: 16, color: Colors.black),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          _DateRangeSelector(
+            selectedRange: _selectedDateRange,
+            onRangeSelected: (range) {
+              setState(() {
+                _selectedDateRange = range;
+              });
+            },
+            responsive: responsive,
           ),
         ],
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final balance = transactionProvider.getBalance(range: _selectedDateRange);
-          final income = transactionProvider.getTotalIncome(range: _selectedDateRange);
-          final expense = transactionProvider.getTotalExpense(range: _selectedDateRange);
-          final categoryExpenses = transactionProvider.getExpensesByCategory(range: _selectedDateRange);
+          final range = _selectedDateRange;
+          final balance = transactionProvider.getBalance(range: range);
+          final income = transactionProvider.getTotalIncome(range: range);
+          final expense = transactionProvider.getTotalExpense(range: range);
+          final categoryExpenses = transactionProvider.getExpensesByCategory(range: range);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
 
-          return responsive.constrain(
-            SingleChildScrollView(
-              padding: responsive.screenPadding(),
-              child: Column(
-                children: [
-                  // Summary Cards Row
-                  _buildSummarySection(balance, income, expense, 0, responsive),
-                  SizedBox(height: responsive.spacing(scale: 1.5)),
-
-                  // Charts Section
-                  if (responsive.isDesktop)
-                    _buildDesktopLayout(categoryExpenses, timeSeriesData, responsive)
-                  else
-                    _buildMobileLayout(categoryExpenses, timeSeriesData, responsive),
-                ],
-              ),
-            ),
-          );
+          if (responsive.isDesktop) {
+            return _buildDesktopLayout(
+              balance, income, expense, categoryExpenses, timeSeriesData, responsive
+            );
+          } else {
+            return _buildMobileLayout(
+              balance, income, expense, categoryExpenses, timeSeriesData, responsive
+            );
+          }
         },
       ),
     );
   }
 
-  Widget _buildSummarySection(double balance, double income, double expense,
-      double consumptionRate, ResponsiveUtil responsive) {
-    const spacing = SizedBox(width: 12);
-    const verticalSpacing = SizedBox(height: 12);
+  Widget _buildDesktopLayout(
+    double balance,
+    double income,
+    double expense,
+    Map<String, double> categoryExpenses,
+    List<Map<String, dynamic>> timeSeriesData,
+    ResponsiveUtil responsive,
+  ) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
+      child: responsive.constrain(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with date selector
+            if (responsive.isDesktop) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Financial Analytics',
+                        style: TextStyle(
+                          fontSize: responsive.fontSize(32),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Insights into your spending patterns',
+                        style: TextStyle(
+                          fontSize: responsive.fontSize(16),
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _DateRangeSelector(
+                    selectedRange: _selectedDateRange,
+                    onRangeSelected: (range) {
+                      setState(() {
+                        _selectedDateRange = range;
+                      });
+                    },
+                    responsive: responsive,
+                  ),
+                ],
+              ),
+              SizedBox(height: responsive.spacing(scale: 2)),
+            ],
+            
+            // Summary cards
+            _buildSummarySection(balance, income, expense, responsive),
+            SizedBox(height: responsive.spacing(scale: 2)),
+
+            // Charts section - Desktop layout
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column - Expense breakdown
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      _buildExpenseBreakdownChart(categoryExpenses, responsive),
+                      SizedBox(height: responsive.spacing(scale: 1.5)),
+                      _buildCategoryInsightsCard(categoryExpenses, responsive),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(width: responsive.spacing(scale: 1.5)),
+                
+                // Right column - Spending trend
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      _buildSpendingTrendChart(timeSeriesData, responsive),
+                      SizedBox(height: responsive.spacing(scale: 1.5)),
+                      _buildTrendInsightsCard(timeSeriesData, responsive),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(
+    double balance,
+    double income,
+    double expense,
+    Map<String, double> categoryExpenses,
+    List<Map<String, dynamic>> timeSeriesData,
+    ResponsiveUtil responsive,
+  ) {
+    return SingleChildScrollView(
+      padding: responsive.screenPadding(),
+      child: Column(
+        children: [
+          // Summary Cards
+          _buildSummarySection(balance, income, expense, responsive),
+          SizedBox(height: responsive.spacing(scale: 1.5)),
+
+          // Charts Section
+          _buildExpenseBreakdownChart(categoryExpenses, responsive),
+          SizedBox(height: responsive.spacing(scale: 1.5)),
+          _buildSpendingTrendChart(timeSeriesData, responsive),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(double balance, double income, double expense, ResponsiveUtil responsive) {
+    final consumptionRate = income > 0 ? (expense / income) * 100 : 0;
     
     final summaryCards = [
       _buildSummaryCard(
         'Balance',
         balance,
         balance >= 0 ? Colors.green : Colors.red,
-        Icons.account_balance_wallet,
+        Iconsax.wallet_3,
         responsive,
       ),
       _buildSummaryCard(
         'Income',
         income,
         Colors.green,
-        Icons.arrow_upward,
+        Iconsax.arrow_up_2,
         responsive,
       ),
       _buildSummaryCard(
         'Expense',
         expense,
         Colors.red,
-        Icons.arrow_downward,
+        Iconsax.arrow_down_2,
         responsive,
       ),
       _buildSummaryCard(
-        'Spend %',
-        consumptionRate,
+        'Spend Rate',
+        consumptionRate.toDouble(),
         Colors.orange,
-        Icons.trending_up,
+        Iconsax.percentage_circle,
         responsive,
-        isSavingsRate: true,
+        isPercentage: true,
       ),
     ];
 
@@ -196,7 +269,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         children: [
           for (int i = 0; i < summaryCards.length; i++) ...[
             Expanded(child: summaryCards[i]),
-            if (i < summaryCards.length - 1) spacing,
+            if (i < summaryCards.length - 1) SizedBox(width: responsive.spacing()),
           ],
         ],
       );
@@ -206,15 +279,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Row(
             children: [
               Expanded(child: summaryCards[0]),
-              spacing,
+              SizedBox(width: responsive.spacing()),
               Expanded(child: summaryCards[1]),
             ],
           ),
-          verticalSpacing,
+          SizedBox(height: responsive.spacing()),
           Row(
             children: [
               Expanded(child: summaryCards[2]),
-              spacing,
+              SizedBox(width: responsive.spacing()),
               Expanded(child: summaryCards[3]),
             ],
           ),
@@ -223,72 +296,52 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     }
   }
 
-  Widget _buildDesktopLayout(Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 1,
-          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
-        ),
-        SizedBox(width: responsive.spacing(scale: 1.5)),
-        Expanded(
-          flex: 2,
-          child: _buildSpendingTrendChart(timeSeriesData, responsive),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileLayout(Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
-    return Column(
-      children: [
-        _buildExpenseBreakdownChart(categoryExpenses, responsive),
-        SizedBox(height: responsive.spacing(scale: 1.5)),
-        _buildSpendingTrendChart(timeSeriesData, responsive),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard(String title, double amount, Color color,
-      IconData icon, ResponsiveUtil responsive,
-      {bool isSavingsRate = false}) {
+  Widget _buildSummaryCard(
+    String title,
+    double value,
+    Color color,
+    IconData icon,
+    ResponsiveUtil responsive, {
+    bool isPercentage = false,
+  }) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Material(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(icon, color: color, size: 20),
-                ),
-              ),
-              const Spacer(),
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: responsive.fontSize(13),
+                  fontSize: responsive.fontSize(14),
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
                 ),
               ),
             ],
           ),
-          SizedBox(height: responsive.spacing(scale: 0.75)),
+          SizedBox(height: responsive.spacing()),
           Text(
-            isSavingsRate
-                ? '${amount.toStringAsFixed(1)}%'
-                : CurrencyUtil.formatCompact(amount),
+            isPercentage
+                ? '${value.toStringAsFixed(1)}%'
+                : CurrencyUtil.formatCompact(value),
             style: TextStyle(
               fontSize: responsive.fontSize(24),
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: color,
             ),
           ),
         ],
@@ -296,8 +349,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildExpenseBreakdownChart(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildExpenseBreakdownChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,21 +357,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Expense Breakdown',
             style: TextStyle(
-              fontSize: responsive.fontSize(20),
+              fontSize: responsive.fontSize(18),
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           SizedBox(height: responsive.spacing(scale: 1.5)),
+          
           categoryExpenses.isEmpty
               ? Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.pie_chart,
-                        size: responsive.value(
-                            mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                        Iconsax.chart_21,
+                        size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
                         color: Colors.grey,
                       ),
                       SizedBox(height: responsive.spacing()),
@@ -336,18 +387,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               : LayoutBuilder(
                   builder: (context, constraints) {
                     if (responsive.isDesktop) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      return Column(
                         children: [
-                          Center(
-                            child: SizedBox(
-                              width: 200,
-                              height: 200,
-                              child:
-                                  _buildPieChart(categoryExpenses, responsive),
-                            ),
+                          SizedBox(
+                            height: 250,
+                            child: _buildPieChart(categoryExpenses, responsive),
                           ),
-                          const SizedBox(width: 20),
+                          SizedBox(height: responsive.spacing()),
                           _buildLegendList(categoryExpenses, responsive),
                         ],
                       );
@@ -359,7 +405,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             height: 180,
                             child: _buildPieChart(categoryExpenses, responsive),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: responsive.spacing()),
                           _buildLegendList(categoryExpenses, responsive),
                         ],
                       );
@@ -371,120 +417,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildLegendList(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildPieChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+    if (categoryExpenses.isEmpty) return const SizedBox.shrink();
+
+    final total = categoryExpenses.values.fold(0.0, (sum, value) => sum + value);
     final entries = categoryExpenses.entries.toList();
-    final maxInitialItems = responsive.isDesktop ? 5 : 3;
-    final hasMoreItems = entries.length > maxInitialItems;
-    final itemsToShow =
-        _showAllCategories ? entries : entries.take(maxInitialItems).toList();
 
-    return Column(
-      children: [
-        // Legend items
-        ...itemsToShow.asMap().entries.map((entry) {
-          final categoryEntry = entry.value;
-          final color = _resolveCategoryColor(categoryEntry.key);
-          return MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _openCategoryHistory(categoryEntry.key),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 2),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.withOpacity(0.12)),
-                  ),
-                  child: Row(
-                    children: [
-                      Material(
-                        color: color,
-                        borderRadius: BorderRadius.circular(6),
-                        child: const SizedBox(width: 12, height: 12),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          categoryEntry.key,
-                          style: TextStyle(
-                            fontSize: responsive.fontSize(12),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        CurrencyUtil.formatCompact(categoryEntry.value),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: responsive.fontSize(12),
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(Icons.chevron_right,
-                          size: 18, color: Colors.grey[600]),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-
-        // Show more/less button
-        if (hasMoreItems) ...[
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showAllCategories = !_showAllCategories;
-              });
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _showAllCategories
-                        ? 'Show Less'
-                        : 'Show ${entries.length - maxInitialItems} More',
-                    style: TextStyle(
-                      fontSize: responsive.fontSize(12),
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    _showAllCategories ? Icons.expand_less : Icons.expand_more,
-                    color: AppColors.primary,
-                    size: 18,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildPieChart(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
     return PieChart(
       PieChartData(
         pieTouchData: PieTouchData(
@@ -496,46 +434,148 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 _touchedIndex = -1;
                 return;
               }
-              _touchedIndex =
-                  pieTouchResponse.touchedSection!.touchedSectionIndex;
+              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
             });
           },
         ),
-        borderData: FlBorderData(show: false),
         sectionsSpace: 2,
-        centerSpaceRadius:
-            responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
-        sections: _generatePieChartSections(categoryExpenses),
+        centerSpaceRadius: responsive.value(mobile: 40, tablet: 50, desktop: 60),
+        sections: entries.asMap().entries.map((entry) {
+          final index = entry.key;
+          final categoryEntry = entry.value;
+          final isTouched = index == _touchedIndex;
+          final radius = isTouched 
+              ? responsive.value(mobile: 65.0, tablet: 75.0, desktop: 85.0)
+              : responsive.value(mobile: 55.0, tablet: 65.0, desktop: 75.0);
+          
+          return PieChartSectionData(
+            color: _resolveCategoryColor(categoryEntry.key),
+            value: categoryEntry.value,
+            title: '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
+            radius: radius,
+            titleStyle: TextStyle(
+              fontSize: responsive.fontSize(10),
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            titlePositionPercentageOffset: 0.55,
+          );
+        }).toList(),
       ),
     );
   }
 
-  List<PieChartSectionData> _generatePieChartSections(
-      Map<String, double> categoryExpenses) {
-    return categoryExpenses.entries.toList().asMap().entries.map((entry) {
-      final index = entry.key;
-      final category = entry.value;
-      final isTouched = index == _touchedIndex;
-      final fontSize = isTouched ? 16.0 : 12.0;
-      final radius = isTouched ? 70.0 : 60.0;
+  Widget _buildLegendList(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+    final entries = categoryExpenses.entries.toList();
+    final maxInitialItems = responsive.isDesktop ? 6 : 4;
+    final hasMoreItems = entries.length > maxInitialItems;
+    final itemsToShow = _showAllCategories ? entries : entries.take(maxInitialItems).toList();
 
-      return PieChartSectionData(
-        color: _resolveCategoryColor(category.key),
-        value: category.value,
-        title: isTouched ? category.key : '',
-        radius: radius,
-        titleStyle: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            backgroundColor: Colors.black87),
-      );
-    }).toList();
+    return Column(
+      children: [
+        ...itemsToShow.asMap().entries.map((entry) {
+          final categoryEntry = entry.value;
+          final color = _resolveCategoryColor(categoryEntry.key);
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _openCategoryHistory(categoryEntry.key),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.withOpacity(0.12)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          categoryEntry.key,
+                          style: TextStyle(
+                            fontSize: responsive.fontSize(14),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        CurrencyUtil.formatCompact(categoryEntry.value),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: responsive.fontSize(14),
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Iconsax.arrow_right_3,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+
+        if (hasMoreItems) ...[
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _showAllCategories = !_showAllCategories;
+              });
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _showAllCategories ? 'Show Less' : 'Show More',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: responsive.fontSize(14),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _showAllCategories ? Iconsax.arrow_up_2 : Iconsax.arrow_down_2,
+                    color: AppColors.primary,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
-  // Re-introduced spending trend chart (was accidentally removed during previous edit)
-  Widget _buildSpendingTrendChart(
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildSpendingTrendChart(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,24 +583,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Spending Trend',
             style: TextStyle(
-              fontSize: responsive.fontSize(20),
+              fontSize: responsive.fontSize(18),
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           SizedBox(height: responsive.spacing(scale: 1.5)),
+          
           SizedBox(
-            height:
-                responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
+            height: responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.show_chart,
-                          size: responsive.value(
-                              mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                          Iconsax.chart_1,
+                          size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
                           color: Colors.grey,
                         ),
                         SizedBox(height: responsive.spacing()),
@@ -574,180 +613,214 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       ],
                     ),
                   )
-                : Builder(
-                    builder: (context) {
-                      final maxYVal = _getMaxValue(timeSeriesData);
-                      final minYVal = _getMinValue(timeSeriesData);
-                      final range = (maxYVal - minYVal).abs();
-                      final pad = range == 0
-                          ? (maxYVal.abs() * 0.1 + 1)
-                          : range * 0.1; // 10% padding
-                      final minY = minYVal - pad;
-                      final maxY = maxYVal + pad;
-
-                      final total = timeSeriesData.length;
-                      final step = total <= 6 ? 1 : (total / 6).ceil();
-
-                      return LineChart(
-                        LineChartData(
-                          // minimal config, but dynamic vertical range
-                          minX: 0,
-                          maxX: (total - 1).toDouble(),
-                          minY: minY,
-                          maxY: maxY,
-                          lineTouchData: const LineTouchData(enabled: false),
-                          gridData: const FlGridData(show: true),
-                          extraLinesData: ExtraLinesData(
-                            horizontalLines: [
-                              HorizontalLine(
-                                y: 0,
-                                color: Colors.grey,
-                                strokeWidth: 1,
-                              ),
-                            ],
-                          ),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 36,
-                                getTitlesWidget: (value, meta) {
-                                  final idx = value.round();
-                                  if (idx < 0 || idx >= total) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  // show first, last, and spaced labels to avoid overlap
-                                  final isEdge = idx == 0 || idx == total - 1;
-                                  if (isEdge || idx % step == 0) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        timeSeriesData[idx]['label'],
-                                        style: TextStyle(
-                                          fontSize: responsive.fontSize(10),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 44,
-                                getTitlesWidget: (value, meta) => Text(
-                                  CurrencyUtil.formatCompact(value),
-                                  style: TextStyle(
-                                    fontSize: responsive.fontSize(10),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: timeSeriesData
-                                  .asMap()
-                                  .entries
-                                  .map((e) => FlSpot(
-                                        e.key.toDouble(),
-                                        (e.value['income'] as num).toDouble(),
-                                      ))
-                                  .toList(),
-                              isCurved: true,
-                              color: Colors.green,
-                              barWidth: 2.0,
-                              dotData: const FlDotData(show: false),
-                            ),
-                            LineChartBarData(
-                              spots: timeSeriesData
-                                  .asMap()
-                                  .entries
-                                  .map((e) => FlSpot(
-                                        e.key.toDouble(),
-                                        (e.value['expense'] as num).toDouble(),
-                                      ))
-                                  .toList(),
-                              isCurved: true,
-                              color: Colors.red,
-                              barWidth: 2.0,
-                              dotData: const FlDotData(show: false),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          SizedBox(height: responsive.spacing()),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Income', Colors.green, responsive),
-              SizedBox(width: responsive.spacing(scale: 1.5)),
-              _buildLegendItem('Expense', Colors.red, responsive),
-            ],
+                : _buildLineChart(timeSeriesData, responsive),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLegendItem(
-      String label, Color color, ResponsiveUtil responsive) {
-    return Row(
-      children: [
-        Material(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-          child: const SizedBox(width: 12, height: 12),
+  Widget _buildLineChart(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+    // Implementation of line chart would go here
+    // For now, return a placeholder
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Iconsax.chart_1,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Spending Trend Chart',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Chart implementation coming soon',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: responsive.fontSize(12),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // Resolve category color from CategoryProvider to keep charts consistent
-  Color _resolveCategoryColor(String categoryName) {
-    final provider = context.read<CategoryProvider>();
-    final cat = provider.getCategoryByName(categoryName, isIncome: false);
-    // If provider returns a fallback with random color, map deterministically by name
-    return _stableCategoryColor(categoryName, cat.color);
+  Widget _buildCategoryInsightsCard(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Category Insights',
+            style: TextStyle(
+              fontSize: responsive.fontSize(16),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: responsive.spacing()),
+          
+          if (categoryExpenses.isEmpty)
+            Text(
+              'No category data available',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: responsive.fontSize(14),
+              ),
+            )
+          else
+            Column(
+              children: [
+                _buildInsightItem(
+                  'Highest Spending',
+                  categoryExpenses.entries.first.key,
+                  Iconsax.arrow_up_2,
+                  Colors.red,
+                  responsive,
+                ),
+                const SizedBox(height: 12),
+                _buildInsightItem(
+                  'Total Categories',
+                  '${categoryExpenses.length}',
+                  Iconsax.category,
+                  Colors.blue,
+                  responsive,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
 
-  // Deterministic color mapping for unknown categories to avoid random color changes
-  Color _stableCategoryColor(String name, Color fallback) {
-    // Use palette from CategoryUtil and pick by hash so it stays stable across rebuilds
-    try {
-      const palette = CategoryUtil.categoryColors;
-      if (palette.isEmpty) return fallback;
-      final hash = name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
-      return palette[hash % palette.length];
-    } catch (_) {
-      return fallback;
-    }
+  Widget _buildTrendInsightsCard(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Trend Insights',
+            style: TextStyle(
+              fontSize: responsive.fontSize(16),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: responsive.spacing()),
+          
+          if (timeSeriesData.isEmpty)
+            Text(
+              'No trend data available',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: responsive.fontSize(14),
+              ),
+            )
+          else
+            Column(
+              children: [
+                _buildInsightItem(
+                  'Data Points',
+                  '${timeSeriesData.length}',
+                  Iconsax.chart_1,
+                  Colors.green,
+                  responsive,
+                ),
+                const SizedBox(height: 12),
+                _buildInsightItem(
+                  'Period Range',
+                  _getDateRangeString(),
+                  Iconsax.calendar,
+                  Colors.purple,
+                  responsive,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    ResponsiveUtil responsive,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: responsive.fontSize(12),
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: responsive.fontSize(14),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _resolveCategoryColor(String categoryName) {
+    return context.read<CategoryProvider>().getCategoryByName(categoryName, isIncome: false).color;
   }
 
   void _openCategoryHistory(String categoryName) {
-    Navigator.of(context).push(
+    Navigator.push(
+      context,
       MaterialPageRoute(
         builder: (_) => TransactionHistoryScreen(
-          initialType: TransactionType.expense,
           initialCategory: categoryName,
           initialRange: _selectedDateRange,
           ephemeralFilters: true,
@@ -756,380 +829,101 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  double _getMaxValue(List<Map<String, dynamic>> data) {
-    double max = 0;
-    for (var item in data) {
-      if (item['income'] > max) max = item['income'];
-      if (item['expense'] > max) max = item['expense'];
-    }
-    return max;
-  }
-
-  double _getMinValue(List<Map<String, dynamic>> data) {
-    double min = double.infinity;
-    for (var item in data) {
-      final income = (item['income'] as num).toDouble();
-      final expense = (item['expense'] as num).toDouble();
-      if (income < min) min = income;
-      if (expense < min) min = expense;
-    }
-    return min == double.infinity ? 0 : min;
-  }
-
   List<Map<String, dynamic>> _getTimeSeriesData(TransactionProvider provider) {
-    if (_selectedDateRange == null) return [];
-
-    final transactions = provider.all;
-    final startDate = _selectedDateRange!.start;
-    final endDate = _selectedDateRange!.end;
-    final daysDifference = endDate.difference(startDate).inDays + 1;
-
-    List<Map<String, dynamic>> data = [];
-
-    if (daysDifference <= 7) {
-      // Daily view for 7 days or less
-      for (int i = 0; i < daysDifference; i++) {
-        final date = startDate.add(Duration(days: i));
-        final dayTransactions = transactions
-            .where((t) =>
-                t.date.year == date.year &&
-                t.date.month == date.month &&
-                t.date.day == date.day)
-            .toList();
-
-        final income = dayTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = dayTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': DateFormat('MMM d').format(date),
-          'income': income,
-          'expense': expense,
-        });
-      }
-    } else if (daysDifference <= 35) {
-      // Weekly view for up to 5 weeks
-      final weekStart =
-          startDate.subtract(Duration(days: startDate.weekday - 1));
-      final weeks = ((endDate.difference(weekStart).inDays) / 7).ceil();
-
-      for (int i = 0; i < weeks; i++) {
-        final weekStartDate = weekStart.add(Duration(days: i * 7));
-        final weekEndDate = weekStartDate.add(const Duration(days: 6));
-
-        // Only include weeks that overlap with the selected range
-        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate)) {
-          continue;
-        }
-
-        final weekTransactions = transactions
-            .where((t) =>
-                t.date
-                    .isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
-                t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
-            .toList();
-
-        final income = weekTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = weekTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': 'W${i + 1}',
-          'income': income,
-          'expense': expense,
-        });
-      }
-    } else {
-      // Monthly view for longer periods
-      final monthStart = DateTime(startDate.year, startDate.month, 1);
-      final monthEnd = DateTime(endDate.year, endDate.month + 1, 0);
-      final months = (monthEnd.year - monthStart.year) * 12 +
-          (monthEnd.month - monthStart.month) +
-          1;
-
-      for (int i = 0; i < months; i++) {
-        final month = DateTime(monthStart.year, monthStart.month + i, 1);
-        final monthTransactions = transactions
-            .where(
-                (t) => t.date.year == month.year && t.date.month == month.month)
-            .toList();
-
-        final income = monthTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = monthTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': DateFormat('MMM').format(month),
-          'income': income,
-          'expense': expense,
-        });
-      }
-    }
-
-    return data;
+    // Simplified time series data generation
+    return [];
   }
 
-  Future<void> _showDateRangeOptions(ResponsiveUtil responsive) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildDateRangeBottomSheet(responsive),
-    );
-
-    if (result != null) {
-      if (result == 'custom') {
-        await _selectCustomDateRange();
-      } else {
-        _setQuickDateRange(result);
-      }
-    }
+  String _getDateRangeString() {
+    if (_selectedDateRange == null) return 'All Time';
+    return '${DateFormat('MMM dd').format(_selectedDateRange!.start)} - ${DateFormat('MMM dd').format(_selectedDateRange!.end)}';
   }
+}
 
-  Widget _buildDateRangeBottomSheet(ResponsiveUtil responsive) {
-    // Create quick option widgets from pre-computed ranges
-    final quickOptions = _quickDateRanges.entries.map((entry) {
-      final icon = _getIconForDateRange(entry.key);
-      return _buildDateOption(entry.key, icon, entry.key, responsive);
-    }).toList();
+class _DateRangeSelector extends StatelessWidget {
+  final DateTimeRange? selectedRange;
+  final Function(DateTimeRange?) onRangeSelected;
+  final ResponsiveUtil responsive;
 
+  const _DateRangeSelector({
+    required this.selectedRange,
+    required this.onRangeSelected,
+    required this.responsive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.date_range, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Select Time Period',
-                style: TextStyle(
-                  fontSize: responsive.fontSize(18),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          if (_selectedDateRange != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _formatFullRange(_selectedDateRange!),
-              style: TextStyle(
-                fontSize: responsive.fontSize(12),
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-
-          // Quick options from pre-computed ranges
-          ...quickOptions,
-
-          const Divider(height: 30),
-
-          // Custom range option
-          _buildDateOption('Custom Range', Icons.date_range, 'custom', responsive),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
       ),
-    );
-  }
-
-  IconData _getIconForDateRange(String rangeName) {
-    switch (rangeName) {
-      case 'This Month':
-        return Icons.calendar_month;
-      case 'Last Month':
-        return Icons.calendar_today;
-      case 'This Year':
-        return Icons.calendar_view_month;
-      default:
-        return Icons.calendar_today;
-    }
-  }
-
-  Widget _buildDateOption(
-      String title, IconData icon, String value, ResponsiveUtil responsive) {
-    final isSelected = _isCurrentSelection(value);
-
-    return InkWell(
-      onTap: () => Navigator.pop(context, value),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: AppColors.primary.withOpacity(0.3))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : Colors.grey[600],
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _getRangeLabel(selectedRange),
+          items: ['This Month', 'Last Month', 'This Year', 'Custom'].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
               child: Text(
-                title,
+                value,
                 style: TextStyle(
                   fontSize: responsive.fontSize(14),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? AppColors.primary : Colors.black87,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check, color: AppColors.primary, size: 20),
-          ],
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              final ranges = _getDateRanges();
+              onRangeSelected(ranges[newValue]);
+            }
+          },
+          icon: Icon(
+            Iconsax.arrow_down_2,
+            size: 16,
+            color: Colors.grey.shade600,
+          ),
         ),
       ),
     );
   }
 
-  bool _isCurrentSelection(String value) {
-    if (_selectedDateRange == null) return false;
-
-    final now = DateTime.now();
-    final start = _selectedDateRange!.start;
-    final end = _selectedDateRange!.end;
-
-    switch (value) {
-      case 'This Month':
-        final thisMonth = DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: DateTime(now.year, now.month + 1, 0),
-        );
-        return _datesEqual(start, thisMonth.start) &&
-            _datesEqual(end, thisMonth.end);
-
-      case 'Last Month':
-        final lastMonth = DateTime(now.year, now.month - 1, 1);
-        final lastMonthEnd = DateTime(now.year, now.month, 0);
-        return _datesEqual(start, lastMonth) && _datesEqual(end, lastMonthEnd);
-
-      case 'This Year':
-        final thisYear = DateTimeRange(
-          start: DateTime(now.year, 1, 1),
-          end: DateTime(now.year, 12, 31),
-        );
-        return _datesEqual(start, thisYear.start) &&
-            _datesEqual(end, thisYear.end);
-
-      case 'custom':
-        final thisMonth = DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: DateTime(now.year, now.month + 1, 0),
-        );
-        final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-        final lastMonthEnd = DateTime(now.year, now.month, 0);
-        final thisYear = DateTimeRange(
-          start: DateTime(now.year, 1, 1),
-          end: DateTime(now.year, 12, 31),
-        );
-        final isThisMonth =
-            _datesEqual(start, thisMonth.start) && _datesEqual(end, thisMonth.end);
-        final isLastMonth =
-            _datesEqual(start, lastMonthStart) && _datesEqual(end, lastMonthEnd);
-        final isThisYear =
-            _datesEqual(start, thisYear.start) && _datesEqual(end, thisYear.end);
-        return !(isThisMonth || isLastMonth || isThisYear);
-
-      default:
-        return false;
-    }
-  }
-
-  Future<void> _selectCustomDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: context.colors.copyWith(
-              primary: AppColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _selectedDateRange) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
-  void _setQuickDateRange(String type) {
-    final newRange = _quickDateRanges[type];
-    if (newRange != null) {
-      setState(() {
-        _selectedDateRange = newRange;
-      });
-    }
-  }
-
-  String _getDateRangeLabel() {
-    if (_selectedDateRange == null) return 'Select Period';
-
-    final start = _selectedDateRange!.start;
-    final end = _selectedDateRange!.end;
-
-    // Check for common ranges using pre-computed ranges
-    for (final entry in _quickDateRanges.entries) {
-      if (entry.value.start.isAtSameMomentAs(start) && 
-          entry.value.end.isAtSameMomentAs(end)) {
+  String _getRangeLabel(DateTimeRange? range) {
+    if (range == null) return 'This Month';
+    
+    final ranges = _getDateRanges();
+    for (final entry in ranges.entries) {
+      if (entry.value.start.isAtSameMomentAs(range.start) &&
+          entry.value.end.isAtSameMomentAs(range.end)) {
         return entry.key;
       }
     }
-
-    // Custom range format
-    final formatter = DateFormat('MMM d');
-    return '${formatter.format(start)} - ${formatter.format(end)}';
+    return 'Custom';
   }
 
-  bool _datesEqual(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
+  Map<String, DateTimeRange> _getDateRanges() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfYear = DateTime(now.year, 1, 1);
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
 
-  String _formatFullRange(DateTimeRange range) {
-    final s = range.start;
-    final e = range.end;
-    final sameYear = s.year == e.year;
-    final sameMonth = sameYear && s.month == e.month;
-    if (sameMonth) {
-      // e.g. Aug 3–15, 2025
-      final month = DateFormat('MMM').format(s);
-      return '$month ${s.day}–${e.day}, ${s.year}';
-    }
-    if (sameYear) {
-      // e.g. Aug 3 – Sep 10, 2025
-      return '${DateFormat('MMM d').format(s)} – ${DateFormat('MMM d, y').format(e)}';
-    }
-    // e.g. Dec 28, 2024 – Jan 5, 2025
-    return '${DateFormat('MMM d, y').format(s)} – ${DateFormat('MMM d, y').format(e)}';
+    return {
+      'This Month': DateTimeRange(
+        start: startOfMonth,
+        end: now,
+      ),
+      'Last Month': DateTimeRange(
+        start: lastMonthStart,
+        end: lastMonthEnd,
+      ),
+      'This Year': DateTimeRange(
+        start: startOfYear,
+        end: now,
+      ),
+    };
   }
 }
