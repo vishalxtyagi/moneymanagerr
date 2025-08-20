@@ -3,11 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/constants/themes.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
@@ -73,21 +72,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // for keep alive
-    final responsive = ResponsiveUtil.of(context);
     
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Analytics',
           style: TextStyle(
-            fontSize: responsive.fontSize(20),
+            fontSize: context.fontSize(20),
             fontWeight: FontWeight.bold,
           ),
         ),
         elevation: 0,
         actions: [
           Padding(
-            padding: EdgeInsets.only(right: responsive.spacing()),
+            padding: EdgeInsets.only(right: context.spacing()),
             child: Material(
               borderRadius: BorderRadius.circular(8),
               child: Ink(
@@ -97,7 +95,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(8),
-                  onTap: () => _showDateRangeOptions(responsive),
+                  onTap: () => _showDateRangeOptions(),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
@@ -108,7 +106,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         Text(
                           _getDateRangeLabel(),
                           style: TextStyle(
-                            fontSize: responsive.fontSize(12),
+                            fontSize: context.fontSize(12),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -131,20 +129,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           final categoryExpenses = transactionProvider.getExpensesByCategory(range: _selectedDateRange);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
 
-          return responsive.constrain(
+          return context.constrain(
             SingleChildScrollView(
-              padding: responsive.screenPadding(),
+              padding: context.screenPadding,
               child: Column(
                 children: [
                   // Summary Cards Row
-                  _buildSummarySection(balance, income, expense, 0, responsive),
-                  SizedBox(height: responsive.spacing(scale: 1.5)),
+                  _buildSummarySection(balance, income, expense, 0),
+                  SizedBox(height: context.spacing(1.5)),
 
                   // Charts Section
-                  if (responsive.isDesktop)
-                    _buildDesktopLayout(categoryExpenses, timeSeriesData, responsive)
+                  if (context.isDesktop)
+                    _buildDesktopLayout(categoryExpenses, timeSeriesData)
                   else
-                    _buildMobileLayout(categoryExpenses, timeSeriesData, responsive),
+                    _buildMobileLayout(categoryExpenses, timeSeriesData),
                 ],
               ),
             ),
@@ -155,7 +153,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildSummarySection(double balance, double income, double expense,
-      double consumptionRate, ResponsiveUtil responsive) {
+      double consumptionRate) {
     const spacing = SizedBox(width: 12);
     const verticalSpacing = SizedBox(height: 12);
     
@@ -164,34 +162,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         'Balance',
         balance,
         balance >= 0 ? Colors.green : Colors.red,
-        Icons.account_balance_wallet,
-        responsive,
+        Icons.account_balance_wallet
       ),
       _buildSummaryCard(
         'Income',
         income,
         Colors.green,
-        Icons.arrow_upward,
-        responsive,
+        Icons.arrow_upward
       ),
       _buildSummaryCard(
         'Expense',
         expense,
         Colors.red,
-        Icons.arrow_downward,
-        responsive,
+        Icons.arrow_downward
       ),
       _buildSummaryCard(
         'Spend %',
         consumptionRate,
         Colors.orange,
         Icons.trending_up,
-        responsive,
         isSavingsRate: true,
       ),
     ];
 
-    if (responsive.isDesktop) {
+    if (context.isDesktop) {
       return Row(
         children: [
           for (int i = 0; i < summaryCards.length; i++) ...[
@@ -224,36 +218,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildDesktopLayout(Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+      List<Map<String, dynamic>> timeSeriesData) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           flex: 1,
-          child: _buildExpenseBreakdownChart(categoryExpenses, responsive),
+          child: _buildExpenseBreakdownChart(categoryExpenses),
         ),
-        SizedBox(width: responsive.spacing(scale: 1.5)),
+        SizedBox(width: context.spacing(1.5)),
         Expanded(
           flex: 2,
-          child: _buildSpendingTrendChart(timeSeriesData, responsive),
+          child: _buildSpendingTrendChart(timeSeriesData),
         ),
       ],
     );
   }
 
   Widget _buildMobileLayout(Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+      List<Map<String, dynamic>> timeSeriesData) {
     return Column(
       children: [
-        _buildExpenseBreakdownChart(categoryExpenses, responsive),
-        SizedBox(height: responsive.spacing(scale: 1.5)),
-        _buildSpendingTrendChart(timeSeriesData, responsive),
+        _buildExpenseBreakdownChart(categoryExpenses),
+        SizedBox(height: context.spacing(1.5)),
+        _buildSpendingTrendChart(timeSeriesData),
       ],
     );
   }
 
   Widget _buildSummaryCard(String title, double amount, Color color,
-      IconData icon, ResponsiveUtil responsive,
+      IconData icon,
       {bool isSavingsRate = false}) {
     return AppCard(
       child: Column(
@@ -274,19 +268,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 title,
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: responsive.fontSize(13),
+                  fontSize: context.fontSize(13),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          SizedBox(height: responsive.spacing(scale: 0.75)),
+          SizedBox(height: context.spacing(0.75)),
           Text(
             isSavingsRate
                 ? '${amount.toStringAsFixed(1)}%'
                 : CurrencyUtil.formatCompact(amount),
             style: TextStyle(
-              fontSize: responsive.fontSize(24),
+              fontSize: context.fontSize(24),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -297,7 +291,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildExpenseBreakdownChart(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+      Map<String, double> categoryExpenses) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,12 +299,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Expense Breakdown',
             style: TextStyle(
-              fontSize: responsive.fontSize(20),
+              fontSize: context.fontSize(20),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
+          SizedBox(height: context.spacing(1.5)),
           categoryExpenses.isEmpty
               ? Center(
                   child: Column(
@@ -318,16 +312,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     children: [
                       Icon(
                         Icons.pie_chart,
-                        size: responsive.value(
+                        size: context.responsiveValue(
                             mobile: 48.0, tablet: 56.0, desktop: 64.0),
                         color: Colors.grey,
                       ),
-                      SizedBox(height: responsive.spacing()),
+                      SizedBox(height: context.spacing()),
                       Text(
                         'No expense data available',
                         style: TextStyle(
                           color: Colors.grey,
-                          fontSize: responsive.fontSize(16),
+                          fontSize: context.fontSize(16),
                         ),
                       ),
                     ],
@@ -335,7 +329,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    if (responsive.isDesktop) {
+                    if (context.isDesktop) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -344,11 +338,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                               width: 200,
                               height: 200,
                               child:
-                                  _buildPieChart(categoryExpenses, responsive),
+                                  _buildPieChart(categoryExpenses),
                             ),
                           ),
                           const SizedBox(width: 20),
-                          _buildLegendList(categoryExpenses, responsive),
+                          _buildLegendList(categoryExpenses),
                         ],
                       );
                     } else {
@@ -357,10 +351,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           SizedBox(
                             width: 180,
                             height: 180,
-                            child: _buildPieChart(categoryExpenses, responsive),
+                            child: _buildPieChart(categoryExpenses),
                           ),
                           const SizedBox(height: 20),
-                          _buildLegendList(categoryExpenses, responsive),
+                          _buildLegendList(categoryExpenses),
                         ],
                       );
                     }
@@ -372,9 +366,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildLegendList(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+      Map<String, double> categoryExpenses) {
     final entries = categoryExpenses.entries.toList();
-    final maxInitialItems = responsive.isDesktop ? 5 : 3;
+    final maxInitialItems = context.isDesktop ? 5 : 3;
     final hasMoreItems = entries.length > maxInitialItems;
     final itemsToShow =
         _showAllCategories ? entries : entries.take(maxInitialItems).toList();
@@ -413,7 +407,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         child: Text(
                           categoryEntry.key,
                           style: TextStyle(
-                            fontSize: responsive.fontSize(12),
+                            fontSize: context.fontSize(12),
                             fontWeight: FontWeight.w500,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -423,7 +417,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         CurrencyUtil.formatCompact(categoryEntry.value),
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: responsive.fontSize(12),
+                          fontSize: context.fontSize(12),
                           color: Colors.black87,
                         ),
                       ),
@@ -463,7 +457,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         ? 'Show Less'
                         : 'Show ${entries.length - maxInitialItems} More',
                     style: TextStyle(
-                      fontSize: responsive.fontSize(12),
+                      fontSize: context.fontSize(12),
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -484,7 +478,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildPieChart(
-      Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+      Map<String, double> categoryExpenses) {
     return PieChart(
       PieChartData(
         pieTouchData: PieTouchData(
@@ -504,7 +498,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         borderData: FlBorderData(show: false),
         sectionsSpace: 2,
         centerSpaceRadius:
-            responsive.value(mobile: 30.0, tablet: 35.0, desktop: 40.0),
+            context.responsiveValue(mobile: 30.0, tablet: 35.0, desktop: 40.0),
         sections: _generatePieChartSections(categoryExpenses),
       ),
     );
@@ -535,7 +529,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   // Re-introduced spending trend chart (was accidentally removed during previous edit)
   Widget _buildSpendingTrendChart(
-      List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+      List<Map<String, dynamic>> timeSeriesData) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,15 +537,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Spending Trend',
             style: TextStyle(
-              fontSize: responsive.fontSize(20),
+              fontSize: context.fontSize(20),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
+          SizedBox(height: context.spacing(1.5)),
           SizedBox(
             height:
-                responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
+                context.responsiveValue(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? Center(
                     child: Column(
@@ -559,16 +553,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       children: [
                         Icon(
                           Icons.show_chart,
-                          size: responsive.value(
+                          size: context.responsiveValue(
                               mobile: 48.0, tablet: 56.0, desktop: 64.0),
                           color: Colors.grey,
                         ),
-                        SizedBox(height: responsive.spacing()),
+                        SizedBox(height: context.spacing()),
                         Text(
                           'No transaction data available',
                           style: TextStyle(
                             color: Colors.grey,
-                            fontSize: responsive.fontSize(16),
+                            fontSize: context.fontSize(16),
                           ),
                         ),
                       ],
@@ -625,7 +619,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                       child: Text(
                                         timeSeriesData[idx]['label'],
                                         style: TextStyle(
-                                          fontSize: responsive.fontSize(10),
+                                          fontSize: context.fontSize(10),
                                         ),
                                       ),
                                     );
@@ -641,7 +635,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                 getTitlesWidget: (value, meta) => Text(
                                   CurrencyUtil.formatCompact(value),
                                   style: TextStyle(
-                                    fontSize: responsive.fontSize(10),
+                                    fontSize: context.fontSize(10),
                                   ),
                                 ),
                               ),
@@ -687,13 +681,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     },
                   ),
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Income', Colors.green, responsive),
-              SizedBox(width: responsive.spacing(scale: 1.5)),
-              _buildLegendItem('Expense', Colors.red, responsive),
+              _buildLegendItem('Income', Colors.green),
+              SizedBox(width: context.spacing(1.5)),
+              _buildLegendItem('Expense', Colors.red),
             ],
           ),
         ],
@@ -702,7 +696,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildLegendItem(
-      String label, Color color, ResponsiveUtil responsive) {
+      String label, Color color) {
     return Row(
       children: [
         Material(
@@ -714,7 +708,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         Text(
           label,
           style: TextStyle(
-            fontSize: responsive.fontSize(12),
+            fontSize: context.fontSize(12),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -878,13 +872,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return data;
   }
 
-  Future<void> _showDateRangeOptions(ResponsiveUtil responsive) async {
+  Future<void> _showDateRangeOptions() async {
     final result = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _buildDateRangeBottomSheet(responsive),
+      builder: (context) => _buildDateRangeBottomSheet(),
     );
 
     if (result != null) {
@@ -896,11 +890,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     }
   }
 
-  Widget _buildDateRangeBottomSheet(ResponsiveUtil responsive) {
+  Widget _buildDateRangeBottomSheet() {
     // Create quick option widgets from pre-computed ranges
     final quickOptions = _quickDateRanges.entries.map((entry) {
       final icon = _getIconForDateRange(entry.key);
-      return _buildDateOption(entry.key, icon, entry.key, responsive);
+      return _buildDateOption(entry.key, icon, entry.key);
     }).toList();
 
     return Container(
@@ -916,7 +910,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Text(
                 'Select Time Period',
                 style: TextStyle(
-                  fontSize: responsive.fontSize(18),
+                  fontSize: context.fontSize(18),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -927,7 +921,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Text(
               _formatFullRange(_selectedDateRange!),
               style: TextStyle(
-                fontSize: responsive.fontSize(12),
+                fontSize: context.fontSize(12),
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
               ),
@@ -941,7 +935,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           const Divider(height: 30),
 
           // Custom range option
-          _buildDateOption('Custom Range', Icons.date_range, 'custom', responsive),
+          _buildDateOption('Custom Range', Icons.date_range, 'custom'),
         ],
       ),
     );
@@ -961,7 +955,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildDateOption(
-      String title, IconData icon, String value, ResponsiveUtil responsive) {
+      String title, IconData icon, String value) {
     final isSelected = _isCurrentSelection(value);
 
     return InkWell(
@@ -989,7 +983,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected ? AppColors.primary : Colors.black87,
                 ),

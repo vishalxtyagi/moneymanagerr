@@ -9,7 +9,7 @@ import 'core/providers/transaction_provider.dart';
 import 'core/providers/analytics_provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth_screen.dart';
-import 'screens/main_navigation_screen_optimized.dart';
+import 'screens/main_navigation_screen.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -70,7 +70,7 @@ class _AuthChecker extends StatelessWidget {
     return Selector<AuthProvider, bool>(
       selector: (_, auth) => auth.isSignedIn,
       builder: (_, isSignedIn, __) =>
-          isSignedIn ? const MainNavigationScreenOptimized() : const AuthScreen(),
+          isSignedIn ? const MainNavigationScreen() : const AuthScreen(),
     );
   }
 }

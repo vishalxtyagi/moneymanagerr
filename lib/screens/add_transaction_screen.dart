@@ -352,7 +352,7 @@ class _HeaderSection extends StatelessWidget {
                 width: 40,
                 height: 40,
                 child: Icon(
-                  Iconsax.add_square,
+                  Iconsax.add_copy,
                   color: Colors.white,
                   size: 20,
                 ),

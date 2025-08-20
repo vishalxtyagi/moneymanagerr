@@ -6,7 +6,7 @@ import 'package:moneymanager/core/models/analytics_model.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:moneymanager/widgets/common/card.dart';
@@ -106,31 +106,28 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final responsive = ResponsiveUtil.of(context);
     
-    return responsive.isDesktop 
-        ? _DesktopLayout(responsive: responsive)
-        : _MobileLayout(responsive: responsive);
+    return context.isDesktop 
+        ? const _DesktopLayout()
+        : const _MobileLayout();
   }
 }
 
 class _DesktopLayout extends StatelessWidget {
-  const _DesktopLayout({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _DesktopLayout();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
-        child: responsive.constrain(
+        padding: EdgeInsets.all(context.spacing(1.5)),
+        child: context.constrain(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _WelcomeSection(responsive: responsive),
-              SizedBox(height: responsive.spacing(scale: 1.5)),
+              const _WelcomeSection(),
+              SizedBox(height: context.spacing(1.5)),
               
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,18 +136,18 @@ class _DesktopLayout extends StatelessWidget {
                     flex: 2,
                     child: Column(
                       children: [
-                        _BalanceSection(responsive: responsive),
-                        SizedBox(height: responsive.spacing()),
-                        _QuickStatsGrid(responsive: responsive),
-                        SizedBox(height: responsive.spacing()),
-                        _InsightsCard(responsive: responsive)
+                        const _BalanceSection(),
+                        SizedBox(height: context.spacing()),
+                        const _QuickStatsGrid(),
+                        SizedBox(height: context.spacing()),
+                        const _InsightsCard()
                       ],
                     ),
                   ),
-                  SizedBox(width: responsive.spacing(scale: 1.5)),
-                  Expanded(
+                  SizedBox(width: context.spacing(1.5)),
+                  const Expanded(
                     flex: 3,
-                    child: _RecentTransactionsSection(responsive: responsive),
+                    child: _RecentTransactionsSection(),
                   ),
                 ],
               ),
@@ -163,20 +160,18 @@ class _DesktopLayout extends StatelessWidget {
 }
 
 class _MobileLayout extends StatelessWidget {
-  const _MobileLayout({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _MobileLayout();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFB8E6B8),
+    return const Scaffold(
+      backgroundColor: Color(0xFFB8E6B8),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _HeaderSection(responsive: responsive),
-              _ContentSection(responsive: responsive),
+              _HeaderSection(),
+              _ContentSection(),
             ],
           ),
         ),
@@ -186,9 +181,7 @@ class _MobileLayout extends StatelessWidget {
 }
 
 class _WelcomeSection extends StatelessWidget {
-  const _WelcomeSection({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _WelcomeSection();
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +200,7 @@ class _WelcomeSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Padding(
-            padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
+            padding: EdgeInsets.all(context.spacing(1.5)),
             child: Row(
               children: [
                 Expanded(
@@ -218,7 +211,7 @@ class _WelcomeSection extends StatelessWidget {
                         'Good ${_DashboardConstants.greeting}!',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
-                          fontSize: responsive.fontSize(16),
+                          fontSize: context.fontSize(16),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -227,7 +220,7 @@ class _WelcomeSection extends StatelessWidget {
                         'Welcome back, $firstName',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: responsive.fontSize(28),
+                          fontSize: context.fontSize(28),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -236,13 +229,13 @@ class _WelcomeSection extends StatelessWidget {
                         _DashboardConstants.formattedDate,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
-                          fontSize: responsive.fontSize(14),
+                          fontSize: context.fontSize(14),
                         ),
                       ),
                     ],
                   ),
                 ),
-                _UserAvatar(responsive: responsive),
+                const _UserAvatar(),
               ],
             ),
           ),
@@ -253,9 +246,7 @@ class _WelcomeSection extends StatelessWidget {
 }
 
 class _UserAvatar extends StatelessWidget {
-  const _UserAvatar({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _UserAvatar();
 
   @override
   Widget build(BuildContext context) {
@@ -293,9 +284,7 @@ class _UserAvatar extends StatelessWidget {
 }
 
 class _BalanceSection extends StatelessWidget {
-  const _BalanceSection({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _BalanceSection();
 
   @override
   Widget build(BuildContext context) {
@@ -312,9 +301,7 @@ class _BalanceSection extends StatelessWidget {
 }
 
 class _QuickStatsGrid extends StatelessWidget {
-  const _QuickStatsGrid({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _QuickStatsGrid();
 
   @override
   Widget build(BuildContext context) {
@@ -339,8 +326,8 @@ class _QuickStatsGrid extends StatelessWidget {
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: responsive.spacing(),
-          crossAxisSpacing: responsive.spacing(),
+          mainAxisSpacing: context.spacing(),
+          crossAxisSpacing: context.spacing(),
           childAspectRatio: 1.4,
           children: [
             StatisticCard(
@@ -390,9 +377,7 @@ class _QuickStatsGrid extends StatelessWidget {
 }
 
 class _RecentTransactionsSection extends StatelessWidget {
-  const _RecentTransactionsSection({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _RecentTransactionsSection();
 
   @override
   Widget build(BuildContext context) {
@@ -410,7 +395,7 @@ class _RecentTransactionsSection extends StatelessWidget {
                 foregroundColor: AppColors.primary,
                 textStyle: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                 ),
               ),
             ),
@@ -457,9 +442,7 @@ class _RecentTransactionsSection extends StatelessWidget {
 }
 
 class _InsightsCard extends StatelessWidget {
-  const _InsightsCard({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _InsightsCard();
 
   @override
   Widget build(BuildContext context) {
@@ -470,12 +453,12 @@ class _InsightsCard extends StatelessWidget {
           Text(
             'Insights',
             style: TextStyle(
-              fontSize: responsive.fontSize(18),
+              fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           
           Selector<TransactionProvider, _InsightData>(
             selector: (_, provider) => _InsightData(
@@ -488,8 +471,7 @@ class _InsightsCard extends StatelessWidget {
               
               return Column(
                 children: insights.map((insight) => _InsightItem(
-                  insight: insight,
-                  responsive: responsive,
+                  insight: insight
                 )).toList(),
               );
             },
@@ -553,12 +535,10 @@ class _InsightsCard extends StatelessWidget {
 
 class _InsightItem extends StatelessWidget {
   const _InsightItem({
-    required this.insight,
-    required this.responsive,
+    required this.insight
   });
   
   final _Insight insight;
-  final ResponsiveUtil responsive;
 
   @override
   Widget build(BuildContext context) {
@@ -593,7 +573,7 @@ class _InsightItem extends StatelessWidget {
                     Text(
                       insight.title,
                       style: TextStyle(
-                        fontSize: responsive.fontSize(14),
+                        fontSize: context.fontSize(14),
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -602,7 +582,7 @@ class _InsightItem extends StatelessWidget {
                     Text(
                       insight.description,
                       style: TextStyle(
-                        fontSize: responsive.fontSize(12),
+                        fontSize: context.fontSize(12),
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -618,16 +598,14 @@ class _InsightItem extends StatelessWidget {
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _HeaderSection();
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(color: Color(0xFFB8E6B8)),
       child: Padding(
-        padding: responsive.screenPadding(),
+        padding: context.screenPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -646,7 +624,7 @@ class _HeaderSection extends StatelessWidget {
                           _DashboardConstants.shortFormattedDate,
                           style: TextStyle(
                             color: Colors.black54,
-                            fontSize: responsive.fontSize(16),
+                            fontSize: context.fontSize(16),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -654,7 +632,7 @@ class _HeaderSection extends StatelessWidget {
                           'Hello, $firstName!',
                           style: TextStyle(
                             color: Colors.black87,
-                            fontSize: responsive.fontSize(28),
+                            fontSize: context.fontSize(28),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -663,7 +641,7 @@ class _HeaderSection extends StatelessWidget {
                     Selector<AuthProvider, String?>(
                       selector: (_, provider) => provider.user?.photoURL,
                       builder: (context, photoURL, _) => CircleAvatar(
-                        radius: responsive.value(mobile: 20.0, tablet: 24.0, desktop: 28.0),
+                        radius: context.responsiveValue(mobile: 20.0, tablet: 24.0, desktop: 28.0),
                         backgroundImage: photoURL != null ? NetworkImage(photoURL) : null,
                         child: photoURL == null 
                             ? const Icon(Icons.person, color: Colors.white) 
@@ -674,9 +652,9 @@ class _HeaderSection extends StatelessWidget {
                 );
               },
             ),
-            SizedBox(height: responsive.spacing(scale: 1.5)),
-            _BalanceSection(responsive: responsive),
-            SizedBox(height: responsive.spacing()),
+            SizedBox(height: context.spacing(1.5)),
+            const _BalanceSection(),
+            SizedBox(height: context.spacing()),
           ],
         ),
       ),
@@ -685,21 +663,19 @@ class _HeaderSection extends StatelessWidget {
 }
 
 class _ContentSection extends StatelessWidget {
-  const _ContentSection({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _ContentSection();
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(color: Colors.grey[100]!),
       child: Padding(
-        padding: responsive.screenPadding(),
+        padding: context.screenPadding,
         child: Column(
           children: [
-            _StatisticsRow(responsive: responsive),
-            SizedBox(height: responsive.spacing()),
-            _RecentTransactionsMobile(responsive: responsive),
+            const _StatisticsRow(),
+            SizedBox(height: context.spacing()),
+            const _RecentTransactionsMobile(),
           ],
         ),
       ),
@@ -708,9 +684,7 @@ class _ContentSection extends StatelessWidget {
 }
 
 class _StatisticsRow extends StatelessWidget {
-  const _StatisticsRow({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _StatisticsRow();
 
   @override
   Widget build(BuildContext context) {
@@ -788,9 +762,7 @@ class _StatisticsRow extends StatelessWidget {
 }
 
 class _RecentTransactionsMobile extends StatelessWidget {
-  const _RecentTransactionsMobile({required this.responsive});
-  
-  final ResponsiveUtil responsive;
+  const _RecentTransactionsMobile();
 
   @override
   Widget build(BuildContext context) {
@@ -807,7 +779,7 @@ class _RecentTransactionsMobile extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                 ),
               ),
             ),

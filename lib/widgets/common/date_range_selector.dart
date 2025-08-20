@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 
 /// Optimized date range selector widget - extracted from analytics screen
 class AppDateRangeSelector extends StatelessWidget {
   final DateTimeRange? selectedRange;
   final Function(DateTimeRange) onRangeSelected;
-  final ResponsiveUtil responsive;
 
   const AppDateRangeSelector({
     super.key,
     required this.selectedRange,
     required this.onRangeSelected,
-    required this.responsive,
   });
 
   // Pre-computed date ranges for performance
@@ -54,7 +52,6 @@ class AppDateRangeSelector extends StatelessWidget {
       builder: (context) => _DateRangeBottomSheet(
         ranges: ranges,
         onRangeSelected: onRangeSelected,
-        responsive: responsive,
       ),
     );
   }
@@ -80,7 +77,7 @@ class AppDateRangeSelector extends StatelessWidget {
               Text(
                 _getDateRangeLabel(),
                 style: TextStyle(
-                  fontSize: responsive.fontSize(12),
+                  fontSize: context.fontSize(12),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -98,29 +95,27 @@ class AppDateRangeSelector extends StatelessWidget {
 class _DateRangeBottomSheet extends StatelessWidget {
   final Map<String, DateTimeRange> ranges;
   final Function(DateTimeRange) onRangeSelected;
-  final ResponsiveUtil responsive;
 
   const _DateRangeBottomSheet({
     required this.ranges,
     required this.onRangeSelected,
-    required this.responsive,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(responsive.spacing()),
+      padding: EdgeInsets.all(context.spacing()),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'Select Date Range',
             style: TextStyle(
-              fontSize: responsive.fontSize(18),
+              fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           
           // Pre-built quick date options
           ...ranges.entries.map((entry) => ListTile(

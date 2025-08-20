@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 
 /// Optimized summary cards section - extracted and reusable
@@ -10,7 +10,6 @@ class AppSummaryCards extends StatelessWidget {
   final double balance;
   final double income;
   final double expense;
-  final ResponsiveUtil responsive;
   final bool isDesktop;
 
   const AppSummaryCards({
@@ -18,7 +17,6 @@ class AppSummaryCards extends StatelessWidget {
     required this.balance,
     required this.income,
     required this.expense,
-    required this.responsive,
     this.isDesktop = false,
   });
 
@@ -32,33 +30,29 @@ class AppSummaryCards extends StatelessWidget {
         value: balance,
         color: balance >= 0 ? Colors.green : Colors.red,
         icon: Iconsax.wallet_3,
-        responsive: responsive,
       ),
       _SummaryCard(
         title: 'Income',
         value: income,
         color: Colors.green,
         icon: Iconsax.arrow_up_2,
-        responsive: responsive,
       ),
       _SummaryCard(
         title: 'Expense',
         value: expense,
         color: Colors.red,
         icon: Iconsax.arrow_down_2,
-        responsive: responsive,
       ),
       _SummaryCard(
         title: 'Spend Rate',
         value: consumptionRate.toDouble(),
         color: Colors.orange,
         icon: Iconsax.percentage_circle,
-        responsive: responsive,
         isPercentage: true,
       ),
     ];
 
-    if (isDesktop || responsive.isDesktop) {
+    if (isDesktop || context.isDesktop) {
       return Row(
         children: summaryCards
             .map((card) => Expanded(child: card))
@@ -69,8 +63,8 @@ class AppSummaryCards extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: 2,
-        crossAxisSpacing: responsive.spacing(),
-        mainAxisSpacing: responsive.spacing(),
+        crossAxisSpacing: context.spacing(),
+        mainAxisSpacing: context.spacing(),
         childAspectRatio: 1.5,
         children: summaryCards,
       );
@@ -84,7 +78,6 @@ class _SummaryCard extends StatelessWidget {
   final double value;
   final Color color;
   final IconData icon;
-  final ResponsiveUtil responsive;
   final bool isPercentage;
 
   const _SummaryCard({
@@ -92,7 +85,6 @@ class _SummaryCard extends StatelessWidget {
     required this.value,
     required this.color,
     required this.icon,
-    required this.responsive,
     this.isPercentage = false,
   });
 
@@ -108,7 +100,7 @@ class _SummaryCard extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -129,13 +121,13 @@ class _SummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           Text(
             isPercentage
                 ? '${value.toStringAsFixed(1)}%'
                 : CurrencyUtil.formatCompact(value),
             style: TextStyle(
-              fontSize: responsive.fontSize(24),
+              fontSize: context.fontSize(24),
               fontWeight: FontWeight.bold,
               color: color,
             ),

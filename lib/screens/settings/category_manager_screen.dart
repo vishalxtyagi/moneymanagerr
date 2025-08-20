@@ -49,7 +49,7 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
         actions: [
           IconButton(
             onPressed: () => _showAddDialog(),
-            icon: const Icon(Iconsax.add),
+            icon: const Icon(Iconsax.add_copy),
           ),
         ],
         bottom: TabBar(

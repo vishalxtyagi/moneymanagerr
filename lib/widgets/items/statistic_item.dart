@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 
 class StatisticCard extends StatelessWidget {
@@ -21,13 +21,12 @@ class StatisticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveUtil.of(context);
     
     // Pre-calculate values to avoid computation in build
-    final iconSize = responsive.fontSize(16);
-    final spacing = responsive.spacing(scale: 0.5);
-    final valueFontSize = responsive.fontSize(16);
-    final titleFontSize = responsive.fontSize(12);
+    final iconSize = context.fontSize(16);
+    final spacing = context.spacing(0.5);
+    final valueFontSize = context.fontSize(16);
+    final titleFontSize = context.fontSize(12);
     
     // Pre-calculate colors
     final iconBgColor = color.withOpacity(0.1);

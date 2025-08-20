@@ -7,7 +7,7 @@ import 'package:moneymanager/core/models/category_model.dart';
 import 'package:moneymanager/core/models/transaction_model.dart';
 import 'package:moneymanager/core/utils/category_util.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 
 class TransactionItem extends StatelessWidget {
   const TransactionItem({
@@ -25,13 +25,12 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveUtil.of(context);
     
     // Cache frequently used values to avoid repeated computation
     final icon = CategoryUtil.getIconByIndex(category.iconIdx);
-    final padding = responsive.value(mobile: 16.0, tablet: 20.0, desktop: 24.0);
-    final primaryFontSize = responsive.fontSize(16);
-    final secondaryFontSize = responsive.fontSize(12);
+    final padding = context.responsiveValue(mobile: 16.0, tablet: 20.0, desktop: 24.0);
+    final primaryFontSize = context.fontSize(16);
+    final secondaryFontSize = context.fontSize(12);
     
     // Pre-format date and amount strings
     final dateText = _dateFormatter.format(transaction.date);
@@ -55,7 +54,7 @@ class TransactionItem extends StatelessWidget {
               backgroundColor: category.color.withOpacity(0.1),
               child: Icon(icon, color: category.color, size: 20),
             ),
-            SizedBox(width: responsive.spacing()),
+            SizedBox(width: context.spacing()),
             
             // Transaction Details
             Expanded(
@@ -72,7 +71,7 @@ class TransactionItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: responsive.spacing(scale: 0.25)),
+                  SizedBox(height: context.spacing(0.25)),
                   
                   // Date and Category row with optimized layout
                   Row(
@@ -105,7 +104,7 @@ class TransactionItem extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: responsive.spacing()),
+            SizedBox(width: context.spacing()),
             
             // Amount and Note with const conditions
             Column(
@@ -121,10 +120,10 @@ class TransactionItem extends StatelessWidget {
                 ),
                 if ((transaction.note ?? '').isNotEmpty)
                   Padding(
-                    padding: EdgeInsets.only(top: responsive.spacing(scale: 0.25)),
+                    padding: EdgeInsets.only(top: context.spacing(0.25)),
                     child: Icon(
                       Icons.note,
-                      size: responsive.fontSize(14),
+                      size: context.fontSize(14),
                       color: AppColors.textDisabled,
                     ),
                   ),

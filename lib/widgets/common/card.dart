@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/styles.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
@@ -25,10 +25,8 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveUtil.of(context);
-    
-    final radius = borderRadius ?? BorderRadius.circular(responsive.spacing(scale: 0.8));
-    final contentPadding = padding ?? responsive.screenPadding();
+    final radius = borderRadius ?? BorderRadius.circular(context.spacing(0.8));
+    final contentPadding = padding ?? context.screenPadding;
     final cardColor = color ?? AppColors.card;
     final cardElevation = elevation ?? AppStyles.elevation;
 

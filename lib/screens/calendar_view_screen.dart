@@ -9,7 +9,7 @@ import 'package:moneymanager/core/models/transaction_model.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:provider/provider.dart';
 
@@ -80,12 +80,10 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // for keep alive
-    final responsive = ResponsiveUtil.of(context);
-    
+    super.build(context); // for keep alive    
     return Scaffold(
-      backgroundColor: responsive.isDesktop ? Colors.grey.shade50 : null,
-      appBar: responsive.isDesktop ? null : AppBar(
+      backgroundColor: context.isDesktop ? Colors.grey.shade50 : null,
+      appBar: context.isDesktop ? null : AppBar(
         title: const Text('Calendar View'),
       ),
       body: Consumer<TransactionProvider>(
@@ -100,9 +98,9 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
             _clearCache();
           }
 
-          return responsive.isDesktop
-              ? _buildDesktopLayout(transactions, selectedDayTransactions, responsive)
-              : _buildMobileLayout(transactions, selectedDayTransactions, responsive);
+          return context.isDesktop
+              ? _buildDesktopLayout(transactions, selectedDayTransactions)
+              : _buildMobileLayout(transactions, selectedDayTransactions);
         },
       ),
     );
@@ -111,11 +109,10 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
   Widget _buildDesktopLayout(
     List<TransactionModel> transactions,
     List<TransactionModel> selectedDayTransactions,
-    ResponsiveUtil responsive,
   ) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
-      child: responsive.constrain(
+      padding: EdgeInsets.all(context.spacing(1.5)),
+      child: context.constrain(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -157,7 +154,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
                         getTransactionsForDay: _getTransactionsForDay,
                         isDesktop: true,
                       ),
-                      SizedBox(height: responsive.spacing()),
+                      SizedBox(height: context.spacing()),
                       
                       // Day Summary Card
                       if (_selectedDay != null)
@@ -171,7 +168,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
                   ),
                 ),
                 
-                SizedBox(width: responsive.spacing(scale: 1.5)),
+                SizedBox(width: context.spacing(1.5)),
                 
                 // Right column - Transaction list
                 Expanded(
@@ -188,12 +185,12 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
                                 ? 'Transactions for ${DateFormat('MMM d, y').format(_selectedDay!)}'
                                 : 'Select a date to view transactions',
                             style: TextStyle(
-                              fontSize: responsive.fontSize(20),
+                              fontSize: context.fontSize(20),
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          SizedBox(height: responsive.spacing()),
+                          SizedBox(height: context.spacing()),
                           
                           // Transaction list
                           Expanded(
@@ -220,7 +217,6 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
   Widget _buildMobileLayout(
     List<TransactionModel> transactions,
     List<TransactionModel> selectedDayTransactions,
-    ResponsiveUtil responsive,
   ) {
     return Column(
       children: [

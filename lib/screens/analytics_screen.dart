@@ -5,7 +5,7 @@ import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
@@ -61,15 +61,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final responsive = ResponsiveUtil.of(context);
     
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: responsive.isDesktop ? null : AppBar(
+      appBar: context.isDesktop ? null : AppBar(
         title: Text(
           'Analytics',
           style: TextStyle(
-            fontSize: responsive.fontSize(20),
+            fontSize: context.fontSize(20),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -82,7 +81,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 _selectedDateRange = range;
               });
             },
-            responsive: responsive,
           ),
         ],
       ),
@@ -95,13 +93,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           final categoryExpenses = transactionProvider.getExpensesByCategory(range: range);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
 
-          if (responsive.isDesktop) {
+          if (context.isDesktop) {
             return _buildDesktopLayout(
-              balance, income, expense, categoryExpenses, timeSeriesData, responsive
+              balance, income, expense, categoryExpenses, timeSeriesData
             );
           } else {
             return _buildMobileLayout(
-              balance, income, expense, categoryExpenses, timeSeriesData, responsive
+              balance, income, expense, categoryExpenses, timeSeriesData
             );
           }
         },
@@ -115,16 +113,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     double expense,
     Map<String, double> categoryExpenses,
     List<Map<String, dynamic>> timeSeriesData,
-    ResponsiveUtil responsive,
   ) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(responsive.spacing(scale: 1.5)),
-      child: responsive.constrain(
+      padding: EdgeInsets.all(context.spacing(1.5)),
+      child: context.constrain(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with date selector
-            if (responsive.isDesktop) ...[
+            if (context.isDesktop) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -134,7 +131,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       Text(
                         'Financial Analytics',
                         style: TextStyle(
-                          fontSize: responsive.fontSize(32),
+                          fontSize: context.fontSize(32),
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -143,7 +140,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       Text(
                         'Insights into your spending patterns',
                         style: TextStyle(
-                          fontSize: responsive.fontSize(16),
+                          fontSize: context.fontSize(16),
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -156,16 +153,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         _selectedDateRange = range;
                       });
                     },
-                    responsive: responsive,
                   ),
                 ],
               ),
-              SizedBox(height: responsive.spacing(scale: 2)),
+              SizedBox(height: context.spacing(2)),
             ],
             
             // Summary cards
-            _buildSummarySection(balance, income, expense, responsive),
-            SizedBox(height: responsive.spacing(scale: 2)),
+            _buildSummarySection(balance, income, expense),
+            SizedBox(height: context.spacing(2)),
 
             // Charts section - Desktop layout
             Row(
@@ -176,23 +172,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   flex: 2,
                   child: Column(
                     children: [
-                      _buildExpenseBreakdownChart(categoryExpenses, responsive),
-                      SizedBox(height: responsive.spacing(scale: 1.5)),
-                      _buildCategoryInsightsCard(categoryExpenses, responsive),
+                      _buildExpenseBreakdownChart(categoryExpenses),
+                      SizedBox(height: context.spacing(1.5)),
+                      _buildCategoryInsightsCard(categoryExpenses),
                     ],
                   ),
                 ),
                 
-                SizedBox(width: responsive.spacing(scale: 1.5)),
+                SizedBox(width: context.spacing(1.5)),
                 
                 // Right column - Spending trend
                 Expanded(
                   flex: 3,
                   child: Column(
                     children: [
-                      _buildSpendingTrendChart(timeSeriesData, responsive),
-                      SizedBox(height: responsive.spacing(scale: 1.5)),
-                      _buildTrendInsightsCard(timeSeriesData, responsive),
+                      _buildSpendingTrendChart(timeSeriesData),
+                      SizedBox(height: context.spacing(1.5)),
+                      _buildTrendInsightsCard(timeSeriesData),
                     ],
                   ),
                 ),
@@ -210,26 +206,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     double expense,
     Map<String, double> categoryExpenses,
     List<Map<String, dynamic>> timeSeriesData,
-    ResponsiveUtil responsive,
   ) {
     return SingleChildScrollView(
-      padding: responsive.screenPadding(),
+      padding: context.screenPadding,
       child: Column(
         children: [
           // Summary Cards
-          _buildSummarySection(balance, income, expense, responsive),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
+          _buildSummarySection(balance, income, expense),
+          SizedBox(height: context.spacing(1.5)),
 
           // Charts Section
-          _buildExpenseBreakdownChart(categoryExpenses, responsive),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
-          _buildSpendingTrendChart(timeSeriesData, responsive),
+          _buildExpenseBreakdownChart(categoryExpenses),
+          SizedBox(height: context.spacing(1.5)),
+          _buildSpendingTrendChart(timeSeriesData),
         ],
       ),
     );
   }
 
-  Widget _buildSummarySection(double balance, double income, double expense, ResponsiveUtil responsive) {
+  Widget _buildSummarySection(double balance, double income, double expense) {
     final consumptionRate = income > 0 ? (expense / income) * 100 : 0;
     
     final summaryCards = [
@@ -237,39 +232,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         'Balance',
         balance,
         balance >= 0 ? Colors.green : Colors.red,
-        Iconsax.wallet_3,
-        responsive,
+        Iconsax.wallet_3
       ),
       _buildSummaryCard(
         'Income',
         income,
         Colors.green,
-        Iconsax.arrow_up_2,
-        responsive,
+        Iconsax.arrow_up_2
       ),
       _buildSummaryCard(
         'Expense',
         expense,
         Colors.red,
-        Iconsax.arrow_down_2,
-        responsive,
+        Iconsax.arrow_down_2
       ),
       _buildSummaryCard(
         'Spend Rate',
         consumptionRate.toDouble(),
         Colors.orange,
         Iconsax.percentage_circle,
-        responsive,
         isPercentage: true,
       ),
     ];
 
-    if (responsive.isDesktop) {
+    if (context.isDesktop) {
       return Row(
         children: [
           for (int i = 0; i < summaryCards.length; i++) ...[
             Expanded(child: summaryCards[i]),
-            if (i < summaryCards.length - 1) SizedBox(width: responsive.spacing()),
+            if (i < summaryCards.length - 1) SizedBox(width: context.spacing()),
           ],
         ],
       );
@@ -279,15 +270,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Row(
             children: [
               Expanded(child: summaryCards[0]),
-              SizedBox(width: responsive.spacing()),
+              SizedBox(width: context.spacing()),
               Expanded(child: summaryCards[1]),
             ],
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           Row(
             children: [
               Expanded(child: summaryCards[2]),
-              SizedBox(width: responsive.spacing()),
+              SizedBox(width: context.spacing()),
               Expanded(child: summaryCards[3]),
             ],
           ),
@@ -300,8 +291,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     String title,
     double value,
     Color color,
-    IconData icon,
-    ResponsiveUtil responsive, {
+    IconData icon, {
     bool isPercentage = false,
   }) {
     return AppCard(
@@ -314,7 +304,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -333,13 +323,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               ),
             ],
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           Text(
             isPercentage
                 ? '${value.toStringAsFixed(1)}%'
                 : CurrencyUtil.formatCompact(value),
             style: TextStyle(
-              fontSize: responsive.fontSize(24),
+              fontSize: context.fontSize(24),
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -349,7 +339,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildExpenseBreakdownChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildExpenseBreakdownChart(Map<String, double> categoryExpenses) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,12 +347,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Expense Breakdown',
             style: TextStyle(
-              fontSize: responsive.fontSize(18),
+              fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
+          SizedBox(height: context.spacing(1.5)),
           
           categoryExpenses.isEmpty
               ? Center(
@@ -370,15 +360,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     children: [
                       Icon(
                         Iconsax.chart_21,
-                        size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                        size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
                         color: Colors.grey,
                       ),
-                      SizedBox(height: responsive.spacing()),
+                      SizedBox(height: context.spacing()),
                       Text(
                         'No expense data available',
                         style: TextStyle(
                           color: Colors.grey,
-                          fontSize: responsive.fontSize(16),
+                          fontSize: context.fontSize(16),
                         ),
                       ),
                     ],
@@ -386,15 +376,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    if (responsive.isDesktop) {
+                    if (context.isDesktop) {
                       return Column(
                         children: [
                           SizedBox(
                             height: 250,
-                            child: _buildPieChart(categoryExpenses, responsive),
+                            child: _buildPieChart(categoryExpenses),
                           ),
-                          SizedBox(height: responsive.spacing()),
-                          _buildLegendList(categoryExpenses, responsive),
+                          SizedBox(height: context.spacing()),
+                          _buildLegendList(categoryExpenses),
                         ],
                       );
                     } else {
@@ -403,10 +393,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           SizedBox(
                             width: 180,
                             height: 180,
-                            child: _buildPieChart(categoryExpenses, responsive),
+                            child: _buildPieChart(categoryExpenses),
                           ),
-                          SizedBox(height: responsive.spacing()),
-                          _buildLegendList(categoryExpenses, responsive),
+                          SizedBox(height: context.spacing()),
+                          _buildLegendList(categoryExpenses),
                         ],
                       );
                     }
@@ -417,7 +407,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildPieChart(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildPieChart(Map<String, double> categoryExpenses) {
     if (categoryExpenses.isEmpty) return const SizedBox.shrink();
 
     final total = categoryExpenses.values.fold(0.0, (sum, value) => sum + value);
@@ -439,14 +429,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           },
         ),
         sectionsSpace: 2,
-        centerSpaceRadius: responsive.value(mobile: 40, tablet: 50, desktop: 60),
+        centerSpaceRadius: context.responsiveValue(mobile: 40, tablet: 50, desktop: 60),
         sections: entries.asMap().entries.map((entry) {
           final index = entry.key;
           final categoryEntry = entry.value;
           final isTouched = index == _touchedIndex;
           final radius = isTouched 
-              ? responsive.value(mobile: 65.0, tablet: 75.0, desktop: 85.0)
-              : responsive.value(mobile: 55.0, tablet: 65.0, desktop: 75.0);
+              ? context.responsiveValue(mobile: 65.0, tablet: 75.0, desktop: 85.0)
+              : context.responsiveValue(mobile: 55.0, tablet: 65.0, desktop: 75.0);
           
           return PieChartSectionData(
             color: _resolveCategoryColor(categoryEntry.key),
@@ -454,7 +444,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
             radius: radius,
             titleStyle: TextStyle(
-              fontSize: responsive.fontSize(10),
+              fontSize: context.fontSize(10),
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -465,9 +455,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildLegendList(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildLegendList(Map<String, double> categoryExpenses) {
     final entries = categoryExpenses.entries.toList();
-    final maxInitialItems = responsive.isDesktop ? 6 : 4;
+    final maxInitialItems = context.isDesktop ? 6 : 4;
     final hasMoreItems = entries.length > maxInitialItems;
     final itemsToShow = _showAllCategories ? entries : entries.take(maxInitialItems).toList();
 
@@ -505,7 +495,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         child: Text(
                           categoryEntry.key,
                           style: TextStyle(
-                            fontSize: responsive.fontSize(14),
+                            fontSize: context.fontSize(14),
                             fontWeight: FontWeight.w500,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -515,7 +505,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         CurrencyUtil.formatCompact(categoryEntry.value),
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: responsive.fontSize(14),
+                          fontSize: context.fontSize(14),
                           color: Colors.black87,
                         ),
                       ),
@@ -557,7 +547,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
-                      fontSize: responsive.fontSize(14),
+                      fontSize: context.fontSize(14),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -575,7 +565,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildSpendingTrendChart(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildSpendingTrendChart(List<Map<String, dynamic>> timeSeriesData) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,15 +573,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Spending Trend',
             style: TextStyle(
-              fontSize: responsive.fontSize(18),
+              fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: responsive.spacing(scale: 1.5)),
+          SizedBox(height: context.spacing(1.5)),
           
           SizedBox(
-            height: responsive.value(mobile: 250.0, tablet: 300.0, desktop: 350.0),
+            height: context.responsiveValue(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? Center(
                     child: Column(
@@ -599,28 +589,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       children: [
                         Icon(
                           Iconsax.chart_1,
-                          size: responsive.value(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                          size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
                           color: Colors.grey,
                         ),
-                        SizedBox(height: responsive.spacing()),
+                        SizedBox(height: context.spacing()),
                         Text(
                           'No transaction data available',
                           style: TextStyle(
                             color: Colors.grey,
-                            fontSize: responsive.fontSize(16),
+                            fontSize: context.fontSize(16),
                           ),
                         ),
                       ],
                     ),
                   )
-                : _buildLineChart(timeSeriesData, responsive),
+                : _buildLineChart(timeSeriesData),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLineChart(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildLineChart(List<Map<String, dynamic>> timeSeriesData) {
     // Implementation of line chart would go here
     // For now, return a placeholder
     return Container(
@@ -660,7 +650,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildCategoryInsightsCard(Map<String, double> categoryExpenses, ResponsiveUtil responsive) {
+  Widget _buildCategoryInsightsCard(Map<String, double> categoryExpenses) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,19 +658,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Category Insights',
             style: TextStyle(
-              fontSize: responsive.fontSize(16),
+              fontSize: context.fontSize(16),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           
           if (categoryExpenses.isEmpty)
             Text(
               'No category data available',
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: responsive.fontSize(14),
+                fontSize: context.fontSize(14),
               ),
             )
           else
@@ -690,16 +680,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Highest Spending',
                   categoryExpenses.entries.first.key,
                   Iconsax.arrow_up_2,
-                  Colors.red,
-                  responsive,
+                  Colors.red
                 ),
                 const SizedBox(height: 12),
                 _buildInsightItem(
                   'Total Categories',
                   '${categoryExpenses.length}',
                   Iconsax.category,
-                  Colors.blue,
-                  responsive,
+                  Colors.blue
                 ),
               ],
             ),
@@ -708,7 +696,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildTrendInsightsCard(List<Map<String, dynamic>> timeSeriesData, ResponsiveUtil responsive) {
+  Widget _buildTrendInsightsCard(List<Map<String, dynamic>> timeSeriesData) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,19 +704,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Text(
             'Trend Insights',
             style: TextStyle(
-              fontSize: responsive.fontSize(16),
+              fontSize: context.fontSize(16),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: responsive.spacing()),
+          SizedBox(height: context.spacing()),
           
           if (timeSeriesData.isEmpty)
             Text(
               'No trend data available',
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: responsive.fontSize(14),
+                fontSize: context.fontSize(14),
               ),
             )
           else
@@ -738,16 +726,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Data Points',
                   '${timeSeriesData.length}',
                   Iconsax.chart_1,
-                  Colors.green,
-                  responsive,
+                  Colors.green
                 ),
                 const SizedBox(height: 12),
                 _buildInsightItem(
                   'Period Range',
                   _getDateRangeString(),
                   Iconsax.calendar,
-                  Colors.purple,
-                  responsive,
+                  Colors.purple
                 ),
               ],
             ),
@@ -761,7 +747,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     String value,
     IconData icon,
     Color color,
-    ResponsiveUtil responsive,
   ) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -792,14 +777,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: responsive.fontSize(12),
+                    fontSize: context.fontSize(12),
                     color: Colors.grey.shade600,
                   ),
                 ),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: responsive.fontSize(14),
+                    fontSize: context.fontSize(14),
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -843,12 +828,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 class _DateRangeSelector extends StatelessWidget {
   final DateTimeRange? selectedRange;
   final Function(DateTimeRange?) onRangeSelected;
-  final ResponsiveUtil responsive;
 
   const _DateRangeSelector({
     required this.selectedRange,
-    required this.onRangeSelected,
-    required this.responsive,
+    required this.onRangeSelected
   });
 
   @override
@@ -869,7 +852,7 @@ class _DateRangeSelector extends StatelessWidget {
               child: Text(
                 value,
                 style: TextStyle(
-                  fontSize: responsive.fontSize(14),
+                  fontSize: context.fontSize(14),
                   fontWeight: FontWeight.w500,
                 ),
               ),

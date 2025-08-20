@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/models/analytics_model.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/responsive_util.dart';
+import 'package:moneymanager/core/utils/context_util.dart';
 
 class BalanceCard extends StatelessWidget {
   const BalanceCard({super.key, required this.analytics});
@@ -11,13 +11,12 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveUtil.of(context);
     
     // Pre-calculate values to avoid computation in build
-    final padding = responsive.spacing(scale: 1.5);
-    final radius = responsive.spacing(scale: 1.25);
-    final balanceFontSize = responsive.fontSize(36);
-    final iconSize = responsive.fontSize(16);
+    final padding = context.spacing(1.5);
+    final radius = context.spacing(1.25);
+    final balanceFontSize = context.fontSize(36);
+    final iconSize = context.fontSize(16);
     
     // Pre-format currency strings
     final balanceText = CurrencyUtil.format(analytics.balance);
@@ -39,10 +38,9 @@ class BalanceCard extends StatelessWidget {
               // Header with const styling
               _BalanceHeader(
                 consumptionData: analytics.consumptionData,
-                responsive: responsive,
               ),
 
-              SizedBox(height: responsive.spacing(scale: 0.75)),
+              SizedBox(height: context.spacing(0.75)),
 
               // Balance amount with optimized text
               Text(
@@ -54,14 +52,13 @@ class BalanceCard extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(height: responsive.spacing(scale: 1.25)),
+              SizedBox(height: context.spacing(1.25)),
 
               // Income & Expense Row with optimized layout
               _IncomeExpenseRow(
                 expenseText: expenseText,
                 incomeText: incomeText,
                 iconSize: iconSize,
-                responsive: responsive,
               ),
             ],
           ),
@@ -75,11 +72,9 @@ class BalanceCard extends StatelessWidget {
 class _BalanceHeader extends StatelessWidget {
   const _BalanceHeader({
     required this.consumptionData,
-    required this.responsive,
   });
 
   final ConsumptionData consumptionData;
-  final ResponsiveUtil responsive;
 
   @override
   Widget build(BuildContext context) {
@@ -119,13 +114,11 @@ class _IncomeExpenseRow extends StatelessWidget {
     required this.expenseText,
     required this.incomeText,
     required this.iconSize,
-    required this.responsive,
   });
 
   final String expenseText;
   final String incomeText;
   final double iconSize;
-  final ResponsiveUtil responsive;
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +136,7 @@ class _IncomeExpenseRow extends StatelessWidget {
                     color: Colors.white,
                     size: iconSize,
                   ),
-                  SizedBox(width: responsive.spacing(scale: 0.25)),
+                  SizedBox(width: context.spacing(0.25)),
                   const Text('Expense', style: TextStyle(color: Colors.white70)),
                 ],
               ),
@@ -157,7 +150,7 @@ class _IncomeExpenseRow extends StatelessWidget {
           ),
         ),
 
-        SizedBox(width: responsive.spacing(scale: 1.25)),
+        SizedBox(width: context.spacing(1.25)),
 
         // Income section
         Expanded(
@@ -171,7 +164,7 @@ class _IncomeExpenseRow extends StatelessWidget {
                     color: Colors.white,
                     size: iconSize,
                   ),
-                  SizedBox(width: responsive.spacing(scale: 0.25)),
+                  SizedBox(width: context.spacing(0.25)),
                   const Text('Income', style: TextStyle(color: Colors.white70)),
                 ],
               ),
