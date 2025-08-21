@@ -1,14 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'core/constants/themes.dart';
+import 'constants/themes.dart';
 import 'package:provider/provider.dart';
-import 'core/providers/auth_provider.dart';
-import 'core/providers/category_provider.dart';
-import 'core/providers/transaction_provider.dart';
-import 'core/providers/analytics_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/category_provider.dart';
+import 'providers/transaction_provider.dart';
+import 'providers/analytics_provider.dart';
 import 'firebase_options.dart';
-import 'core/services/notification_service.dart';
-import 'core/router/app_router.dart';
+import 'services/notification_service.dart';
+import 'router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/styles.dart';
 
 class AppTypeSelector<T> extends StatelessWidget {
   final T selectedValue;

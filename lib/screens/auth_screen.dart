@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/widgets/common/logo.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:provider/provider.dart';
-import 'package:moneymanager/core/providers/auth_provider.dart';
+import 'package:moneymanager/providers/auth_provider.dart';
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});

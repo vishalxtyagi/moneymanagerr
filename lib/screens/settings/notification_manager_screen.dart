@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/constants/styles.dart';
 
 class NotificationManagerScreen extends StatefulWidget {
   const NotificationManagerScreen({super.key});

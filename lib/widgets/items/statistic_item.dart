@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/utils/context_util.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 
 class StatisticCard extends StatelessWidget {

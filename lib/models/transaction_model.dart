@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/constants/enums.dart';
 
 class TransactionModel {
   final String id;

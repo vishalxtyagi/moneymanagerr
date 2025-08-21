@@ -3,9 +3,9 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/utils/currency_util.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/utils/currency_util.dart';
 import 'package:uuid/uuid.dart';
 
 class NotificationService {

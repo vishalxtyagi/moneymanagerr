@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/models/analytics_model.dart';
-import 'package:moneymanager/core/providers/transaction_provider.dart';
-import 'package:moneymanager/core/utils/notifier_utils.dart';
+import 'package:moneymanager/models/analytics_model.dart';
+import 'package:moneymanager/providers/transaction_provider.dart';
+import 'package:moneymanager/utils/notifier_utils.dart';
 
 /// Centralized analytics computations to avoid expensive calculations in build methods
 class AnalyticsProvider extends ChangeNotifier with NotifierMixin {

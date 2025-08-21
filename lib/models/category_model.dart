@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/utils/category_util.dart';
+import 'package:moneymanager/utils/category_util.dart';
 
 class CategoryModel {
   final String name;

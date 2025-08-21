@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/styles.dart';
-import 'package:moneymanager/core/models/analytics_model.dart';
-import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/context_util.dart';
+import 'package:moneymanager/constants/styles.dart';
+import 'package:moneymanager/models/analytics_model.dart';
+import 'package:moneymanager/utils/currency_util.dart';
+import 'package:moneymanager/utils/context_util.dart';
 
 class BalanceCard extends StatelessWidget {
   const BalanceCard({super.key, required this.analytics});

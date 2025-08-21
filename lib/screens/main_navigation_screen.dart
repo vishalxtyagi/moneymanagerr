@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/providers/auth_provider.dart';
-import 'package:moneymanager/core/utils/context_util.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:moneymanager/screens/analytics_screen.dart';
 import 'package:moneymanager/screens/calendar_view_screen.dart';
 import 'package:moneymanager/screens/dashboard_screen.dart';
 import 'package:moneymanager/screens/settings_screen.dart';
 import 'package:moneymanager/widgets/common/logo.dart';
-import 'package:moneymanager/core/router/app_router.dart';
+import 'package:moneymanager/router/app_router.dart';
 
 final class _NavigationConfig {
   static const items = [

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/constants/styles.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/constants/styles.dart';
 
 class AppButton extends StatelessWidget {
   const AppButton({

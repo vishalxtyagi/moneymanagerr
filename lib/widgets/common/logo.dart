@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/constants/enums.dart';
 
 class AppLogo extends StatelessWidget {
   final LogoType type;

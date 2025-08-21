@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/models/category_model.dart';
+import 'package:moneymanager/models/category_model.dart';
 
 class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/providers/auth_provider.dart';
-import 'package:moneymanager/core/utils/notifier_utils.dart';
-import 'package:moneymanager/core/services/navigation_service.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/utils/notifier_utils.dart';
+import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';

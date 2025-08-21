@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/models/transaction_model.dart';
-import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/models/transaction_model.dart';
+import 'package:moneymanager/providers/transaction_provider.dart';
 
 class AnalyticsModel {
   final double balance;

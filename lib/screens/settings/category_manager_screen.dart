@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import 'package:moneymanager/core/constants/colors.dart';
-import 'package:moneymanager/core/models/category_model.dart';
-import 'package:moneymanager/core/services/navigation_service.dart';
+import 'package:moneymanager/constants/colors.dart';
+import 'package:moneymanager/models/category_model.dart';
+import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:provider/provider.dart';
-import 'package:moneymanager/core/utils/category_util.dart';
-import 'package:moneymanager/core/providers/auth_provider.dart';
-import 'package:moneymanager/core/providers/category_provider.dart';
+import 'package:moneymanager/utils/category_util.dart';
+import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/providers/category_provider.dart';
 
 class CategoryManagerScreen extends StatefulWidget {
   const CategoryManagerScreen({super.key});

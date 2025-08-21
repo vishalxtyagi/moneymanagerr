@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/constants/colors.dart';
 
 class AppSectionHeader extends StatelessWidget {
   final String title;

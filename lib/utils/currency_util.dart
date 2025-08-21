@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-import 'package:moneymanager/core/constants/enums.dart';
+import 'package:moneymanager/constants/enums.dart';
 
 class CurrencyUtil {
   CurrencyUtil._();

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/utils/context_util.dart';
-import 'package:moneymanager/core/services/navigation_service.dart';
+import 'package:moneymanager/utils/context_util.dart';
+import 'package:moneymanager/services/navigation_service.dart';
 
 /// Optimized date range selector widget - extracted from analytics screen
 class AppDateRangeSelector extends StatelessWidget {

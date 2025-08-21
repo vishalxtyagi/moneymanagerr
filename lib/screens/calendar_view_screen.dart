@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/providers/category_provider.dart';
+import 'package:moneymanager/constants/enums.dart';
+import 'package:moneymanager/providers/category_provider.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:moneymanager/core/models/transaction_model.dart';
-import 'package:moneymanager/core/providers/transaction_provider.dart';
+import 'package:moneymanager/models/transaction_model.dart';
+import 'package:moneymanager/providers/transaction_provider.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
-import 'package:moneymanager/core/utils/currency_util.dart';
-import 'package:moneymanager/core/utils/context_util.dart';
-import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/utils/currency_util.dart';
+import 'package:moneymanager/utils/context_util.dart';
+import 'package:moneymanager/constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class CalendarViewScreen extends StatefulWidget {

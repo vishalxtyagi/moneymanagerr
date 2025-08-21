@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../../screens/auth_screen.dart';
-import '../../screens/main_navigation_screen.dart';
-import '../../screens/add_transaction_screen.dart';
-import '../../screens/transaction_history_screen.dart';
-import '../../screens/settings/category_manager_screen.dart';
+import '../screens/auth_screen.dart';
+import '../screens/main_navigation_screen.dart';
+import '../screens/add_transaction_screen.dart';
+import '../screens/transaction_history_screen.dart';
+import '../screens/settings/category_manager_screen.dart';
 import '../models/transaction_model.dart';
 
 class AppRouter {

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
-import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/constants/colors.dart';
 
 class CategoryUtil {
   CategoryUtil._();
