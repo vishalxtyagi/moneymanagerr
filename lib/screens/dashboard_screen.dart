@@ -11,6 +11,7 @@ import 'package:moneymanager/core/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/items/balance_card.dart';
+import 'package:moneymanager/widgets/items/insight_card.dart';
 import 'package:moneymanager/widgets/items/statistic_item.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
@@ -460,8 +461,14 @@ class _InsightsCard extends StatelessWidget {
               final insights = _generateInsights(data);
               
               return Column(
-                children: insights.map((insight) => _InsightItem(
-                  insight: insight
+                children: insights.map((insight) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: InsightCard(
+                    title: insight.title,
+                    description: insight.description,
+                    icon: insight.icon,
+                    color: insight.color,
+                  ),
                 )).toList(),
               );
             },
@@ -520,70 +527,6 @@ class _InsightsCard extends StatelessWidget {
     }
     
     return insights;
-  }
-}
-
-class _InsightItem extends StatelessWidget {
-  const _InsightItem({
-    required this.insight
-  });
-  
-  final _Insight insight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: insight.color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: insight.color.withOpacity(0.2)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: insight.color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Icon(insight.icon, color: insight.color, size: 20),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      insight.title,
-                      style: TextStyle(
-                        fontSize: context.fontSize(14),
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      insight.description,
-                      style: TextStyle(
-                        fontSize: context.fontSize(12),
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

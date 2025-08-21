@@ -65,7 +65,7 @@ class AppSummaryCards extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: context.spacing(),
         mainAxisSpacing: context.spacing(),
-        childAspectRatio: 1.5,
+        childAspectRatio: 1.35,
         children: summaryCards,
       );
     }

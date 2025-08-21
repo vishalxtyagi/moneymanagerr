@@ -5,6 +5,7 @@ import 'package:moneymanager/core/utils/notifier_utils.dart';
 import 'package:moneymanager/core/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/card.dart';
+import 'package:moneymanager/widgets/header/section_header.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -53,51 +54,57 @@ class _SettingsScreenState extends State<SettingsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Notifications Section
-            _SettingsSection(
-              title: 'Notifications',
-              children: [
-                ValueListenableBuilder<bool>(
-                  valueListenable: _notificationsEnabled,
-                  builder: (context, enabled, _) => _NotificationTile(
-                    enabled: enabled,
-                    onChanged: (value) => _notificationsEnabled.value = value,
+            AppSectionHeader(title: 'Notifications'),
+            AppCard(
+              child: Column(
+                children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _notificationsEnabled,
+                    builder: (context, enabled, _) => _NotificationTile(
+                      enabled: enabled,
+                      onChanged: (value) => _notificationsEnabled.value = value,
+                    ),
                   ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _notificationsEnabled,
-                  builder: (context, enabled, _) => enabled
-                      ? const _LowThresholdTile(threshold: _lowThresholdAmount)
-                      : const SizedBox.shrink(),
-                ),
-              ],
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _notificationsEnabled,
+                    builder: (context, enabled, _) => enabled
+                        ? const _LowThresholdTile(threshold: _lowThresholdAmount)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
             // Categories Section
-            _SettingsSection(
-              title: 'Categories',
-              children: [
-                _CategoryManagementTile(),
-                const Divider(height: 1),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _autoCategorize,
-                  builder: (context, autoCategorize, _) => _AutoCategorizeTile(
-                    enabled: autoCategorize,
-                    onChanged: (value) => _autoCategorize.value = value,
+            AppSectionHeader(title: 'Categories'),
+            AppCard(
+              child: Column(
+                children: [
+                  _CategoryManagementTile(),
+                  const Divider(height: 1),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _autoCategorize,
+                    builder: (context, autoCategorize, _) => _AutoCategorizeTile(
+                      enabled: autoCategorize,
+                      onChanged: (value) => _autoCategorize.value = value,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
             // Other sections...
-            _SettingsSection(
-              title: 'Account',
-              children: [
-                _ExportDataTile(),
-                const Divider(height: 1),
-                _SignOutTile(),
-              ],
+            AppSectionHeader(title: 'Account'),
+            AppCard(
+              child: Column(
+                children: [
+                  _ExportDataTile(),
+                  const Divider(height: 1),
+                  _SignOutTile(),
+                ],
+              ),
             ),
           ],
         ),
@@ -107,37 +114,6 @@ class _SettingsScreenState extends State<SettingsScreen>
 }
 
 // Helper widgets for optimized settings screen
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        AppCard(
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-}
-
 class _NotificationTile extends StatelessWidget {
   const _NotificationTile({
     required this.enabled,

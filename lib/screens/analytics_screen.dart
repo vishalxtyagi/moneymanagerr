@@ -9,7 +9,11 @@ import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/core/utils/category_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
-import 'package:moneymanager/widgets/common/summary_cards.dart';
+import 'package:moneymanager/widgets/common/filter_chip.dart';
+import 'package:moneymanager/widgets/header/section_header.dart';
+import 'package:moneymanager/widgets/items/insight_card.dart';
+import 'package:moneymanager/widgets/items/summary_cards.dart';
+import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -244,36 +248,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Expense Breakdown',
-            style: TextStyle(
-              fontSize: context.fontSize(18),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          AppSectionHeader(
+            title: 'Expense Breakdown',
+            fontSize: context.fontSize(18),
           ),
-          SizedBox(height: context.spacing(1.5)),
 
           categoryExpenses.isEmpty
-              ? Center(
-            child: Column(
-              children: [
-                Icon(
-                  Iconsax.chart_21,
-                  size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
-                  color: Colors.grey,
-                ),
-                SizedBox(height: context.spacing()),
-                Text(
-                  'No expense data available',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: context.fontSize(16),
-                  ),
-                ),
-              ],
-            ),
-          )
+              ? AppEmptyState(
+                  icon: Iconsax.chart_21,
+                  title: 'No expense data available',
+                )
               : LayoutBuilder(
             builder: (context, constraints) {
               if (context.isDesktop) {
@@ -357,7 +341,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   Widget _buildLegendList(Map<String, double> categoryExpenses) {
     final entries = categoryExpenses.entries.toList();
-    final maxInitialItems = context.isDesktop ? 6 : 4;
+    const maxInitialItems = 3;
     final hasMoreItems = entries.length > maxInitialItems;
     final itemsToShow = _showAllCategories ? entries : entries.take(maxInitialItems).toList();
 
@@ -470,39 +454,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Spending Trend',
-            style: TextStyle(
-              fontSize: context.fontSize(18),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          AppSectionHeader(
+            title: 'Spending Trend',
+            fontSize: context.fontSize(18),
           ),
-          SizedBox(height: context.spacing(1.5)),
 
           SizedBox(
             height: context.responsiveValue(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Iconsax.chart_1,
-                    size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: context.spacing()),
-                  Text(
-                    'No transaction data available',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: context.fontSize(16),
-                    ),
-                  ),
-                ],
-              ),
-            )
+                ? AppEmptyState(
+                    icon: Iconsax.chart_1,
+                    title: 'No transaction data available',
+                  )
                 : _buildLineChart(timeSeriesData),
           ),
           if (timeSeriesData.isNotEmpty) ...[
@@ -691,15 +654,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Category Insights',
-            style: TextStyle(
-              fontSize: context.fontSize(16),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          AppSectionHeader(
+            title: 'Category Insights',
+            fontSize: context.fontSize(16),
           ),
-          SizedBox(height: context.spacing()),
 
           if (categoryExpenses.isEmpty)
             Text(
@@ -712,18 +670,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           else
             Column(
               children: [
-                _buildInsightItem(
-                    'Highest Spending',
-                    categoryExpenses.entries.first.key,
-                    Iconsax.arrow_up_2,
-                    Colors.red
+                InsightCard(
+                  title: 'Highest Spending',
+                  description: categoryExpenses.entries.first.key,
+                  icon: Iconsax.arrow_up_2,
+                  color: Colors.red,
                 ),
-                const SizedBox(height: 12),
-                _buildInsightItem(
-                    'Total Categories',
-                    '${categoryExpenses.length}',
-                    Iconsax.category,
-                    Colors.blue
+                SizedBox(width: context.spacing()),
+                InsightCard(
+                  title: 'Total Categories',
+                  description: '${categoryExpenses.length}',
+                  icon: Iconsax.category,
+                  color: Colors.blue,
                 ),
               ],
             ),
@@ -737,15 +695,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Trend Insights',
-            style: TextStyle(
-              fontSize: context.fontSize(16),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          AppSectionHeader(
+            title: 'Trend Insights',
+            fontSize: context.fontSize(16),
           ),
-          SizedBox(height: context.spacing()),
 
           if (timeSeriesData.isEmpty)
             Text(
@@ -756,78 +709,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               ),
             )
           else
-            Column(
+            Row(
               children: [
-                _buildInsightItem(
-                    'Data Points',
-                    '${timeSeriesData.length}',
-                    Iconsax.chart_1,
-                    Colors.green
-                ),
-                const SizedBox(height: 12),
-                _buildInsightItem(
-                    'Period Range',
-                    _getDateRangeString(),
-                    Iconsax.calendar,
-                    Colors.purple
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInsightItem(
-      String title,
-      String value,
-      IconData icon,
-      Color color,
-      ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: context.fontSize(12),
-                    color: Colors.grey.shade600,
+                Expanded(
+                  child: InsightCard(
+                    title: 'Data Points',
+                    description: '${timeSeriesData.length}',
+                    icon: Iconsax.chart_1,
+                    color: Colors.green,
                   ),
                 ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: context.fontSize(14),
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                SizedBox(width: context.spacing()),
+                Expanded(
+                  child: InsightCard(
+                    title: 'Period Range',
+                    description: _getDateRangeString(),
+                    icon: Iconsax.calendar,
+                    color: Colors.purple,
                   ),
                 ),
               ],
             ),
-          ),
         ],
       ),
     );
@@ -1214,42 +1116,49 @@ class _DateRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.white,
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _getRangeLabel(selectedRange),
-          items: ['This Month', 'Last Month', 'This Year', 'Custom'].map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: context.fontSize(14),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            if (newValue != null) {
-              final ranges = _getDateRanges();
-              onRangeSelected(ranges[newValue]);
-            }
-          },
-          icon: Icon(
-            Iconsax.arrow_down_2,
-            size: 16,
-            color: Colors.grey.shade600,
-          ),
+    final ranges = _getDateRanges();
+    final selectedLabel = _getRangeLabel(selectedRange);
+    
+    return Wrap(
+      spacing: 8,
+      children: [
+        ...ranges.keys.map((label) {
+          return AppFilterChip(
+            label: label,
+            isSelected: selectedLabel == label,
+            onTap: () => onRangeSelected(ranges[label]),
+          );
+        }),
+        AppFilterChip(
+          label: 'Custom',
+          isSelected: selectedLabel == 'Custom',
+          onTap: () => _selectCustomDateRange(context),
         ),
-      ),
+      ],
     );
+  }
+
+  Future<void> _selectCustomDateRange(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: selectedRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null) {
+      onRangeSelected(picked);
+    }
   }
 
   String _getRangeLabel(DateTimeRange? range) {

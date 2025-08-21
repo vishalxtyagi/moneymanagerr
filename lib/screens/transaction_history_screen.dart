@@ -11,6 +11,7 @@ import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:moneymanager/widgets/common/text_field.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/filter_chip.dart';
+import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:provider/provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -211,7 +212,24 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 }
 
                 if (transactions.isEmpty) {
-                  return _EmptyState(hasActiveFilters: hasActiveFilters);
+                  return AppEmptyState(
+                    icon: Icons.receipt_long,
+                    title: hasActiveFilters
+                        ? 'No transactions match your filters'
+                        : 'No transactions found',
+                    subtitle: hasActiveFilters
+                        ? 'Try adjusting your filters'
+                        : 'Start by adding your first transaction',
+                    action: hasActiveFilters
+                        ? AppButton(
+                            text: 'Clear Filters',
+                            type: ButtonType.outlined,
+                            onPressed: () {
+                              context.read<TransactionProvider>().clearAllFilters();
+                            },
+                          )
+                        : null,
+                  );
                 }
 
                 return ListView.builder(
@@ -256,60 +274,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _FilterBottomSheet(),
-    );
-  }
-}
-
-// Simplified Empty State Component
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.hasActiveFilters});
-  
-  final bool hasActiveFilters;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.receipt_long,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            hasActiveFilters
-                ? 'No transactions match your filters'
-                : 'No transactions found',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            hasActiveFilters
-                ? 'Try adjusting your filters'
-                : 'Start by adding your first transaction',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-          if (hasActiveFilters) ...[
-            const SizedBox(height: 16),
-            AppButton(
-              text: 'Clear Filters',
-              type: ButtonType.outlined,
-              onPressed: () {
-                context.read<TransactionProvider>().clearAllFilters();
-              },
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
