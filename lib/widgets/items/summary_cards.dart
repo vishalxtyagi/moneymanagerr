@@ -11,6 +11,8 @@ class AppSummaryCards extends StatelessWidget {
   final double income;
   final double expense;
   final bool isDesktop;
+  final VoidCallback? onIncomeCardTap;
+  final VoidCallback? onExpenseCardTap;
 
   const AppSummaryCards({
     super.key,
@@ -18,6 +20,8 @@ class AppSummaryCards extends StatelessWidget {
     required this.income,
     required this.expense,
     this.isDesktop = false,
+    this.onIncomeCardTap,
+    this.onExpenseCardTap,
   });
 
   @override
@@ -36,12 +40,14 @@ class AppSummaryCards extends StatelessWidget {
         value: income,
         color: AppColors.success,
         icon: Iconsax.arrow_up_2,
+        onTap: onIncomeCardTap,
       ),
       _SummaryCard(
         title: 'Expense',
         value: expense,
         color: AppColors.error,
         icon: Iconsax.arrow_down_2,
+        onTap: onExpenseCardTap,
       ),
       _SummaryCard(
         title: 'Spend Rate',
@@ -77,6 +83,7 @@ class _SummaryCard extends StatelessWidget {
   final Color color;
   final IconData icon;
   final bool isPercentage;
+  final VoidCallback? onTap;
 
   const _SummaryCard({
     required this.title,
@@ -84,56 +91,68 @@ class _SummaryCard extends StatelessWidget {
     required this.color,
     required this.icon,
     this.isPercentage = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: context.fontSize(14),
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+    final cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                overflow: TextOverflow.ellipsis,
+                fontSize: context.fontSize(14),
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.spacing()),
-          Text(
-            isPercentage
-                ? '${value.toStringAsFixed(1)}%'
-                : CurrencyUtil.formatCompact(value),
-            style: TextStyle(
-              overflow: TextOverflow.ellipsis,
-              fontSize: context.fontSize(24),
-              fontWeight: FontWeight.bold,
-              color: color,
             ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: context.spacing()),
+        Text(
+          isPercentage
+              ? '${value.toStringAsFixed(1)}%'
+              : CurrencyUtil.formatCompact(value),
+          style: TextStyle(
+            overflow: TextOverflow.ellipsis,
+            fontSize: context.fontSize(24),
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    return AppCard(
+      child: onTap != null
+          ? InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: cardContent,
+              ),
+            )
+          : cardContent,
     );
   }
 }

@@ -62,12 +62,10 @@ class AnalyticsModel {
     }
 
     final percentage = (expense / income) * 100;
-    final isOver = percentage > 100;
+    final isOver = percentage > 65;
 
     return ConsumptionData(
-      text: isOver
-          ? '${(percentage - 100).toStringAsFixed(0)}% over budget!'
-          : '${percentage.toStringAsFixed(0)}% spent',
+      text: '${percentage.toStringAsFixed(0)}% spent',
       color: isOver ? AppColors.error : AppColors.primaryVariant,
       percentage: percentage,
     );

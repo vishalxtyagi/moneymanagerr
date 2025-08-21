@@ -16,6 +16,7 @@ import 'package:moneymanager/widgets/items/statistic_item.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
+import 'package:moneymanager/widgets/common/user_avatar.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
@@ -53,22 +54,19 @@ class _NavigationHelper {
   static void navigateToHistory(
     BuildContext context, {
     DateTimeRange? range,
-    String? category,
   }) {
     NavigationService.goToTransactionHistory(
       context,
-      initialRange: range,
-      initialCategory: category,
-      ephemeralFilters: true,
+      initialDateRange: range,
     );
   }
 
   static void navigateToAddTransaction(BuildContext context,
       [dynamic transaction]) {
     if (transaction != null) {
-      NavigationService.goToEditTransaction(context, transaction);
+      NavigationService.openEditTransactionDrawer(context, transaction);
     } else {
-      NavigationService.goToAddTransaction(context);
+      NavigationService.openTransactionDrawer(context);
     }
   }
 }
@@ -250,34 +248,16 @@ class _UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<AuthProvider, String?>(
-        selector: (_, provider) => provider.user?.photoURL,
-        builder: (context, photoURL, _) => DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: photoURL != null
-                      ? ClipOval(
-                          child: Image.network(
-                            photoURL,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Icon(
-                          Iconsax.user,
-                          color: Colors.grey.shade600,
-                          size: 20,
-                        )),
-            ));
+      selector: (_, provider) => provider.user?.photoURL,
+      builder: (context, photoURL, _) => UserAvatar(
+        photoURL: photoURL,
+        size: 80,
+        backgroundColor: Colors.white.withOpacity(0.2),
+        iconColor: Colors.white.withOpacity(0.8),
+        borderColor: Colors.white.withOpacity(0.3),
+        showBorder: true,
+      ),
+    );
   }
 }
 
@@ -583,14 +563,12 @@ class _HeaderSection extends StatelessWidget {
                     ),
                     Selector<AuthProvider, String?>(
                       selector: (_, provider) => provider.user?.photoURL,
-                      builder: (context, photoURL, _) => CircleAvatar(
-                        radius: context.responsiveValue(
-                            mobile: 20.0, tablet: 24.0, desktop: 28.0),
-                        backgroundImage:
-                            photoURL != null ? NetworkImage(photoURL) : null,
-                        child: photoURL == null
-                            ? const Icon(Icons.person, color: Colors.white)
-                            : null,
+                      builder: (context, photoURL, _) => UserAvatar(
+                        photoURL: photoURL,
+                        size: context.responsiveValue(
+                            mobile: 40.0, tablet: 48.0, desktop: 56.0),
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        iconColor: AppColors.primary,
                       ),
                     ),
                   ],

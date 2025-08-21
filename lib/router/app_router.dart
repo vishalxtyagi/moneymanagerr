@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth_screen.dart';
 import '../screens/main_navigation_screen.dart';
@@ -20,11 +19,11 @@ class AppRouter {
   static const String transactionHistory = '/history';
   static const String categoryManager = '/settings/categories';
 
-  static GoRouter createRouter() {
+  static GoRouter createRouter(AuthProvider authProvider) {
     return GoRouter(
       initialLocation: dashboard,
+      refreshListenable: authProvider,
       redirect: (BuildContext context, GoRouterState state) {
-        final authProvider = context.read<AuthProvider>();
         final isSignedIn = authProvider.isSignedIn;
         final isAuthRoute = state.matchedLocation == auth;
 
@@ -100,9 +99,10 @@ class AppRouter {
           builder: (context, state) {
             final extra = state.extra as Map<String, dynamic>?;
             return TransactionHistoryScreen(
-              initialRange: extra?['initialRange'],
+              initialType: extra?['initialType'],
               initialCategory: extra?['initialCategory'],
-              ephemeralFilters: extra?['ephemeralFilters'] ?? false,
+              initialDateRange: extra?['initialDateRange'],
+              initialQuery: extra?['initialQuery'],
             );
           },
         ),

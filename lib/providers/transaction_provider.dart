@@ -11,7 +11,6 @@ import 'dart:async';
 class TransactionProvider with ChangeNotifier, NotifierMixin {
   final _firestore = FirebaseFirestore.instance;
 
-  // Typed collection reference with converter
   CollectionReference<TransactionModel> get _txCol =>
       _firestore.collection('transactions').withConverter<TransactionModel>(
             fromFirestore: (snap, _) => TransactionModel.fromFirestore(snap),
@@ -19,46 +18,23 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
           );
 
   final List<TransactionModel> _all = [];
-  final List<TransactionModel> _filtered = [];
-
-  // Cached aggregates and counters
   double _totalIncome = 0.0;
   double _totalExpense = 0.0;
   int _todayCount = 0;
   int _monthCount = 0;
 
-  // Live subscriptions (typed)
   StreamSubscription<QuerySnapshot<TransactionModel>>? _dashboardSub;
-
-  TransactionType _typeFilter = TransactionType.all;
-  DateTimeRange? _rangeFilter;
-  String _query = '';
-  String? _categoryFilter;
-  Timer? _searchDebounce;
-
+  DocumentSnapshot? _lastDoc;
+  bool _hasMore = true;
   User? _currentUser;
 
-  // Cache for search blobs to avoid repeated toLowerCase joins
-  final Map<String, String> _searchBlobCache = {};
-
-  // Getters
   UnmodifiableListView<TransactionModel> get all => UnmodifiableListView(_all);
-  UnmodifiableListView<TransactionModel> get filtered =>
-      UnmodifiableListView(_filtered);
-  TransactionType get filterType => _typeFilter;
-  DateTimeRange? get filterRange => _rangeFilter;
-  String get searchQuery => _query;
-  String? get filterCategory => _categoryFilter;
   double get totalIncome => _totalIncome;
   double get totalExpense => _totalExpense;
   int get todayCount => _todayCount;
   int get monthCount => _monthCount;
-  bool get hasActiveFilters =>
-      _typeFilter != TransactionType.all ||
-      _rangeFilter != null ||
-      _categoryFilter != null;
+  bool get hasMore => _hasMore;
 
-  /// Helpers for date checks
   bool _isToday(DateTime d) {
     final now = DateTime.now();
     return d.year == now.year && d.month == now.month && d.day == now.day;
@@ -69,16 +45,13 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     return d.year == now.year && d.month == now.month;
   }
 
-  /// Update auth state
   void updateAuth(User? user) {
     if (_currentUser?.uid != user?.uid) {
       _currentUser = user;
       _cancelStreams();
       _clearData();
       if (user != null) {
-        // Start a lightweight live feed for dashboard (latest 50)
         _subscribeDashboardFeed(user.uid, limit: 50);
-        // For history screen initial load; still allow fetch() legacy for now
         fetch(user.uid);
       } else {
         notifyListeners();
@@ -93,13 +66,11 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
 
   void disposeProvider() {
     _cancelStreams();
-    _searchDebounce?.cancel();
   }
 
   @override
   void dispose() {
     _cancelStreams();
-    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -109,8 +80,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     _todayCount = 0;
     _monthCount = 0;
     final now = DateTime.now();
-
-    _searchBlobCache.clear();
 
     for (final txn in _all) {
       if (txn.type == TransactionType.income) {
@@ -127,9 +96,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
       if (txn.date.year == now.year && txn.date.month == now.month) {
         _monthCount++;
       }
-
-      _searchBlobCache[txn.id] =
-          '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase();
     }
   }
 
@@ -150,9 +116,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         optimistic.date.month == now.month) {
       _monthCount++;
     }
-    _searchBlobCache[optimistic.id] =
-        '${optimistic.title} ${optimistic.category} ${optimistic.note ?? ''}'
-            .toLowerCase();
   }
 
   void _onTxnRemoved(TransactionModel removed) {
@@ -170,7 +133,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     if (removed.date.year == now.year && removed.date.month == now.month) {
       _monthCount = (_monthCount - 1).clamp(0, 1 << 31);
     }
-    _searchBlobCache.remove(removed.id);
   }
 
   void _sortAll() {
@@ -181,7 +143,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     });
   }
 
-  /// Live feed for latest N items (merge without dropping older paginated items)
   void _subscribeDashboardFeed(String userId, {int limit = 50}) {
     _dashboardSub = _txCol
         .where('userId', isEqualTo: userId)
@@ -202,9 +163,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
             } else {
               _all[idx] = model;
             }
-            _searchBlobCache[model.id] =
-                '${model.title} ${model.category} ${model.note ?? ''}'
-                    .toLowerCase();
             break;
           case DocumentChangeType.removed:
             if (idx != -1) {
@@ -215,18 +173,15 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         }
       }
 
-      // Batch all updates to reduce rebuilds
       batchUpdate(() {
         _sortAll();
         _recomputeAggregatesAndCounters();
-        _applyFilters();
       });
     }, onError: (e) {
       debugPrint('Dashboard stream error: $e');
     });
   }
 
-  /// Fetch transactions for user (full list; to be used by history with pagination later)
   Future<void> fetch(String userId) async {
     try {
       final snapshot = await _txCol
@@ -245,18 +200,12 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         _hasMore = snapshot.docs.length == 200;
 
         _recomputeAggregatesAndCounters();
-        _applyFilters();
       });
     } catch (e) {
       debugPrint('Fetch Error: $e');
       rethrow;
     }
   }
-
-  /// Pagination support for history screen
-  DocumentSnapshot? _lastDoc;
-  bool _hasMore = true;
-  bool get hasMore => _hasMore;
 
   Future<void> loadMore(String userId, {int pageSize = 50}) async {
     if (!_hasMore) return;
@@ -273,7 +222,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
       if (snapshot.docs.isNotEmpty) {
         _lastDoc = snapshot.docs.last;
         _all.addAll(snapshot.docs.map((d) => d.data()));
-        _applyFilters();
         notifyListeners();
       }
       if (snapshot.docs.length < pageSize) {
@@ -284,7 +232,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     }
   }
 
-  /// Add new transaction (optimistic append)
   Future<void> add({
     required String userId,
     required String title,
@@ -311,11 +258,9 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         updatedAt: DateTime.now(),
       );
       _onTxnInserted(optimistic);
-      _applyFilters();
       notifyListeners();
 
       await _firestore.collection('transactions').doc(id).set({
-        // Remove 'id' field if you prefer doc.id only. Keeping for compatibility
         'id': id,
         'userId': userId,
         'title': title,
@@ -334,7 +279,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     }
   }
 
-  /// Update transaction with optimized local update; createdAt immutable
   Future<void> update(TransactionModel txn) async {
     try {
       _updateTransactionInMemory(txn);
@@ -353,7 +297,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     }
   }
 
-  /// Remove transaction with optimized local removal
   Future<void> remove(String id, String userId) async {
     try {
       final idx = _all.indexWhere((t) => t.id == id);
@@ -362,7 +305,6 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         removed = _all.removeAt(idx);
         _onTxnRemoved(removed);
       }
-      _applyFilters();
       notifyListeners();
 
       await _firestore.collection('transactions').doc(id).delete();
@@ -373,78 +315,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     }
   }
 
-  /// Set type filter
-  void setTypeFilter(TransactionType type) {
-    if (_typeFilter == type) return;
-    _typeFilter = type;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Set date range filter
-  void setRangeFilter(DateTimeRange? range) {
-    if (_rangeFilter == range) return;
-    _rangeFilter = range;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Set search query (debounced)
-  void setQuery(String query) {
-    final q = query.toLowerCase().trim();
-    if (_query == q) return;
-    _query = q;
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-      _applyFilters();
-      notifyListeners();
-    });
-  }
-
-  /// Clear all filters
-  void clearAllFilters() {
-    if (!hasActiveFilters) return;
-    _typeFilter = TransactionType.all;
-    _rangeFilter = null;
-    _query = '';
-    _categoryFilter = null;
-    _applyFilters();
-    notifyListeners();
-  }
-
   DateTime _endOfDay(DateTime d) =>
       DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
-
-  void _applyFilters() {
-    _filtered.clear();
-    for (final txn in _all) {
-      if (_matchesAllFilters(txn)) {
-        _filtered.add(txn);
-      }
-    }
-  }
-
-  bool _matchesAllFilters(TransactionModel txn) {
-    if (_typeFilter != TransactionType.all && txn.type != _typeFilter) {
-      return false;
-    }
-    if (_rangeFilter != null) {
-      final start = _rangeFilter!.start;
-      final end = _endOfDay(_rangeFilter!.end);
-      if (txn.date.isBefore(start) || txn.date.isAfter(end)) {
-        return false;
-      }
-    }
-    if (_query.isNotEmpty) {
-      final blob = _searchBlobCache[txn.id] ??=
-          ('${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase());
-      if (!blob.contains(_query)) return false;
-    }
-    if (_categoryFilter != null && txn.category != _categoryFilter) {
-      return false;
-    }
-    return true;
-  }
 
   List<TransactionModel> _filterByRange(DateTimeRange? range) {
     if (range == null) return _all;
@@ -501,14 +373,42 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
         .toList();
   }
 
-  /// Clear all data and filters
+  List<TransactionModel> filterTransactions({
+    TransactionType? type,
+    String? category,
+    DateTimeRange? dateRange,
+    String? query,
+  }) {
+    return _all.where((txn) {
+      if (type != null && type != TransactionType.all && txn.type != type) {
+        return false;
+      }
+
+      if (category != null && txn.category != category) {
+        return false;
+      }
+
+      if (dateRange != null) {
+        final end = _endOfDay(dateRange.end);
+        if (txn.date.isBefore(dateRange.start) || txn.date.isAfter(end)) {
+          return false;
+        }
+      }
+
+      if (query != null && query.isNotEmpty) {
+        final searchText =
+            '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase();
+        if (!searchText.contains(query.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
   void _clearData() {
     _all.clear();
-    _filtered.clear();
-    _typeFilter = TransactionType.all;
-    _rangeFilter = null;
-    _query = '';
-    _categoryFilter = null;
     _totalIncome = 0.0;
     _totalExpense = 0.0;
     _todayCount = 0;
@@ -517,14 +417,12 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     _hasMore = true;
   }
 
-  /// Optimized local update + adjust aggregates and counters
   void _updateTransactionInMemory(TransactionModel updatedTxn) {
     final index = _all.indexWhere((t) => t.id == updatedTxn.id);
     if (index == -1) return;
 
     final old = _all[index];
 
-    // Adjust aggregates
     if (old.type == TransactionType.income) {
       _totalIncome -= old.amount;
     } else if (old.type == TransactionType.expense) {
@@ -536,23 +434,16 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
       _totalExpense += updatedTxn.amount;
     }
 
-    // Adjust counters
     if (_isToday(old.date)) _todayCount = (_todayCount - 1).clamp(0, 1 << 31);
-    if (_isThisMonth(old.date))
+    if (_isThisMonth(old.date)) {
       _monthCount = (_monthCount - 1).clamp(0, 1 << 31);
+    }
     if (_isToday(updatedTxn.date)) _todayCount++;
-    if (_isThisMonth(updatedTxn.date)) _monthCount++;
+    if (_isThisMonth(updatedTxn.date)) {
+      _monthCount++;
+    }
 
     _all[index] = updatedTxn;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Set category filter (null clears)
-  void setCategoryFilter(String? category) {
-    if (_categoryFilter == category) return;
-    _categoryFilter = category?.isEmpty == true ? null : category;
-    _applyFilters();
     notifyListeners();
   }
 }

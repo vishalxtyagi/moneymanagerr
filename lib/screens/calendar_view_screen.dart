@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/providers/category_provider.dart';
-import 'package:moneymanager/screens/add_transaction_screen.dart';
+import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -558,13 +558,9 @@ class _TransactionsList extends StatelessWidget {
               builder: (_, category, __) => TransactionItem(
                 transaction: transaction,
                 category: category,
-                onTap: () => Navigator.push(
+                onTap: () => NavigationService.openEditTransactionDrawer(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => AddTransactionScreen(
-                      transaction: transaction,
-                    ),
-                  ),
+                  transaction,
                 ),
               ),
             ),

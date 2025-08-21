@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/constants/colors.dart';
 import 'package:moneymanager/models/category_model.dart';
-import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:moneymanager/utils/category_util.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:moneymanager/providers/auth_provider.dart';
 import 'package:moneymanager/providers/category_provider.dart';
 
@@ -67,13 +68,9 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _CategoryList(isIncome: false),
-          _CategoryList(isIncome: true),
-        ],
-      ),
+      body: context.isDesktop
+          ? _DesktopLayout(tabController: _tabController)
+          : _MobileLayout(tabController: _tabController),
     );
   }
 
@@ -82,6 +79,226 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
       context: context,
       builder: (_) => _CategoryDialog(isIncome: _tabController.index == 1),
     );
+  }
+}
+
+class _DesktopLayout extends StatelessWidget {
+  final TabController tabController;
+
+  const _DesktopLayout({required this.tabController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 1200),
+      margin: const EdgeInsets.symmetric(horizontal: 32),
+      child: TabBarView(
+        controller: tabController,
+        children: const [
+          _CategoryGridView(isIncome: false),
+          _CategoryGridView(isIncome: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileLayout extends StatelessWidget {
+  final TabController tabController;
+
+  const _MobileLayout({required this.tabController});
+
+  @override
+  Widget build(BuildContext context) {
+    return TabBarView(
+      controller: tabController,
+      children: const [
+        _CategoryList(isIncome: false),
+        _CategoryList(isIncome: true),
+      ],
+    );
+  }
+}
+
+class _CategoryGridView extends StatelessWidget {
+  final bool isIncome;
+
+  const _CategoryGridView({required this.isIncome});
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<CategoryProvider, List<CategoryModel>>(
+      selector: (_, provider) =>
+          isIncome ? provider.incomeCategories : provider.expenseCategories,
+      builder: (context, categories, _) {
+        if (categories.isEmpty) {
+          return const AppEmptyState(
+            icon: Iconsax.category,
+            title: 'No categories',
+            subtitle: 'Tap + to add categories',
+          );
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(24),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 2.5,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, i) {
+            final category = categories[i];
+            return _CategoryCard(category: category);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _CategoryCard extends StatelessWidget {
+  final CategoryModel category;
+
+  const _CategoryCard({super.key, required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showEditDialog(context),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: category.color,
+                child: Icon(
+                  CategoryUtil.getIconByIndex(category.iconIdx),
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      category.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      category.isIncome ? 'Income' : 'Expense',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showEditDialog(context);
+                  } else if (value == 'delete') {
+                    _showDeleteDialog(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Iconsax.edit_2, size: 16),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Iconsax.trash, size: 16, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => _CategoryDialog(
+        isIncome: category.isIncome,
+        editingCategory: category,
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text('Are you sure you want to delete "${category.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => _deleteCategory(context),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCategory(BuildContext context) async {
+    final userId = context.read<AuthProvider>().user?.uid;
+    if (userId == null) return;
+
+    try {
+      await context.read<CategoryProvider>().remove(userId, category);
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Category deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 }
 
@@ -186,7 +403,7 @@ class _CategoryTile extends StatelessWidget {
             Text('Delete "${category.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => NavigationService.goBack(context),
+            onPressed: () => context.pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
@@ -207,14 +424,14 @@ class _CategoryTile extends StatelessWidget {
     try {
       await context.read<CategoryProvider>().remove(userId, category);
       if (context.mounted) {
-        NavigationService.goBack(context);
+        context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Category deleted')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        NavigationService.goBack(context);
+        context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -360,8 +577,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed:
-                      _loading ? null : () => NavigationService.goBack(context),
+                  onPressed: _loading ? null : () => context.pop(),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 8),
@@ -427,7 +643,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
           ));
 
       if (!mounted) return;
-      NavigationService.goBack(context);
+      context.pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/providers/auth_provider.dart';
+import 'package:moneymanager/router/app_router.dart';
 import 'package:moneymanager/utils/notifier_utils.dart';
-import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/card.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';
@@ -54,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Notifications Section
-            AppSectionHeader(title: 'Notifications'),
+            const AppSectionHeader(title: 'Notifications'),
             AppCard(
               child: Column(
                 children: [
@@ -78,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             const SizedBox(height: 20),
 
             // Categories Section
-            AppSectionHeader(title: 'Categories'),
+            const AppSectionHeader(title: 'Categories'),
             AppCard(
               child: Column(
                 children: [
@@ -98,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             const SizedBox(height: 20),
 
             // Other sections...
-            AppSectionHeader(title: 'Account'),
+            const AppSectionHeader(title: 'Account'),
             AppCard(
               child: Column(
                 children: [
@@ -177,7 +178,7 @@ class _CategoryManagementTile extends StatelessWidget {
       title: const Text('Manage Categories'),
       subtitle: const Text('Add, edit, or remove transaction categories'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => NavigationService.goToCategoryManager(context),
+      onTap: () => context.go(AppRouter.categoryManager),
     );
   }
 }

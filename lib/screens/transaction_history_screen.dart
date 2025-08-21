@@ -3,10 +3,13 @@ import 'package:intl/intl.dart';
 import 'package:moneymanager/constants/colors.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/models/category_model.dart';
+import 'package:moneymanager/models/transaction_model.dart';
 import 'package:moneymanager/providers/auth_provider.dart';
 import 'package:moneymanager/providers/category_provider.dart';
 import 'package:moneymanager/providers/transaction_provider.dart';
+import 'package:moneymanager/services/filter_service.dart';
 import 'package:moneymanager/services/navigation_service.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
 import 'package:moneymanager/widgets/common/text_field.dart';
 import 'package:moneymanager/widgets/common/button.dart';
@@ -17,17 +20,15 @@ import 'package:provider/provider.dart';
 class TransactionHistoryScreen extends StatefulWidget {
   final TransactionType? initialType;
   final String? initialCategory;
-  final DateTimeRange? initialRange;
+  final DateTimeRange? initialDateRange;
   final String? initialQuery;
-  final bool ephemeralFilters; // Restore previous filters on dispose
 
   const TransactionHistoryScreen({
     super.key,
     this.initialType,
     this.initialCategory,
-    this.initialRange,
+    this.initialDateRange,
     this.initialQuery,
-    this.ephemeralFilters = false,
   });
 
   @override
@@ -35,52 +36,39 @@ class TransactionHistoryScreen extends StatefulWidget {
       _TransactionHistoryScreenState();
 }
 
-class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
-    with AutomaticKeepAliveClientMixin {
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Store previous state for ephemeral filters
-  TransactionType? _previousType;
-  String? _previousCategory;
-  DateTimeRange? _previousRange;
-  String? _previousQuery;
-
-  @override
-  bool get wantKeepAlive => true;
+  FilterState _filterState = const FilterState();
+  List<TransactionModel> _filteredTransactions = [];
 
   @override
   void initState() {
     super.initState();
-    _applyInitialFilters();
     _scrollController.addListener(_onScroll);
+    _initializeFilters();
+    _applyFilters();
   }
 
-  void _applyInitialFilters() {
-    final provider = context.read<TransactionProvider>();
-
-    // Store previous state if using ephemeral filters
-    if (widget.ephemeralFilters) {
-      _previousType = provider.filterType;
-      _previousCategory = provider.filterCategory;
-      _previousRange = provider.filterRange;
-      _previousQuery = provider.searchQuery;
-
-      // Clear existing filters before applying new ones
-      provider.clearAllFilters();
-    }
-
-    // Apply initial filters
-    if (widget.initialType != null) {
-      provider.setTypeFilter(widget.initialType!);
-    }
-    provider.setRangeFilter(widget.initialRange);
-    provider.setCategoryFilter(widget.initialCategory);
+  void _initializeFilters() {
+    _filterState = FilterState(
+      type: widget.initialType ?? TransactionType.all,
+      category: widget.initialCategory,
+      dateRange: widget.initialDateRange,
+      query: widget.initialQuery ?? '',
+    );
 
     if (widget.initialQuery?.isNotEmpty == true) {
-      provider.setQuery(widget.initialQuery!);
       _searchController.text = widget.initialQuery!;
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _onScroll() {
@@ -97,467 +85,738 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     }
   }
 
-  @override
-  void dispose() {
-    // Restore previous filters if using ephemeral filters
-    if (widget.ephemeralFilters) {
-      final provider = context.read<TransactionProvider>();
-      provider.clearAllFilters();
+  void _applyFilters() {
+    final provider = context.read<TransactionProvider>();
+    _filteredTransactions = provider.filterTransactions(
+      type: _filterState.type,
+      category: _filterState.category,
+      dateRange: _filterState.dateRange,
+      query: _filterState.query,
+    );
+    setState(() {});
+  }
 
-      if (_previousType != null) {
-        provider.setTypeFilter(_previousType!);
-      }
-      if (_previousRange != null) {
-        provider.setRangeFilter(_previousRange);
-      }
-      if (_previousCategory != null) {
-        provider.setCategoryFilter(_previousCategory);
-      }
-      if (_previousQuery?.isNotEmpty == true) {
-        provider.setQuery(_previousQuery!);
-      }
-    }
-
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void _updateFilter(FilterState newState) {
+    _filterState = newState;
+    _applyFilters();
   }
 
   void _clearAllFilters() {
     _searchController.clear();
-    final provider = context.read<TransactionProvider>();
-    provider.clearAllFilters();
+    _updateFilter(FilterService.clearAll(_filterState));
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // for keep alive
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isWeb = screenWidth > 800;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction History'),
         elevation: 0,
         actions: [
-          Consumer<TransactionProvider>(
-            builder: (_, provider, __) {
-              final hasActiveFilters = provider.hasActiveFilters;
-              return Row(children: [
-                if (hasActiveFilters)
-                  IconButton(
-                    icon: const Icon(Icons.clear_all),
-                    onPressed: _clearAllFilters,
-                    tooltip: 'Clear all filters',
-                  ),
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.filter_alt),
-                      onPressed: () => _showFilterBottomSheet(context, isWeb),
-                      tooltip: 'Filter transactions',
+          if (_filterState.hasActiveFilters)
+            IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: _clearAllFilters,
+              tooltip: 'Clear all filters',
+            ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_alt),
+                onPressed: () => _showFilterDialog(context),
+                tooltip: 'Filter transactions',
+              ),
+              if (_filterState.hasActiveFilters)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF44336),
+                      shape: BoxShape.circle,
                     ),
-                    if (hasActiveFilters)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF44336),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
-              ]);
-            },
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppTextField(
-              label: 'Search',
-              hint: 'Search transactions...',
-              controller: _searchController,
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              showClearButton: true,
-              onChanged: (value) {
-                context.read<TransactionProvider>().setQuery(value);
-              },
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Transactions List
-          Expanded(
-            child: Consumer<TransactionProvider>(
-              builder: (context, transactionProvider, child) {
-                final transactions = transactionProvider.filtered;
-                final hasActiveFilters = transactionProvider.hasActiveFilters;
-
-                // Initial loading state
-                if (transactions.isEmpty &&
-                    transactionProvider.hasMore &&
-                    transactionProvider.all.isEmpty &&
-                    !hasActiveFilters) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (transactions.isEmpty) {
-                  return AppEmptyState(
-                    icon: Icons.receipt_long,
-                    title: hasActiveFilters
-                        ? 'No transactions match your filters'
-                        : 'No transactions found',
-                    subtitle: hasActiveFilters
-                        ? 'Try adjusting your filters'
-                        : 'Start by adding your first transaction',
-                    action: hasActiveFilters
-                        ? AppButton(
-                            text: 'Clear Filters',
-                            type: ButtonType.outlined,
-                            onPressed: () {
-                              context
-                                  .read<TransactionProvider>()
-                                  .clearAllFilters();
-                            },
-                          )
-                        : null,
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: EdgeInsets.symmetric(horizontal: isWeb ? 24 : 16),
-                  itemCount: transactions.length +
-                      (transactionProvider.hasMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= transactions.length) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    final transaction = transactions[index];
-                    return Selector<CategoryProvider, CategoryModel>(
-                      selector: (_, provider) => provider.getCategoryByName(
-                        transaction.category,
-                        isIncome: transaction.type == TransactionType.income,
-                      ),
-                      builder: (_, category, __) => TransactionItem(
-                        transaction: transaction,
-                        category: category,
-                        onTap: () {
-                          NavigationService.goToEditTransaction(
-                              context, transaction);
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            ],
           ),
         ],
       ),
+      body: context.isDesktop
+          ? _DesktopTransactionLayout(
+              filterState: _filterState,
+              filteredTransactions: _filteredTransactions,
+              searchController: _searchController,
+              scrollController: _scrollController,
+              onFilterUpdate: _updateFilter,
+              onClearFilters: _clearAllFilters,
+            )
+          : _MobileTransactionLayout(
+              filterState: _filterState,
+              filteredTransactions: _filteredTransactions,
+              searchController: _searchController,
+              scrollController: _scrollController,
+              onFilterUpdate: _updateFilter,
+              onClearFilters: _clearAllFilters,
+            ),
     );
   }
 
-  void _showFilterBottomSheet(BuildContext context, bool isWeb) {
-    showModalBottomSheet(
+  void _showFilterDialog(BuildContext context) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _FilterBottomSheet(),
+      builder: (context) => _FilterDialog(
+        currentState: _filterState,
+        onApply: _updateFilter,
+      ),
     );
   }
 }
 
-// Simplified Filter Bottom Sheet Component
-class _FilterBottomSheet extends StatelessWidget {
-  const _FilterBottomSheet();
+class _DesktopTransactionLayout extends StatelessWidget {
+  final FilterState filterState;
+  final List<TransactionModel> filteredTransactions;
+  final TextEditingController searchController;
+  final ScrollController scrollController;
+  final Function(FilterState) onFilterUpdate;
+  final VoidCallback onClearFilters;
+
+  const _DesktopTransactionLayout({
+    required this.filterState,
+    required this.filteredTransactions,
+    required this.searchController,
+    required this.scrollController,
+    required this.onFilterUpdate,
+    required this.onClearFilters,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
-        child: Consumer<TransactionProvider>(
-          builder: (context, provider, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      constraints: const BoxConstraints(maxWidth: 1200),
+      margin: const EdgeInsets.symmetric(horizontal: 32),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sidebar with filters
+          SizedBox(
+            width: 280,
+            child: Card(
+              margin: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _FilterSidebar(
+                  filterState: filterState,
+                  onFilterUpdate: onFilterUpdate,
+                  onClearFilters: onClearFilters,
+                ),
+              ),
+            ),
+          ),
+          // Main content area
+          Expanded(
+            child: Column(
               children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                // Search bar
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: AppTextField(
+                    label: 'Search',
+                    hint: 'Search transactions...',
+                    controller: searchController,
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    showClearButton: true,
+                    onChanged: (value) {
+                      onFilterUpdate(
+                          FilterService.setQuery(filterState, value));
+                    },
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // Title
-                const Text(
-                  'Filter Transactions',
-                  style: TextStyle(
-                    overflow: TextOverflow.ellipsis,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                // Transaction grid
+                Expanded(
+                  child: _TransactionGrid(
+                    filteredTransactions: filteredTransactions,
+                    scrollController: scrollController,
+                    filterState: filterState,
+                    onClearFilters: onClearFilters,
                   ),
-                ),
-                const SizedBox(height: 24),
-
-                // Transaction Type Filter
-                _TypeFilterSection(provider: provider),
-                const SizedBox(height: 24),
-
-                // Category Filter (only when specific type selected)
-                if (provider.filterType != TransactionType.all)
-                  _CategoryFilterSection(provider: provider),
-
-                // Date Range Filter
-                _DateRangeSection(provider: provider),
-                const SizedBox(height: 32),
-
-                // Close Button
-                AppButton(
-                  text: 'Close',
-                  type: ButtonType.primary,
-                  onPressed: () => NavigationService.goBack(context),
-                  width: double.infinity,
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Type Filter Section Component
-class _TypeFilterSection extends StatelessWidget {
-  const _TypeFilterSection({required this.provider});
+class _MobileTransactionLayout extends StatelessWidget {
+  final FilterState filterState;
+  final List<TransactionModel> filteredTransactions;
+  final TextEditingController searchController;
+  final ScrollController scrollController;
+  final Function(FilterState) onFilterUpdate;
+  final VoidCallback onClearFilters;
 
-  final TransactionProvider provider;
+  const _MobileTransactionLayout({
+    required this.filterState,
+    required this.filteredTransactions,
+    required this.searchController,
+    required this.scrollController,
+    required this.onFilterUpdate,
+    required this.onClearFilters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: AppTextField(
+            label: 'Search',
+            hint: 'Search transactions...',
+            controller: searchController,
+            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+            showClearButton: true,
+            onChanged: (value) {
+              onFilterUpdate(FilterService.setQuery(filterState, value));
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _TransactionList(
+            filteredTransactions: filteredTransactions,
+            scrollController: scrollController,
+            filterState: filterState,
+            onClearFilters: onClearFilters,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterSidebar extends StatelessWidget {
+  final FilterState filterState;
+  final Function(FilterState) onFilterUpdate;
+  final VoidCallback onClearFilters;
+
+  const _FilterSidebar({
+    required this.filterState,
+    required this.onFilterUpdate,
+    required this.onClearFilters,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Transaction Type',
-          style: TextStyle(
-            overflow: TextOverflow.ellipsis,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: AppFilterChip(
-                label: 'All',
-                isSelected: provider.filterType == TransactionType.all,
-                onTap: () => provider.setTypeFilter(TransactionType.all),
-                color: AppColors.textSecondary,
+            const Text(
+              'Filters',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AppFilterChip(
-                label: 'Income',
-                isSelected: provider.filterType == TransactionType.income,
-                onTap: () => provider.setTypeFilter(TransactionType.income),
-                color: AppColors.success,
+            if (filterState.hasActiveFilters)
+              TextButton(
+                onPressed: onClearFilters,
+                child: const Text('Clear'),
               ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Type filter
+        const Text(
+          'Type',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            AppFilterChip(
+              label: 'All',
+              isSelected: filterState.type == TransactionType.all,
+              onTap: () => onFilterUpdate(
+                FilterService.setType(filterState, TransactionType.all),
+              ),
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AppFilterChip(
-                label: 'Expense',
-                isSelected: provider.filterType == TransactionType.expense,
-                onTap: () => provider.setTypeFilter(TransactionType.expense),
-                color: AppColors.error,
+            const SizedBox(height: 4),
+            AppFilterChip(
+              label: 'Income',
+              isSelected: filterState.type == TransactionType.income,
+              onTap: () => onFilterUpdate(
+                FilterService.setType(filterState, TransactionType.income),
               ),
+              color: AppColors.success,
+            ),
+            const SizedBox(height: 4),
+            AppFilterChip(
+              label: 'Expense',
+              isSelected: filterState.type == TransactionType.expense,
+              onTap: () => onFilterUpdate(
+                FilterService.setType(filterState, TransactionType.expense),
+              ),
+              color: AppColors.error,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        // Date range
+        const Text(
+          'Date Range',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            AppFilterChip(
+              label: 'All Time',
+              isSelected: filterState.dateRange == null,
+              onTap: () => onFilterUpdate(
+                FilterService.setDateRange(filterState, null),
+              ),
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 4),
+            AppFilterChip(
+              label: 'This Week',
+              isSelected: _isCurrentWeek(filterState.dateRange),
+              onTap: () => onFilterUpdate(
+                FilterService.setDateRange(filterState, _getCurrentWeek()),
+              ),
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 4),
+            AppFilterChip(
+              label: 'This Month',
+              isSelected: _isCurrentMonth(filterState.dateRange),
+              onTap: () => onFilterUpdate(
+                FilterService.setDateRange(filterState, _getCurrentMonth()),
+              ),
+              color: AppColors.primary,
             ),
           ],
         ),
       ],
     );
   }
+
+  bool _isCurrentWeek(DateTimeRange? range) {
+    if (range == null) return false;
+    final currentWeek = _getCurrentWeek();
+    return range.start.isAtSameMomentAs(currentWeek.start) &&
+        range.end.isAtSameMomentAs(currentWeek.end);
+  }
+
+  bool _isCurrentMonth(DateTimeRange? range) {
+    if (range == null) return false;
+    final currentMonth = _getCurrentMonth();
+    return range.start.isAtSameMomentAs(currentMonth.start) &&
+        range.end.isAtSameMomentAs(currentMonth.end);
+  }
+
+  DateTimeRange _getCurrentWeek() {
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    return DateTimeRange(
+      start: DateTime(weekStart.year, weekStart.month, weekStart.day),
+      end: DateTime(weekEnd.year, weekEnd.month, weekEnd.day, 23, 59, 59),
+    );
+  }
+
+  DateTimeRange _getCurrentMonth() {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    return DateTimeRange(start: monthStart, end: monthEnd);
+  }
 }
 
-// Category Filter Section Component
-class _CategoryFilterSection extends StatelessWidget {
-  const _CategoryFilterSection({required this.provider});
+class _TransactionGrid extends StatelessWidget {
+  final List<TransactionModel> filteredTransactions;
+  final ScrollController scrollController;
+  final FilterState filterState;
+  final VoidCallback onClearFilters;
 
-  final TransactionProvider provider;
+  const _TransactionGrid({
+    required this.filteredTransactions,
+    required this.scrollController,
+    required this.filterState,
+    required this.onClearFilters,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Category',
-          style: TextStyle(
-            overflow: TextOverflow.ellipsis,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Consumer<CategoryProvider>(
-          builder: (context, catProvider, _) {
-            final isIncome = provider.filterType == TransactionType.income;
-            final categories = isIncome
-                ? catProvider.incomeCategories
-                : catProvider.expenseCategories;
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        if (filteredTransactions.isEmpty && transactionProvider.all.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
+        if (filteredTransactions.isEmpty) {
+          return AppEmptyState(
+            icon: Icons.receipt_long,
+            title: filterState.hasActiveFilters
+                ? 'No transactions match your filters'
+                : 'No transactions found',
+            subtitle: filterState.hasActiveFilters
+                ? 'Try adjusting your filters'
+                : 'Start by adding your first transaction',
+            action: filterState.hasActiveFilters
+                ? AppButton(
+                    text: 'Clear Filters',
+                    type: ButtonType.outlined,
+                    onPressed: onClearFilters,
+                  )
+                : null,
+          );
+        }
+
+        return GridView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3.5,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: filteredTransactions.length +
+              (transactionProvider.hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= filteredTransactions.length) {
+              return const Card(
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final transaction = filteredTransactions[index];
+            return Selector<CategoryProvider, CategoryModel>(
+              selector: (_, provider) => provider.getCategoryByName(
+                transaction.category,
+                isIncome: transaction.type == TransactionType.income,
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String?>(
-                  value: provider.filterCategory,
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('All Categories'),
-                    ),
-                    ...categories.map((c) => DropdownMenuItem<String?>(
-                          value: c.name,
-                          child: Text(c.name),
-                        ))
-                  ],
-                  onChanged: (val) => provider.setCategoryFilter(val),
+              builder: (_, category, __) => TransactionItem(
+                transaction: transaction,
+                category: category,
+                onTap: () {
+                  NavigationService.openEditTransactionDrawer(
+                      context, transaction);
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _TransactionList extends StatelessWidget {
+  final List<TransactionModel> filteredTransactions;
+  final ScrollController scrollController;
+  final FilterState filterState;
+  final VoidCallback onClearFilters;
+
+  const _TransactionList({
+    required this.filteredTransactions,
+    required this.scrollController,
+    required this.filterState,
+    required this.onClearFilters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TransactionProvider>(
+      builder: (context, transactionProvider, child) {
+        if (filteredTransactions.isEmpty && transactionProvider.all.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (filteredTransactions.isEmpty) {
+          return AppEmptyState(
+            icon: Icons.receipt_long,
+            title: filterState.hasActiveFilters
+                ? 'No transactions match your filters'
+                : 'No transactions found',
+            subtitle: filterState.hasActiveFilters
+                ? 'Try adjusting your filters'
+                : 'Start by adding your first transaction',
+            action: filterState.hasActiveFilters
+                ? AppButton(
+                    text: 'Clear Filters',
+                    type: ButtonType.outlined,
+                    onPressed: onClearFilters,
+                  )
+                : null,
+          );
+        }
+
+        return ListView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: filteredTransactions.length +
+              (transactionProvider.hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= filteredTransactions.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final transaction = filteredTransactions[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Selector<CategoryProvider, CategoryModel>(
+                selector: (_, provider) => provider.getCategoryByName(
+                  transaction.category,
+                  isIncome: transaction.type == TransactionType.income,
+                ),
+                builder: (_, category, __) => TransactionItem(
+                  transaction: transaction,
+                  category: category,
+                  onTap: () {
+                    NavigationService.openEditTransactionDrawer(
+                        context, transaction);
+                  },
                 ),
               ),
             );
           },
-        ),
-        const SizedBox(height: 24),
-      ],
+        );
+      },
     );
   }
 }
 
-// Date Range Section Component
-class _DateRangeSection extends StatelessWidget {
-  const _DateRangeSection({required this.provider});
+class _FilterDialog extends StatefulWidget {
+  final FilterState currentState;
+  final Function(FilterState) onApply;
 
-  final TransactionProvider provider;
+  const _FilterDialog({
+    required this.currentState,
+    required this.onApply,
+  });
+
+  @override
+  State<_FilterDialog> createState() => _FilterDialogState();
+}
+
+class _FilterDialogState extends State<_FilterDialog> {
+  late FilterState _tempState;
+
+  @override
+  void initState() {
+    super.initState();
+    _tempState = widget.currentState;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Date Range',
-          style: TextStyle(
-            overflow: TextOverflow.ellipsis,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (provider.filterRange != null) ...[
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF4CAF50).withOpacity(0.3),
+    return AlertDialog(
+      title: const Text('Filter Transactions'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Transaction Type',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            child: Row(
+            const SizedBox(height: 12),
+            Row(
               children: [
-                const Icon(Icons.date_range,
-                    color: Color(0xFF4CAF50), size: 20),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    '${DateFormat('MMM dd, yyyy').format(provider.filterRange!.start)} - ${DateFormat('MMM dd, yyyy').format(provider.filterRange!.end)}',
-                    style: const TextStyle(
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: AppFilterChip(
+                    label: 'All',
+                    isSelected: _tempState.type == TransactionType.all,
+                    onTap: () => setState(() {
+                      _tempState = FilterService.setType(
+                          _tempState, TransactionType.all);
+                    }),
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.clear,
-                      color: Color(0xFF4CAF50), size: 20),
-                  onPressed: () => provider.setRangeFilter(null),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: AppFilterChip(
+                    label: 'Income',
+                    isSelected: _tempState.type == TransactionType.income,
+                    onTap: () => setState(() {
+                      _tempState = FilterService.setType(
+                          _tempState, TransactionType.income);
+                    }),
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: AppFilterChip(
+                    label: 'Expense',
+                    isSelected: _tempState.type == TransactionType.expense,
+                    onTap: () => setState(() {
+                      _tempState = FilterService.setType(
+                          _tempState, TransactionType.expense);
+                    }),
+                    color: AppColors.error,
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
-        ],
+            const SizedBox(height: 24),
+            if (_tempState.type != TransactionType.all) ...[
+              const Text(
+                'Category',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Consumer<CategoryProvider>(
+                builder: (context, catProvider, _) {
+                  final isIncome = _tempState.type == TransactionType.income;
+                  final categories = isIncome
+                      ? catProvider.incomeCategories
+                      : catProvider.expenseCategories;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        value: _tempState.category,
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All Categories'),
+                          ),
+                          ...categories.map((c) => DropdownMenuItem<String?>(
+                                value: c.name,
+                                child: Text(c.name),
+                              ))
+                        ],
+                        onChanged: (val) => setState(() {
+                          _tempState =
+                              FilterService.setCategory(_tempState, val);
+                        }),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+            const Text(
+              'Date Range',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_tempState.dateRange != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.date_range,
+                        color: Color(0xFF4CAF50), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${DateFormat('MMM dd, yyyy').format(_tempState.dateRange!.start)} - ${DateFormat('MMM dd, yyyy').format(_tempState.dateRange!.end)}',
+                        style: const TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.clear,
+                          color: Color(0xFF4CAF50), size: 20),
+                      onPressed: () => setState(() {
+                        _tempState =
+                            FilterService.setDateRange(_tempState, null);
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            AppButton(
+              text: _tempState.dateRange == null
+                  ? 'Select Date Range'
+                  : 'Change Date Range',
+              icon: Icons.date_range,
+              type: ButtonType.outlined,
+              onPressed: _selectDateRange,
+              width: double.infinity,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
         AppButton(
-          text: provider.filterRange == null
-              ? 'Select Date Range'
-              : 'Change Date Range',
-          icon: Icons.date_range,
-          type: ButtonType.outlined,
-          onPressed: () => _selectDateRange(context, provider),
-          width: double.infinity,
+          text: 'Apply',
+          type: ButtonType.primary,
+          onPressed: () {
+            widget.onApply(_tempState);
+            Navigator.of(context).pop();
+          },
         ),
       ],
     );
   }
 
-  Future<void> _selectDateRange(
-      BuildContext context, TransactionProvider provider) async {
+  Future<void> _selectDateRange() async {
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: provider.filterRange,
+      initialDateRange: _tempState.dateRange,
     );
 
     if (picked != null) {
-      provider.setRangeFilter(picked);
+      setState(() {
+        _tempState = FilterService.setDateRange(_tempState, picked);
+      });
     }
   }
 }

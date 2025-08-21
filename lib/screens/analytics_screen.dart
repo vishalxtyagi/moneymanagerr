@@ -4,17 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:moneymanager/constants/colors.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/providers/transaction_provider.dart';
-import 'package:moneymanager/providers/category_provider.dart';
+import 'package:moneymanager/services/analytics_service.dart';
+import 'package:moneymanager/services/navigation_service.dart';
 import 'package:moneymanager/utils/currency_util.dart';
 import 'package:moneymanager/utils/context_util.dart';
-import 'package:moneymanager/utils/category_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
-import 'package:moneymanager/widgets/common/filter_chip.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';
-import 'package:moneymanager/widgets/items/insight_card.dart';
 import 'package:moneymanager/widgets/items/summary_cards.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
-import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
@@ -28,12 +25,8 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen>
     with AutomaticKeepAliveClientMixin {
   int _touchedIndex = -1;
-  late final DateTimeRange _defaultDateRange;
   DateTimeRange? _selectedDateRange;
-  bool _showAllCategories = false;
-
-  // Pre-computed date labels to avoid computation in build
-  late final Map<String, DateTimeRange> _quickDateRanges;
+  List<DateRangeOption> _quickRanges = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -41,26 +34,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _defaultDateRange = DateTimeRange(
-      start: DateTime(now.year, now.month, 1),
-      end: now,
-    );
-    _selectedDateRange = _defaultDateRange;
-    _quickDateRanges = _buildQuickDateRanges(now);
+    _quickRanges = AnalyticsService.getQuickDateRanges();
+    _selectedDateRange = _quickRanges.first.range;
   }
 
-  Map<String, DateTimeRange> _buildQuickDateRanges(DateTime now) {
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final startOfYear = DateTime(now.year, 1, 1);
-    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
-
-    return {
-      'This Month': DateTimeRange(start: startOfMonth, end: now),
-      'Last Month': DateTimeRange(start: lastMonthStart, end: lastMonthEnd),
-      'This Year': DateTimeRange(start: startOfYear, end: now),
-    };
+  void _onCategoryTap(String categoryName) {
+    NavigationService.goToTransactionHistory(
+      context,
+      initialType: TransactionType.expense,
+      initialCategory: categoryName,
+      initialDateRange: _selectedDateRange,
+    );
   }
 
   @override
@@ -69,183 +53,70 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: context.isDesktop
-          ? null
-          : AppBar(
-              title: Text(
-                'Analytics',
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: context.fontSize(20),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              elevation: 0,
-              actions: [
-                Padding(
-                  padding: EdgeInsets.only(right: context.spacing()),
-                  child: Material(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.white,
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: _showDateRangeOptions,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Iconsax.calendar,
-                                  size: 16, color: Colors.grey.shade600),
-                              const SizedBox(width: 6),
-                              Text(
-                                _getDateRangeLabel(),
-                                style: TextStyle(
-                                  overflow: TextOverflow.ellipsis,
-                                  fontSize: context.fontSize(12),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Iconsax.arrow_down_2,
-                                  size: 14, color: Colors.grey.shade600),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+      appBar: AppBar(
+        title: Text(
+          'Analytics',
+          style: TextStyle(
+            fontSize: context.fontSize(20),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: context.spacing()),
+            child: _DateRangeSelector(
+              selectedRange: _selectedDateRange,
+              quickRanges: _quickRanges,
+              onRangeSelected: (range) {
+                setState(() {
+                  _selectedDateRange = range;
+                });
+              },
             ),
+          ),
+        ],
+      ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
-          final range = _selectedDateRange;
-          final balance = transactionProvider.getBalance(range: range);
-          final income = transactionProvider.getTotalIncome(range: range);
-          final expense = transactionProvider.getTotalExpense(range: range);
-          final categoryExpenses =
-              transactionProvider.getExpensesByCategory(range: range);
-          final timeSeriesData = _getTimeSeriesData(transactionProvider);
+          final analyticsData = AnalyticsService.calculateAnalytics(
+            transactionProvider.all,
+            _selectedDateRange,
+          );
 
-          if (context.isDesktop) {
-            return _buildDesktopLayout(
-                balance, income, expense, categoryExpenses, timeSeriesData);
-          } else {
-            return _buildMobileLayout(
-                balance, income, expense, categoryExpenses, timeSeriesData);
-          }
+          return SingleChildScrollView(
+            padding: context.screenPadding,
+            child: Column(
+              children: [
+                _buildSummarySection(analyticsData),
+                SizedBox(height: context.spacing(1.5)),
+                _buildExpenseBreakdownChart(analyticsData.expensesByCategory),
+                SizedBox(height: context.spacing(1.5)),
+                _buildSpendingTrendChart(analyticsData.timeSeriesData),
+              ],
+            ),
+          );
         },
       ),
     );
   }
 
-  Widget _buildDesktopLayout(
-    double balance,
-    double income,
-    double expense,
-    Map<String, double> categoryExpenses,
-    List<Map<String, dynamic>> timeSeriesData,
-  ) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(context.spacing(1.5)),
-      child: context.constrain(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Date selector for desktop (no header since top bar exists)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _DateRangeSelector(
-                  selectedRange: _selectedDateRange,
-                  onRangeSelected: (range) {
-                    setState(() {
-                      _selectedDateRange = range;
-                    });
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: context.spacing(1.5)),
-
-            // Summary cards
-            _buildSummarySection(balance, income, expense),
-            SizedBox(height: context.spacing(2)),
-
-            // Charts section - Desktop layout
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left column - Expense breakdown
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      _buildExpenseBreakdownChart(categoryExpenses),
-                      SizedBox(height: context.spacing(1.5)),
-                      _buildCategoryInsightsCard(categoryExpenses),
-                    ],
-                  ),
-                ),
-
-                SizedBox(width: context.spacing(1.5)),
-
-                // Right column - Spending trend
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      _buildSpendingTrendChart(timeSeriesData),
-                      SizedBox(height: context.spacing(1.5)),
-                      _buildTrendInsightsCard(timeSeriesData),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileLayout(
-    double balance,
-    double income,
-    double expense,
-    Map<String, double> categoryExpenses,
-    List<Map<String, dynamic>> timeSeriesData,
-  ) {
-    return SingleChildScrollView(
-      padding: context.screenPadding,
-      child: Column(
-        children: [
-          // Summary Cards
-          _buildSummarySection(balance, income, expense),
-          SizedBox(height: context.spacing(1.5)),
-
-          // Charts Section
-          _buildExpenseBreakdownChart(categoryExpenses),
-          SizedBox(height: context.spacing(1.5)),
-          _buildSpendingTrendChart(timeSeriesData),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummarySection(double balance, double income, double expense) {
+  Widget _buildSummarySection(AnalyticsData data) {
     return AppSummaryCards(
-      balance: balance,
-      income: income,
-      expense: expense,
-      isDesktop: context.isDesktop,
+      balance: data.balance,
+      income: data.income,
+      expense: data.expense,
+      isDesktop: false,
+      onIncomeCardTap: () => _onSummaryCardTap(TransactionType.income),
+      onExpenseCardTap: () => _onSummaryCardTap(TransactionType.expense),
+    );
+  }
+
+  void _onSummaryCardTap(TransactionType type) {
+    NavigationService.goToTransactionHistory(
+      context,
+      initialType: type,
+      initialDateRange: _selectedDateRange,
     );
   }
 
@@ -259,38 +130,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             fontSize: context.fontSize(18),
           ),
           categoryExpenses.isEmpty
-              ? AppEmptyState(
+              ? const AppEmptyState(
                   icon: Iconsax.chart_21,
                   title: 'No expense data available',
                 )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (context.isDesktop) {
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: 250,
-                            child: _buildPieChart(categoryExpenses),
-                          ),
-                          SizedBox(height: context.spacing()),
-                          _buildLegendList(categoryExpenses),
-                        ],
-                      );
-                    } else {
-                      return Column(
-                        children: [
-                          SizedBox(
-                            width: 180,
-                            height: 180,
-                            child: _buildPieChart(categoryExpenses),
-                          ),
-                          SizedBox(height: context.spacing()),
-                          _buildLegendList(categoryExpenses),
-                        ],
-                      );
-                    }
-                  },
-                )
+              : Column(
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      height: 180,
+                      child: _buildPieChart(categoryExpenses),
+                    ),
+                    SizedBox(height: context.spacing()),
+                    _buildLegendList(categoryExpenses),
+                  ],
+                ),
         ],
       ),
     );
@@ -299,9 +153,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Widget _buildPieChart(Map<String, double> categoryExpenses) {
     if (categoryExpenses.isEmpty) return const SizedBox.shrink();
 
-    final total =
-        categoryExpenses.values.fold(0.0, (sum, value) => sum + value);
-    final entries = categoryExpenses.entries.toList();
+    final entries = categoryExpenses.entries.take(8).toList();
+    final colors = [
+      const Color(0xFFF44336),
+      const Color(0xFF2196F3),
+      const Color(0xFF4CAF50),
+      const Color(0xFFFF9800),
+      const Color(0xFF9C27B0),
+      const Color(0xFF00BCD4),
+      const Color(0xFFFFEB3B),
+      const Color(0xFF795548),
+    ];
 
     return PieChart(
       PieChartData(
@@ -314,37 +176,40 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 _touchedIndex = -1;
                 return;
               }
-              _touchedIndex =
+
+              final sectionIndex =
                   pieTouchResponse.touchedSection!.touchedSectionIndex;
+              _touchedIndex = sectionIndex;
+
+              // Handle tap to navigate to category transactions
+              if (event is FlTapUpEvent && sectionIndex < entries.length) {
+                final categoryName = entries[sectionIndex].key;
+                _onCategoryTap(categoryName);
+              }
             });
           },
         ),
+        borderData: FlBorderData(show: false),
         sectionsSpace: 2,
-        centerSpaceRadius:
-            context.responsiveValue(mobile: 40, tablet: 50, desktop: 60),
+        centerSpaceRadius: 40,
         sections: entries.asMap().entries.map((entry) {
           final index = entry.key;
-          final categoryEntry = entry.value;
+          final data = entry.value;
           final isTouched = index == _touchedIndex;
-          final radius = isTouched
-              ? context.responsiveValue(
-                  mobile: 65.0, tablet: 75.0, desktop: 85.0)
-              : context.responsiveValue(
-                  mobile: 55.0, tablet: 65.0, desktop: 75.0);
+          final fontSize = isTouched ? 14.0 : 12.0;
+          final radius = isTouched ? 65.0 : 55.0;
 
           return PieChartSectionData(
-            color: _resolveCategoryColor(categoryEntry.key),
-            value: categoryEntry.value,
+            color: colors[index % colors.length],
+            value: data.value,
             title:
-                '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
+                '${(data.value / categoryExpenses.values.fold(0.0, (a, b) => a + b) * 100).toStringAsFixed(1)}%',
             radius: radius,
             titleStyle: TextStyle(
-              overflow: TextOverflow.ellipsis,
-              fontSize: context.fontSize(10),
+              fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
-            titlePositionPercentageOffset: 0.55,
           );
         }).toList(),
       ),
@@ -352,118 +217,62 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildLegendList(Map<String, double> categoryExpenses) {
-    final entries = categoryExpenses.entries.toList();
-    const maxInitialItems = 3;
-    final hasMoreItems = entries.length > maxInitialItems;
-    final itemsToShow =
-        _showAllCategories ? entries : entries.take(maxInitialItems).toList();
+    final entries = categoryExpenses.entries.take(8).toList();
+    final colors = [
+      const Color(0xFFF44336),
+      const Color(0xFF2196F3),
+      const Color(0xFF4CAF50),
+      const Color(0xFFFF9800),
+      const Color(0xFF9C27B0),
+      const Color(0xFF00BCD4),
+      const Color(0xFFFFEB3B),
+      const Color(0xFF795548),
+    ];
 
     return Column(
-      children: [
-        ...itemsToShow.asMap().entries.map((entry) {
-          final categoryEntry = entry.value;
-          final color = _resolveCategoryColor(categoryEntry.key);
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _openCategoryHistory(categoryEntry.key),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.withOpacity(0.12)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          categoryEntry.key,
-                          style: TextStyle(
-                            overflow: TextOverflow.ellipsis,
-                            fontSize: context.fontSize(14),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        CurrencyUtil.formatCompact(categoryEntry.value),
-                        style: TextStyle(
-                          overflow: TextOverflow.ellipsis,
-                          fontWeight: FontWeight.w600,
-                          fontSize: context.fontSize(14),
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Iconsax.arrow_right_3,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-        if (hasMoreItems) ...[
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showAllCategories = !_showAllCategories;
-              });
-            },
+      children: entries.asMap().entries.map((entry) {
+        final index = entry.key;
+        final data = entry.value;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: InkWell(
+            onTap: () => _onCategoryTap(data.key),
             borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _showAllCategories ? 'Show Less' : 'Show More',
-                    style: TextStyle(
-                      overflow: TextOverflow.ellipsis,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: context.fontSize(14),
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: colors[index % colors.length],
+                      shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(
-                    _showAllCategories
-                        ? Iconsax.arrow_up_2
-                        : Iconsax.arrow_down_2,
-                    color: AppColors.primary,
-                    size: 16,
+                  Expanded(
+                    child: Text(
+                      data.key,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  Text(
+                    CurrencyUtil.format(data.value),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: Colors.grey,
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ],
+        );
+      }).toList(),
     );
   }
 
@@ -476,740 +285,244 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: 'Spending Trend',
             fontSize: context.fontSize(18),
           ),
-          SizedBox(
-            height: context.responsiveValue(
-                mobile: 250.0, tablet: 300.0, desktop: 350.0),
-            child: timeSeriesData.isEmpty
-                ? AppEmptyState(
-                    icon: Iconsax.chart_1,
-                    title: 'No transaction data available',
-                  )
-                : _buildLineChart(timeSeriesData),
-          ),
-          if (timeSeriesData.isNotEmpty) ...[
-            SizedBox(height: context.spacing()),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildLegendItem('Income', Colors.green),
-                SizedBox(width: context.spacing(1.5)),
-                _buildLegendItem('Expense', Colors.red),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLineChart(List<Map<String, dynamic>> timeSeriesData) {
-    final maxYVal = _getMaxValue(timeSeriesData);
-    final minYVal = _getMinValue(timeSeriesData);
-    final range = (maxYVal - minYVal).abs();
-    final pad = range == 0 ? (maxYVal.abs() * 0.1 + 1) : range * 0.1;
-    final minY = minYVal - pad;
-    final maxY = maxYVal + pad;
-
-    final total = timeSeriesData.length;
-    final step = total <= 6 ? 1 : (total / 6).ceil();
-
-    return LineChart(
-      LineChartData(
-        minX: 0,
-        maxX: (total - 1).toDouble(),
-        minY: minY,
-        maxY: maxY,
-        lineTouchData: const LineTouchData(enabled: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: (maxY - minY) / 4,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.withOpacity(0.2),
-            strokeWidth: 1,
-          ),
-        ),
-        extraLinesData: ExtraLinesData(
-          horizontalLines: [
-            HorizontalLine(
-              y: 0,
-              color: Colors.grey.withOpacity(0.5),
-              strokeWidth: 1,
-            ),
-          ],
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 36,
-              getTitlesWidget: (value, meta) {
-                final idx = value.round();
-                if (idx < 0 || idx >= total) return const SizedBox.shrink();
-                final isEdge = idx == 0 || idx == total - 1;
-                if (isEdge || idx % step == 0) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      timeSeriesData[idx]['label'],
-                      style: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        fontSize: context.fontSize(10),
-                        color: Colors.grey.shade600,
+          timeSeriesData.isEmpty
+              ? const AppEmptyState(
+                  icon: Iconsax.chart,
+                  title: 'No spending data available',
+                )
+              : SizedBox(
+                  height: 200,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: null,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.shade300,
+                            strokeWidth: 1,
+                          );
+                        },
                       ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            interval: 1,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              if (value.toInt() >= timeSeriesData.length) {
+                                return const Text('');
+                              }
+                              final date = timeSeriesData[value.toInt()]['date']
+                                  as DateTime;
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                child: Text(
+                                  DateFormat('M/d').format(date),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: null,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              return Text(
+                                CurrencyUtil.formatCompact(value),
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              );
+                            },
+                            reservedSize: 42,
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      minX: 0,
+                      maxX: (timeSeriesData.length - 1).toDouble(),
+                      minY: 0,
+                      maxY: timeSeriesData.isNotEmpty
+                          ? timeSeriesData
+                                  .map<double>((data) => data['amount'])
+                                  .reduce((a, b) => a > b ? a : b) *
+                              1.1
+                          : 0,
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: timeSeriesData.asMap().entries.map((entry) {
+                            return FlSpot(
+                              entry.key.toDouble(),
+                              entry.value['amount'],
+                            );
+                          }).toList(),
+                          isCurved: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.error.withOpacity(0.3),
+                              AppColors.error,
+                            ],
+                          ),
+                          barWidth: 3,
+                          isStrokeCapRound: true,
+                          dotData: const FlDotData(show: false),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.error.withOpacity(0.1),
+                                AppColors.error.withOpacity(0.05),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 44,
-              getTitlesWidget: (value, meta) => Text(
-                CurrencyUtil.formatCompact(value),
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: context.fontSize(10),
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ),
-          ),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: timeSeriesData
-                .asMap()
-                .entries
-                .map((e) => FlSpot(
-                      e.key.toDouble(),
-                      (e.value['income'] as num).toDouble(),
-                    ))
-                .toList(),
-            isCurved: true,
-            color: Colors.green,
-            barWidth: 3.0,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: Colors.green,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.green.withOpacity(0.1),
-            ),
-          ),
-          LineChartBarData(
-            spots: timeSeriesData
-                .asMap()
-                .entries
-                .map((e) => FlSpot(
-                      e.key.toDouble(),
-                      (e.value['expense'] as num).toDouble(),
-                    ))
-                .toList(),
-            isCurved: true,
-            color: Colors.red,
-            barWidth: 3.0,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: Colors.red,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.red.withOpacity(0.1),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            overflow: TextOverflow.ellipsis,
-            fontSize: context.fontSize(12),
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryInsightsCard(Map<String, double> categoryExpenses) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSectionHeader(
-            title: 'Category Insights',
-            fontSize: context.fontSize(16),
-          ),
-          if (categoryExpenses.isEmpty)
-            Text(
-              'No category data available',
-              style: TextStyle(
-                overflow: TextOverflow.ellipsis,
-                color: Colors.grey.shade600,
-                fontSize: context.fontSize(14),
-              ),
-            )
-          else
-            Column(
-              children: [
-                InsightCard(
-                  title: 'Highest Spending',
-                  description: categoryExpenses.entries.first.key,
-                  icon: Iconsax.arrow_up_2,
-                  color: Colors.red,
-                ),
-                SizedBox(width: context.spacing()),
-                InsightCard(
-                  title: 'Total Categories',
-                  description: '${categoryExpenses.length}',
-                  icon: Iconsax.category,
-                  color: Colors.blue,
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendInsightsCard(List<Map<String, dynamic>> timeSeriesData) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSectionHeader(
-            title: 'Trend Insights',
-            fontSize: context.fontSize(16),
-          ),
-          if (timeSeriesData.isEmpty)
-            Text(
-              'No trend data available',
-              style: TextStyle(
-                overflow: TextOverflow.ellipsis,
-                color: Colors.grey.shade600,
-                fontSize: context.fontSize(14),
-              ),
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: InsightCard(
-                    title: 'Data Points',
-                    description: '${timeSeriesData.length}',
-                    icon: Iconsax.chart_1,
-                    color: Colors.green,
                   ),
                 ),
-                SizedBox(width: context.spacing()),
-                Expanded(
-                  child: InsightCard(
-                    title: 'Period Range',
-                    description: _getDateRangeString(),
-                    icon: Iconsax.calendar,
-                    color: Colors.purple,
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
     );
-  }
-
-  Color _resolveCategoryColor(String categoryName) {
-    final provider = context.read<CategoryProvider>();
-    final cat = provider.getCategoryByName(categoryName, isIncome: false);
-    return _stableCategoryColor(categoryName, cat.color);
-  }
-
-  Color _stableCategoryColor(String name, Color fallback) {
-    try {
-      const palette = CategoryUtil.categoryColors;
-      if (palette.isEmpty) return fallback;
-      final hash =
-          name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
-      return palette[hash % palette.length];
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  void _openCategoryHistory(String categoryName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TransactionHistoryScreen(
-          initialType: TransactionType.expense,
-          initialCategory: categoryName,
-          initialRange: _selectedDateRange,
-          ephemeralFilters: true,
-        ),
-      ),
-    );
-  }
-
-  double _getMaxValue(List<Map<String, dynamic>> data) {
-    double max = 0;
-    for (var item in data) {
-      if (item['income'] > max) max = item['income'];
-      if (item['expense'] > max) max = item['expense'];
-    }
-    return max;
-  }
-
-  double _getMinValue(List<Map<String, dynamic>> data) {
-    double min = double.infinity;
-    for (var item in data) {
-      final income = (item['income'] as num).toDouble();
-      final expense = (item['expense'] as num).toDouble();
-      if (income < min) min = income;
-      if (expense < min) min = expense;
-    }
-    return min == double.infinity ? 0 : min;
-  }
-
-  List<Map<String, dynamic>> _getTimeSeriesData(TransactionProvider provider) {
-    if (_selectedDateRange == null) return [];
-
-    final transactions = provider.all;
-    final startDate = _selectedDateRange!.start;
-    final endDate = _selectedDateRange!.end;
-    final daysDifference = endDate.difference(startDate).inDays + 1;
-
-    List<Map<String, dynamic>> data = [];
-
-    if (daysDifference <= 7) {
-      // Daily view
-      for (int i = 0; i < daysDifference; i++) {
-        final date = startDate.add(Duration(days: i));
-        final dayTransactions = transactions
-            .where((t) =>
-                t.date.year == date.year &&
-                t.date.month == date.month &&
-                t.date.day == date.day)
-            .toList();
-
-        final income = dayTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = dayTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': DateFormat('MMM d').format(date),
-          'income': income,
-          'expense': expense,
-        });
-      }
-    } else if (daysDifference <= 35) {
-      // Weekly view
-      final weekStart =
-          startDate.subtract(Duration(days: startDate.weekday - 1));
-      final weeks = ((endDate.difference(weekStart).inDays) / 7).ceil();
-
-      for (int i = 0; i < weeks; i++) {
-        final weekStartDate = weekStart.add(Duration(days: i * 7));
-        final weekEndDate = weekStartDate.add(const Duration(days: 6));
-
-        // Only include weeks that overlap with the selected range
-        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate)) {
-          continue;
-        }
-
-        final weekTransactions = transactions
-            .where((t) =>
-                t.date
-                    .isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
-                t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
-            .toList();
-
-        final income = weekTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = weekTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': 'W${i + 1}',
-          'income': income,
-          'expense': expense,
-        });
-      }
-    } else {
-      // Monthly view
-      final monthStart = DateTime(startDate.year, startDate.month, 1);
-      final monthEnd = DateTime(endDate.year, endDate.month + 1, 0);
-      final months = (monthEnd.year - monthStart.year) * 12 +
-          (monthEnd.month - monthStart.month) +
-          1;
-
-      for (int i = 0; i < months; i++) {
-        final month = DateTime(monthStart.year, monthStart.month + i, 1);
-        final monthTransactions = transactions
-            .where(
-                (t) => t.date.year == month.year && t.date.month == month.month)
-            .toList();
-
-        final income = monthTransactions
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (total, t) => total + t.amount);
-        final expense = monthTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (total, t) => total + t.amount);
-
-        data.add({
-          'label': DateFormat('MMM').format(month),
-          'income': income,
-          'expense': expense,
-        });
-      }
-    }
-
-    return data;
-  }
-
-  Future<void> _showDateRangeOptions() async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildDateRangeBottomSheet(),
-    );
-
-    if (result != null) {
-      if (result == 'custom') {
-        await _selectCustomDateRange();
-      } else {
-        _setQuickDateRange(result);
-      }
-    }
-  }
-
-  Widget _buildDateRangeBottomSheet() {
-    final quickOptions = _quickDateRanges.entries.map((entry) {
-      final icon = _getIconForDateRange(entry.key);
-      return _buildDateOption(entry.key, icon, entry.key);
-    }).toList();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Iconsax.calendar, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Select Time Period',
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: context.fontSize(18),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          if (_selectedDateRange != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _formatFullRange(_selectedDateRange!),
-              style: TextStyle(
-                overflow: TextOverflow.ellipsis,
-                fontSize: context.fontSize(12),
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          ...quickOptions,
-          const Divider(height: 30),
-          _buildDateOption('Custom Range', Iconsax.calendar_edit, 'custom'),
-        ],
-      ),
-    );
-  }
-
-  IconData _getIconForDateRange(String rangeName) {
-    switch (rangeName) {
-      case 'This Month':
-        return Iconsax.calendar;
-      case 'Last Month':
-        return Iconsax.calendar_tick;
-      case 'This Year':
-        return Iconsax.calendar_search;
-      default:
-        return Iconsax.calendar;
-    }
-  }
-
-  Widget _buildDateOption(String title, IconData icon, String value) {
-    final isSelected = _isCurrentSelection(value);
-
-    return InkWell(
-      onTap: () => Navigator.pop(context, value),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: AppColors.primary.withOpacity(0.3))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : Colors.grey[600],
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: context.fontSize(14),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? AppColors.primary : Colors.black87,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Icon(Iconsax.tick_circle, color: AppColors.primary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _isCurrentSelection(String value) {
-    if (_selectedDateRange == null) return false;
-
-    final ranges = _quickDateRanges;
-    final selectedRange = ranges[value];
-
-    if (selectedRange != null) {
-      return _datesEqual(_selectedDateRange!.start, selectedRange.start) &&
-          _datesEqual(_selectedDateRange!.end, selectedRange.end);
-    }
-
-    // Custom range check
-    if (value == 'custom') {
-      return !ranges.values.any((range) =>
-          _datesEqual(_selectedDateRange!.start, range.start) &&
-          _datesEqual(_selectedDateRange!.end, range.end));
-    }
-
-    return false;
-  }
-
-  Future<void> _selectCustomDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.primary,
-                ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _selectedDateRange) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
-  void _setQuickDateRange(String type) {
-    final newRange = _quickDateRanges[type];
-    if (newRange != null) {
-      setState(() {
-        _selectedDateRange = newRange;
-      });
-    }
-  }
-
-  String _getDateRangeLabel() {
-    if (_selectedDateRange == null) return 'Select Period';
-
-    // Check for common ranges
-    for (final entry in _quickDateRanges.entries) {
-      if (_datesEqual(_selectedDateRange!.start, entry.value.start) &&
-          _datesEqual(_selectedDateRange!.end, entry.value.end)) {
-        return entry.key;
-      }
-    }
-
-    // Custom range format
-    final formatter = DateFormat('MMM d');
-    return '${formatter.format(_selectedDateRange!.start)} - ${formatter.format(_selectedDateRange!.end)}';
-  }
-
-  String _getDateRangeString() {
-    if (_selectedDateRange == null) return 'All Time';
-    return '${DateFormat('MMM dd').format(_selectedDateRange!.start)} - ${DateFormat('MMM dd').format(_selectedDateRange!.end)}';
-  }
-
-  bool _datesEqual(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
-
-  String _formatFullRange(DateTimeRange range) {
-    final s = range.start;
-    final e = range.end;
-    final sameYear = s.year == e.year;
-    final sameMonth = sameYear && s.month == e.month;
-
-    if (sameMonth) {
-      final month = DateFormat('MMM').format(s);
-      return '$month ${s.day}–${e.day}, ${s.year}';
-    }
-    if (sameYear) {
-      return '${DateFormat('MMM d').format(s)} – ${DateFormat('MMM d, y').format(e)}';
-    }
-    return '${DateFormat('MMM d, y').format(s)} – ${DateFormat('MMM d, y').format(e)}';
   }
 }
 
 class _DateRangeSelector extends StatelessWidget {
   final DateTimeRange? selectedRange;
-  final Function(DateTimeRange?) onRangeSelected;
+  final List<DateRangeOption> quickRanges;
+  final Function(DateTimeRange) onRangeSelected;
 
-  const _DateRangeSelector(
-      {required this.selectedRange, required this.onRangeSelected});
+  const _DateRangeSelector({
+    required this.selectedRange,
+    required this.quickRanges,
+    required this.onRangeSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final ranges = _getDateRanges();
-    final selectedLabel = _getRangeLabel(selectedRange);
-
-    return Wrap(
-      spacing: 8,
-      children: [
-        ...ranges.keys.map((label) {
-          return AppFilterChip(
-            label: label,
-            isSelected: selectedLabel == label,
-            onTap: () => onRangeSelected(ranges[label]),
-          );
-        }),
-        AppFilterChip(
-          label: 'Custom',
-          isSelected: selectedLabel == 'Custom',
-          onTap: () => _selectCustomDateRange(context),
+    return Material(
+      borderRadius: BorderRadius.circular(8),
+      child: Ink(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
         ),
-      ],
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _showDateRangeOptions(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Iconsax.calendar, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  _getDateRangeLabel(),
+                  style: TextStyle(
+                    fontSize: context.fontSize(12),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Iconsax.arrow_down_2,
+                    size: 14, color: Colors.grey.shade600),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  Future<void> _selectCustomDateRange(BuildContext context) async {
+  String _getDateRangeLabel() {
+    if (selectedRange == null) return 'Select Range';
+
+    for (final range in quickRanges) {
+      if (range.range.start == selectedRange!.start &&
+          range.range.end == selectedRange!.end) {
+        return range.label;
+      }
+    }
+
+    return '${DateFormat('MMM d').format(selectedRange!.start)} - ${DateFormat('MMM d').format(selectedRange!.end)}';
+  }
+
+  void _showDateRangeOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Select Date Range',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...quickRanges.map((option) => ListTile(
+                  title: Text(option.label),
+                  trailing: selectedRange != null &&
+                          option.range.start == selectedRange!.start &&
+                          option.range.end == selectedRange!.end
+                      ? const Icon(Icons.check, color: Colors.green)
+                      : null,
+                  onTap: () {
+                    onRangeSelected(option.range);
+                    Navigator.pop(context);
+                  },
+                )),
+            const Divider(),
+            ListTile(
+              title: const Text('Custom Range'),
+              leading: const Icon(Icons.date_range),
+              onTap: () => _selectCustomRange(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectCustomRange(BuildContext context) async {
+    Navigator.pop(context);
+
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
       initialDateRange: selectedRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
       onRangeSelected(picked);
     }
-  }
-
-  String _getRangeLabel(DateTimeRange? range) {
-    if (range == null) return 'This Month';
-
-    final ranges = _getDateRanges();
-    for (final entry in ranges.entries) {
-      if (entry.value.start.isAtSameMomentAs(range.start) &&
-          entry.value.end.isAtSameMomentAs(range.end)) {
-        return entry.key;
-      }
-    }
-    return 'Custom';
-  }
-
-  Map<String, DateTimeRange> _getDateRanges() {
-    final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final startOfYear = DateTime(now.year, 1, 1);
-    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
-
-    return {
-      'This Month': DateTimeRange(start: startOfMonth, end: now),
-      'Last Month': DateTimeRange(start: lastMonthStart, end: lastMonthEnd),
-      'This Year': DateTimeRange(start: startOfYear, end: now),
-    };
   }
 }

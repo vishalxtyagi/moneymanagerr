@@ -50,11 +50,15 @@ class MoneyManagerApp extends StatelessWidget {
               analytics ?? AnalyticsProvider(transaction),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'Money Manager',
-        debugShowCheckedModeBanner: false,
-        theme: AppThemes.lightTheme,
-        routerConfig: AppRouter.createRouter(),
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return MaterialApp.router(
+            title: 'Money Manager',
+            debugShowCheckedModeBanner: false,
+            theme: AppThemes.lightTheme,
+            routerConfig: AppRouter.createRouter(authProvider),
+          );
+        },
       ),
     );
   }
