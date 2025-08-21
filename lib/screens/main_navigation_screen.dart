@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
-
+import 'package:go_router/go_router.dart';
 import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/utils/context_util.dart';
 import 'package:moneymanager/screens/add_transaction_screen.dart';
@@ -11,40 +12,87 @@ import 'package:moneymanager/screens/calendar_view_screen.dart';
 import 'package:moneymanager/screens/dashboard_screen.dart';
 import 'package:moneymanager/screens/settings_screen.dart';
 import 'package:moneymanager/widgets/common/logo.dart';
+import 'package:moneymanager/core/router/app_router.dart';
 
-/// Optimized main navigation with IndexedStack for desktop and proper state management
+final class _NavigationConfig {
+  static const items = [
+    _NavigationItem(
+      icon: Iconsax.home_2_copy,
+      selectedIcon: Iconsax.home_2,
+      label: 'Dashboard',
+      subtitle: 'Overview of your transactions',
+    ),
+    _NavigationItem(
+      icon: Iconsax.chart_2_copy,
+      selectedIcon: Iconsax.chart_21,
+      label: 'Analytics',
+    ),
+    _NavigationItem(
+      icon: Iconsax.calendar_2_copy,
+      selectedIcon: Iconsax.calendar_2,
+      label: 'Calendar',
+    ),
+    _NavigationItem(
+      icon: Iconsax.setting_2_copy,
+      selectedIcon: Iconsax.setting_2,
+      label: 'Settings',
+    ),
+  ];
+
+  static const screens = [
+    DashboardScreen(key: PageStorageKey('dashboard')),
+    AnalyticsScreen(key: PageStorageKey('analytics')),
+    CalendarViewScreen(key: PageStorageKey('calendar')),
+    SettingsScreen(key: PageStorageKey('settings')),
+  ];
+}
+
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int initialIndex;
+  
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _isAddTransactionOpen = false;
-  
-  // Pre-built screens with PageStorageKey for state preservation
-  static final List<Widget> _screens = [
-    const DashboardScreen(key: PageStorageKey('DashboardScreen')),
-    const AnalyticsScreen(key: PageStorageKey('AnalyticsScreen')),
-    const AddTransactionScreen(key: PageStorageKey('AddTransactionScreen')),
-    const CalendarViewScreen(key: PageStorageKey('CalendarViewScreen')),
-    const SettingsScreen(key: PageStorageKey('SettingsScreen')),
-  ];
 
-  // Pre-calculated screen titles
-  static const List<String> _screenTitles = [
-    'Dashboard',
-    'Analytics',
-    'Add Transaction',
-    'Calendar',
-    'Settings',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
-  void _onDestinationSelected(int index) {
-    if (index != _currentIndex && index != 2) { // Skip add transaction index
-      setState(() => _currentIndex = index);
+  @override
+  void didUpdateWidget(MainNavigationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      setState(() {
+        _currentIndex = widget.initialIndex;
+      });
+    }
+  }
+
+  void _onNavigationItemSelected(int index) {
+    if (index != _currentIndex) {
+      // Navigate to the appropriate route
+      switch (index) {
+        case 0:
+          GoRouter.of(context).go(AppRouter.dashboard);
+          break;
+        case 1:
+          GoRouter.of(context).go(AppRouter.analytics);
+          break;
+        case 2:
+          GoRouter.of(context).go(AppRouter.calendar);
+          break;
+        case 3:
+          GoRouter.of(context).go(AppRouter.settings);
+          break;
+      }
     }
   }
 
@@ -59,385 +107,491 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {   
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Main content area
-          Row(
-            children: [
-              // Desktop sidebar navigation
-              if (context.isDesktop)
-                _DesktopSidebar(
-                  currentIndex: _currentIndex,
-                  onDestinationSelected: _onDestinationSelected,
-                  onAddTransactionPressed: _toggleAddTransaction,
-                  isAddTransactionOpen: _isAddTransactionOpen,
-                ),
-              
-              // Main content with IndexedStack for desktop
-              Expanded(
-                child: Column(
-                  children: [
-                    // Desktop app bar
-                    if (context.isDesktop)
-                      _DesktopAppBar(
-                        currentScreenTitle: _screenTitles[_currentIndex],
-                        onAddTransactionPressed: _toggleAddTransaction,
-                        isAddTransactionOpen: _isAddTransactionOpen,
-                      ),
-                    
-                    // Screen content - IndexedStack preserves state
-                    Expanded(
-                      child: RepaintBoundary(
-                        child: IndexedStack(
-                          index: _currentIndex,
-                          children: _screens,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          // Desktop Add Transaction Sidebar
-          if (context.isDesktop && _isAddTransactionOpen)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: AddTransactionScreen(
-                key: const PageStorageKey('AddTransactionScreen'),
-                onClose: _closeAddTransaction,
-              ),
-            ),
-          
-          // Mobile overlay
-          if (_isAddTransactionOpen && !context.isDesktop)
-            GestureDetector(
-              onTap: _closeAddTransaction,
-              child: Container(
-                color: Colors.black54,
-              ),
-            ),
-        ],
-      ),
-      
-      // Mobile bottom navigation
-      bottomNavigationBar: context.isMobile ? _MobileBottomNavigation(
-        currentIndex: _currentIndex,
-        onDestinationSelected: _onDestinationSelected,
-      ) : null,
-          
-      // Mobile floating action button
-      floatingActionButton: context.isMobile ? _MobileFAB(
-        onPressed: _toggleAddTransaction,
-      ) : null,
-      floatingActionButtonLocation:
-          context.isMobile ? FloatingActionButtonLocation.centerDocked : null,
-    );
+  Widget build(BuildContext context) {
+    final isDesktop = context.isDesktop;
+
+    return isDesktop
+        ? _DesktopLayout(
+            currentIndex: _currentIndex,
+            onNavigationItemSelected: _onNavigationItemSelected,
+            onToggleAddTransaction: _toggleAddTransaction,
+            onCloseAddTransaction: _closeAddTransaction,
+            isAddTransactionOpen: _isAddTransactionOpen,
+          )
+        : _MobileLayout(
+            currentIndex: _currentIndex,
+            onNavigationItemSelected: _onNavigationItemSelected,
+            onToggleAddTransaction: _toggleAddTransaction,
+            onCloseAddTransaction: _closeAddTransaction,
+            isAddTransactionOpen: _isAddTransactionOpen,
+          );
   }
 }
 
-/// Optimized desktop sidebar with minimal rebuilds
-class _DesktopSidebar extends StatelessWidget {
+class _NavigationItem {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final String title;
+  final String subtitle;
+
+  const _NavigationItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    String? title,
+    String? subtitle,
+  }) : title = title ?? label,
+       subtitle = subtitle ?? 'Manage your finances efficiently';
+}
+
+class _DesktopLayout extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onDestinationSelected;
-  final VoidCallback onAddTransactionPressed;
+  final Function(int) onNavigationItemSelected;
+  final VoidCallback onToggleAddTransaction;
+  final VoidCallback onCloseAddTransaction;
   final bool isAddTransactionOpen;
 
-  const _DesktopSidebar({
+  const _DesktopLayout({
     required this.currentIndex,
-    required this.onDestinationSelected,
-    required this.onAddTransactionPressed,
+    required this.onNavigationItemSelected,
+    required this.onToggleAddTransaction,
+    required this.onCloseAddTransaction,
     required this.isAddTransactionOpen,
   });
 
-  static const List<_NavItem> _navItems = [
-    _NavItem(icon: Iconsax.home_2, label: 'Dashboard'),
-    _NavItem(icon: Iconsax.chart_21, label: 'Analytics'),
-    _NavItem(icon: Iconsax.calendar_2, label: 'Calendar'),
-    _NavItem(icon: Iconsax.setting_2, label: 'Settings'),
-  ];
-
   @override
-  Widget build(BuildContext context) {    
-    return Container(
-      width: 280,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: Color(0xFFE0E0E0))),
-      ),
-      child: Column(
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
         children: [
-          // Logo section
-          Container(
-            height: 80,
-            padding: EdgeInsets.all(context.spacing()),
-            child: const Row(
+          _DesktopSidebar(
+            currentIndex: currentIndex,
+            onNavigationItemSelected: onNavigationItemSelected,
+            onAddTransactionPressed: onToggleAddTransaction,
+            isAddTransactionOpen: isAddTransactionOpen,
+          ),
+          Expanded(
+            child: Column(
               children: [
-                AppLogo(size: 32),
-                SizedBox(width: 12),
-                Text(
-                  'Money Manager',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                _DesktopAppBar(
+                  currentScreenData: _NavigationConfig.items[currentIndex],
+                  onAddTransactionPressed: onToggleAddTransaction,
+                ),
+                Expanded(
+                  child: RepaintBoundary(
+                    child: IndexedStack(
+                      index: currentIndex,
+                      children: _NavigationConfig.screens,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Add Transaction Button
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.spacing()),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onAddTransactionPressed,
-                icon: Icon(isAddTransactionOpen ? Iconsax.close_circle : Iconsax.add_copy),
-                label: Text(isAddTransactionOpen ? 'Close' : 'Add Transaction'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isAddTransactionOpen ? Colors.grey : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+          if (isAddTransactionOpen)
+            SizedBox(
+              width: 400,
+              child: AddTransactionScreen(
+                key: const PageStorageKey('add_transaction_desktop'),
+                onClose: onCloseAddTransaction,
               ),
             ),
-          ),
-          
-          SizedBox(height: context.spacing()),
-          
-          // Navigation items
-          Expanded(
-            child: ListView.builder(
-              itemCount: _navItems.length,
-              itemBuilder: (context, index) {
-                final item = _navItems[index];
-                final isSelected = currentIndex == index;
-                
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.spacing(),
-                    vertical: 4,
-                  ),
-                  child: Material(
-                    color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => onDestinationSelected(index),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              item.icon,
-                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              item.label,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          
-          // User info at bottom
-          Selector<AuthProvider, (String?, String?)>(
-            selector: (_, provider) => (provider.user?.displayName, provider.user?.email),
-            builder: (context, userInfo, _) => Container(
-              padding: EdgeInsets.all(context.spacing()),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.primary,
-                    child: Icon(Iconsax.user, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          userInfo.$1 ?? 'User',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          userInfo.$2 ?? '',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-/// Simple navigation item model
-class _NavItem {
-  final IconData icon;
-  final String label;
+class _MobileLayout extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onNavigationItemSelected;
+  final VoidCallback onToggleAddTransaction;
+  final VoidCallback onCloseAddTransaction;
+  final bool isAddTransactionOpen;
 
-  const _NavItem({required this.icon, required this.label});
+  const _MobileLayout({
+    required this.currentIndex,
+    required this.onNavigationItemSelected,
+    required this.onToggleAddTransaction,
+    required this.onCloseAddTransaction,
+    required this.isAddTransactionOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          RepaintBoundary(
+            child: _NavigationConfig.screens[currentIndex],
+          ),
+          if (isAddTransactionOpen) ...[
+            GestureDetector(
+              onTap: onCloseAddTransaction,
+              child: const ColoredBox(color: Colors.black54),
+            ),
+            Positioned.fill(
+              child: AddTransactionScreen(
+                key: const PageStorageKey('add_transaction_mobile'),
+                onClose: onCloseAddTransaction,
+              ),
+            ),
+          ],
+        ],
+      ),
+      bottomNavigationBar: _MobileBottomNavigation(
+        currentIndex: currentIndex,
+        onNavigationItemSelected: onNavigationItemSelected,
+      ),
+      floatingActionButton: _MobileFAB(
+        onPressed: onToggleAddTransaction,
+        isOpen: isAddTransactionOpen,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
 }
 
-/// Desktop app bar with screen title
-class _DesktopAppBar extends StatelessWidget {
-  final String currentScreenTitle;
+class _DesktopSidebar extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onNavigationItemSelected;
   final VoidCallback onAddTransactionPressed;
   final bool isAddTransactionOpen;
 
-  const _DesktopAppBar({
-    required this.currentScreenTitle,
+  const _DesktopSidebar({
+    required this.currentIndex,
+    required this.onNavigationItemSelected,
     required this.onAddTransactionPressed,
     required this.isAddTransactionOpen,
   });
 
   @override
-  Widget build(BuildContext context) {    
-    return Container(
-      height: 80,
+  Widget build(BuildContext context) {
+    return DecoratedBox(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
+        border: Border(right: BorderSide(color: Color(0xFFE0E0E0))),
       ),
-      padding: EdgeInsets.symmetric(horizontal: context.spacing(1.5)),
-      child: Row(
-        children: [
-          Text(
-            currentScreenTitle,
-            style: TextStyle(
-              fontSize: context.fontSize(24),
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const Spacer(),
-          if (!isAddTransactionOpen)
-            ElevatedButton.icon(
+      child: SizedBox(
+        width: 280,
+        child: Column(
+          children: [
+            const _LogoSection(),
+            SizedBox(height: context.spacing(0.5)),
+            _AddTransactionButton(
               onPressed: onAddTransactionPressed,
-              icon: const Icon(Iconsax.add_copy),
-              label: const Text('Add Transaction'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              isOpen: isAddTransactionOpen,
             ),
-        ],
+            _NavigationItems(
+              currentIndex: currentIndex,
+              onItemSelected: onNavigationItemSelected,
+            ),
+            const _UserInfo(),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Mobile bottom navigation
-class _MobileBottomNavigation extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onDestinationSelected;
+class _LogoSection extends StatelessWidget {
+  const _LogoSection();
 
-  const _MobileBottomNavigation({
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+            bottom: BorderSide(color: AppColors.border),
+          right: BorderSide(color: AppColors.border)
+        )
+
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: context.spacing()),
+        child: const Row(
+          children: [
+            AppLogo(size: 80, type: LogoType.dark),
+            Text(
+              'Money Manager',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                height: 1
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddTransactionButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final bool isOpen;
+
+  const _AddTransactionButton({
+    required this.onPressed,
+    required this.isOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing(),
+        vertical: 4,
+      ),
+      child: _NavigationItemWidget(
+        item: _NavigationItem(icon: Iconsax.add_copy, selectedIcon: Iconsax.add_copy, label: 'Add Transaction'),
+        isSelected: isOpen,
+        onTap: onPressed,
+      ),
+    );
+  }
+}
+
+class _NavigationItems extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onItemSelected;
+
+  const _NavigationItems({
     required this.currentIndex,
-    required this.onDestinationSelected,
+    required this.onItemSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: _NavigationConfig.items.length,
+        itemBuilder: (context, index) {
+          final item = _NavigationConfig.items[index];
+          final isSelected = currentIndex == index;
+
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.spacing(),
+              vertical: 4,
+            ),
+            child: _NavigationItemWidget(
+              item: item,
+              isSelected: isSelected,
+              onTap: () => onItemSelected(index),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NavigationItemWidget extends StatelessWidget {
+  final _NavigationItem item;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavigationItemWidget({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 8,
-      child: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Iconsax.home_2_copy),
-            selectedIcon: Icon(Iconsax.home_2),
-            label: 'Home',
+      color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? item.selectedIcon : item.icon,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Iconsax.chart_2_copy),
-            selectedIcon: Icon(Iconsax.chart_21),
-            label: 'Analytics',
-          ),
-          NavigationDestination(
-            enabled: false,
-            icon: SizedBox.shrink(),
-            label: '',
-          ),
-          NavigationDestination(
-            icon: Icon(Iconsax.calendar_2_copy),
-            selectedIcon: Icon(Iconsax.calendar_2),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Iconsax.setting_2_copy),
-            selectedIcon: Icon(Iconsax.setting_2),
-            label: 'Settings',
-          ),
-        ],
-        backgroundColor: Colors.white,
-        indicatorColor: AppColors.primary.withOpacity(0.1),
-        surfaceTintColor: Colors.transparent,
-        height: 70,
+        ),
       ),
     );
   }
 }
 
-/// Mobile floating action button
+class _UserInfo extends StatelessWidget {
+  const _UserInfo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<AuthProvider, (String?, String?)>(
+      selector: (_, provider) => (
+        provider.user?.displayName,
+        provider.user?.email,
+      ),
+      builder: (context, userInfo, _) => DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(context.spacing()),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary,
+                child: Icon(Iconsax.user, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      userInfo.$1 ?? 'User',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (userInfo.$2?.isNotEmpty == true)
+                      Text(
+                        userInfo.$2!,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopAppBar extends StatelessWidget {
+  final _NavigationItem currentScreenData;
+  final VoidCallback onAddTransactionPressed;
+
+  const _DesktopAppBar({
+    required this.currentScreenData,
+    required this.onAddTransactionPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
+      ),
+      child: SizedBox(
+        height: 80,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: context.spacing(1.5)),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    currentScreenData.title,
+                    style: TextStyle(
+                      fontSize: context.fontSize(24),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    currentScreenData.subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileBottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onNavigationItemSelected;
+
+  const _MobileBottomNavigation({
+    required this.currentIndex,
+    required this.onNavigationItemSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      onDestinationSelected: onNavigationItemSelected,
+      destinations: _NavigationConfig.items
+          .map((item) => NavigationDestination(
+                icon: Icon(item.icon),
+                selectedIcon: Icon(item.selectedIcon),
+                label: item.label,
+              ))
+          .toList(),
+      backgroundColor: Colors.white,
+      indicatorColor: AppColors.primary.withOpacity(0.1),
+      surfaceTintColor: Colors.transparent,
+      height: 70,
+      elevation: 8,
+    );
+  }
+}
+
 class _MobileFAB extends StatelessWidget {
   final VoidCallback onPressed;
+  final bool isOpen;
 
-  const _MobileFAB({required this.onPressed});
+  const _MobileFAB({
+    required this.onPressed,
+    required this.isOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
       onPressed: onPressed,
-      backgroundColor: AppColors.primary,
+      backgroundColor: isOpen ? AppColors.textSecondary : AppColors.primary,
       foregroundColor: Colors.white,
       elevation: 8,
-      child: const Icon(Iconsax.add_copy),
+      child: Icon(isOpen ? Iconsax.close_circle : Iconsax.add_copy),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/widgets/common/logo.dart';
+import 'package:moneymanager/widgets/common/button.dart';
 import 'package:provider/provider.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 
@@ -88,30 +90,11 @@ class _GoogleSignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
+    return AppButton(
+      text: 'Sign in with Google',
+      icon: Icons.login,
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-        elevation: 4,
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.login, color: Colors.black54),
-          SizedBox(width: 10),
-          Text(
-            'Sign in with Google',
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
+      type: ButtonType.google,
     );
   }
 }

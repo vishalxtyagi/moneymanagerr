@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:moneymanager/core/constants/colors.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/utils/currency_util.dart';
 import 'package:moneymanager/core/utils/context_util.dart';
+import 'package:moneymanager/core/utils/category_util.dart';
 import 'package:moneymanager/widgets/common/card.dart';
+import 'package:moneymanager/widgets/common/summary_cards.dart';
 import 'package:moneymanager/screens/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -25,43 +28,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   DateTimeRange? _selectedDateRange;
   bool _showAllCategories = false;
 
+  // Pre-computed date labels to avoid computation in build
+  late final Map<String, DateTimeRange> _quickDateRanges;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _defaultDateRange = _getDateRanges()['This Month']!;
+    final now = DateTime.now();
+    _defaultDateRange = DateTimeRange(
+      start: DateTime(now.year, now.month, 1),
+      end: now,
+    );
     _selectedDateRange = _defaultDateRange;
+    _quickDateRanges = _buildQuickDateRanges(now);
   }
 
-  Map<String, DateTimeRange> _getDateRanges() {
-    final now = DateTime.now();
+  Map<String, DateTimeRange> _buildQuickDateRanges(DateTime now) {
     final startOfMonth = DateTime(now.year, now.month, 1);
     final startOfYear = DateTime(now.year, 1, 1);
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
     final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
 
     return {
-      'This Month': DateTimeRange(
-        start: startOfMonth,
-        end: now,
-      ),
-      'Last Month': DateTimeRange(
-        start: lastMonthStart,
-        end: lastMonthEnd,
-      ),
-      'This Year': DateTimeRange(
-        start: startOfYear,
-        end: now,
-      ),
+      'This Month': DateTimeRange(start: startOfMonth, end: now),
+      'Last Month': DateTimeRange(start: lastMonthStart, end: lastMonthEnd),
+      'This Year': DateTimeRange(start: startOfYear, end: now),
     };
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: context.isDesktop ? null : AppBar(
@@ -74,13 +75,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         ),
         elevation: 0,
         actions: [
-          _DateRangeSelector(
-            selectedRange: _selectedDateRange,
-            onRangeSelected: (range) {
-              setState(() {
-                _selectedDateRange = range;
-              });
-            },
+          Padding(
+            padding: EdgeInsets.only(right: context.spacing()),
+            child: Material(
+              borderRadius: BorderRadius.circular(8),
+              child: Ink(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _showDateRangeOptions,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Iconsax.calendar, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getDateRangeLabel(),
+                          style: TextStyle(
+                            fontSize: context.fontSize(12),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Iconsax.arrow_down_2, size: 14, color: Colors.grey.shade600),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -95,11 +124,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
           if (context.isDesktop) {
             return _buildDesktopLayout(
-              balance, income, expense, categoryExpenses, timeSeriesData
+                balance, income, expense, categoryExpenses, timeSeriesData
             );
           } else {
             return _buildMobileLayout(
-              balance, income, expense, categoryExpenses, timeSeriesData
+                balance, income, expense, categoryExpenses, timeSeriesData
             );
           }
         },
@@ -108,57 +137,34 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildDesktopLayout(
-    double balance,
-    double income,
-    double expense,
-    Map<String, double> categoryExpenses,
-    List<Map<String, dynamic>> timeSeriesData,
-  ) {
+      double balance,
+      double income,
+      double expense,
+      Map<String, double> categoryExpenses,
+      List<Map<String, dynamic>> timeSeriesData,
+      ) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(context.spacing(1.5)),
       child: context.constrain(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with date selector
-            if (context.isDesktop) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Financial Analytics',
-                        style: TextStyle(
-                          fontSize: context.fontSize(32),
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Insights into your spending patterns',
-                        style: TextStyle(
-                          fontSize: context.fontSize(16),
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _DateRangeSelector(
-                    selectedRange: _selectedDateRange,
-                    onRangeSelected: (range) {
-                      setState(() {
-                        _selectedDateRange = range;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: context.spacing(2)),
-            ],
-            
+            // Date selector for desktop (no header since top bar exists)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _DateRangeSelector(
+                  selectedRange: _selectedDateRange,
+                  onRangeSelected: (range) {
+                    setState(() {
+                      _selectedDateRange = range;
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: context.spacing(1.5)),
+
             // Summary cards
             _buildSummarySection(balance, income, expense),
             SizedBox(height: context.spacing(2)),
@@ -178,9 +184,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ],
                   ),
                 ),
-                
+
                 SizedBox(width: context.spacing(1.5)),
-                
+
                 // Right column - Spending trend
                 Expanded(
                   flex: 3,
@@ -201,12 +207,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildMobileLayout(
-    double balance,
-    double income,
-    double expense,
-    Map<String, double> categoryExpenses,
-    List<Map<String, dynamic>> timeSeriesData,
-  ) {
+      double balance,
+      double income,
+      double expense,
+      Map<String, double> categoryExpenses,
+      List<Map<String, dynamic>> timeSeriesData,
+      ) {
     return SingleChildScrollView(
       padding: context.screenPadding,
       child: Column(
@@ -225,117 +231,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildSummarySection(double balance, double income, double expense) {
-    final consumptionRate = income > 0 ? (expense / income) * 100 : 0;
-    
-    final summaryCards = [
-      _buildSummaryCard(
-        'Balance',
-        balance,
-        balance >= 0 ? Colors.green : Colors.red,
-        Iconsax.wallet_3
-      ),
-      _buildSummaryCard(
-        'Income',
-        income,
-        Colors.green,
-        Iconsax.arrow_up_2
-      ),
-      _buildSummaryCard(
-        'Expense',
-        expense,
-        Colors.red,
-        Iconsax.arrow_down_2
-      ),
-      _buildSummaryCard(
-        'Spend Rate',
-        consumptionRate.toDouble(),
-        Colors.orange,
-        Iconsax.percentage_circle,
-        isPercentage: true,
-      ),
-    ];
-
-    if (context.isDesktop) {
-      return Row(
-        children: [
-          for (int i = 0; i < summaryCards.length; i++) ...[
-            Expanded(child: summaryCards[i]),
-            if (i < summaryCards.length - 1) SizedBox(width: context.spacing()),
-          ],
-        ],
-      );
-    } else {
-      return Column(
-        children: [
-          Row(
-            children: [
-              Expanded(child: summaryCards[0]),
-              SizedBox(width: context.spacing()),
-              Expanded(child: summaryCards[1]),
-            ],
-          ),
-          SizedBox(height: context.spacing()),
-          Row(
-            children: [
-              Expanded(child: summaryCards[2]),
-              SizedBox(width: context.spacing()),
-              Expanded(child: summaryCards[3]),
-            ],
-          ),
-        ],
-      );
-    }
-  }
-
-  Widget _buildSummaryCard(
-    String title,
-    double value,
-    Color color,
-    IconData icon, {
-    bool isPercentage = false,
-  }) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: context.fontSize(14),
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.spacing()),
-          Text(
-            isPercentage
-                ? '${value.toStringAsFixed(1)}%'
-                : CurrencyUtil.formatCompact(value),
-            style: TextStyle(
-              fontSize: context.fontSize(24),
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
+    return AppSummaryCards(
+      balance: balance,
+      income: income,
+      expense: expense,
+      isDesktop: context.isDesktop,
     );
   }
 
@@ -353,55 +253,55 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ),
           SizedBox(height: context.spacing(1.5)),
-          
+
           categoryExpenses.isEmpty
               ? Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Iconsax.chart_21,
-                        size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: context.spacing()),
-                      Text(
-                        'No expense data available',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: context.fontSize(16),
-                        ),
-                      ),
-                    ],
+            child: Column(
+              children: [
+                Icon(
+                  Iconsax.chart_21,
+                  size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                  color: Colors.grey,
+                ),
+                SizedBox(height: context.spacing()),
+                Text(
+                  'No expense data available',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: context.fontSize(16),
                   ),
-                )
+                ),
+              ],
+            ),
+          )
               : LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (context.isDesktop) {
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: 250,
-                            child: _buildPieChart(categoryExpenses),
-                          ),
-                          SizedBox(height: context.spacing()),
-                          _buildLegendList(categoryExpenses),
-                        ],
-                      );
-                    } else {
-                      return Column(
-                        children: [
-                          SizedBox(
-                            width: 180,
-                            height: 180,
-                            child: _buildPieChart(categoryExpenses),
-                          ),
-                          SizedBox(height: context.spacing()),
-                          _buildLegendList(categoryExpenses),
-                        ],
-                      );
-                    }
-                  },
-                )
+            builder: (context, constraints) {
+              if (context.isDesktop) {
+                return Column(
+                  children: [
+                    SizedBox(
+                      height: 250,
+                      child: _buildPieChart(categoryExpenses),
+                    ),
+                    SizedBox(height: context.spacing()),
+                    _buildLegendList(categoryExpenses),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      height: 180,
+                      child: _buildPieChart(categoryExpenses),
+                    ),
+                    SizedBox(height: context.spacing()),
+                    _buildLegendList(categoryExpenses),
+                  ],
+                );
+              }
+            },
+          )
         ],
       ),
     );
@@ -434,10 +334,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           final index = entry.key;
           final categoryEntry = entry.value;
           final isTouched = index == _touchedIndex;
-          final radius = isTouched 
+          final radius = isTouched
               ? context.responsiveValue(mobile: 65.0, tablet: 75.0, desktop: 85.0)
               : context.responsiveValue(mobile: 55.0, tablet: 65.0, desktop: 75.0);
-          
+
           return PieChartSectionData(
             color: _resolveCategoryColor(categoryEntry.key),
             value: categoryEntry.value,
@@ -579,74 +479,210 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ),
           SizedBox(height: context.spacing(1.5)),
-          
+
           SizedBox(
             height: context.responsiveValue(mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Iconsax.chart_1,
-                          size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: context.spacing()),
-                        Text(
-                          'No transaction data available',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: context.fontSize(16),
-                          ),
-                        ),
-                      ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Iconsax.chart_1,
+                    size: context.responsiveValue(mobile: 48.0, tablet: 56.0, desktop: 64.0),
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: context.spacing()),
+                  Text(
+                    'No transaction data available',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: context.fontSize(16),
                     ),
-                  )
+                  ),
+                ],
+              ),
+            )
                 : _buildLineChart(timeSeriesData),
           ),
+          if (timeSeriesData.isNotEmpty) ...[
+            SizedBox(height: context.spacing()),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildLegendItem('Income', Colors.green),
+                SizedBox(width: context.spacing(1.5)),
+                _buildLegendItem('Expense', Colors.red),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildLineChart(List<Map<String, dynamic>> timeSeriesData) {
-    // Implementation of line chart would go here
-    // For now, return a placeholder
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.chart_1,
-              size: 48,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Spending Trend Chart',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Chart implementation coming soon',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 12,
-              ),
+    final maxYVal = _getMaxValue(timeSeriesData);
+    final minYVal = _getMinValue(timeSeriesData);
+    final range = (maxYVal - minYVal).abs();
+    final pad = range == 0 ? (maxYVal.abs() * 0.1 + 1) : range * 0.1;
+    final minY = minYVal - pad;
+    final maxY = maxYVal + pad;
+
+    final total = timeSeriesData.length;
+    final step = total <= 6 ? 1 : (total / 6).ceil();
+
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: (total - 1).toDouble(),
+        minY: minY,
+        maxY: maxY,
+        lineTouchData: const LineTouchData(enabled: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: (maxY - minY) / 4,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.withOpacity(0.2),
+            strokeWidth: 1,
+          ),
+        ),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+              y: 0,
+              color: Colors.grey.withOpacity(0.5),
+              strokeWidth: 1,
             ),
           ],
         ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 36,
+              getTitlesWidget: (value, meta) {
+                final idx = value.round();
+                if (idx < 0 || idx >= total) return const SizedBox.shrink();
+                final isEdge = idx == 0 || idx == total - 1;
+                if (isEdge || idx % step == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      timeSeriesData[idx]['label'],
+                      style: TextStyle(
+                        fontSize: context.fontSize(10),
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 44,
+              getTitlesWidget: (value, meta) => Text(
+                CurrencyUtil.formatCompact(value),
+                style: TextStyle(
+                  fontSize: context.fontSize(10),
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: timeSeriesData
+                .asMap()
+                .entries
+                .map((e) => FlSpot(
+              e.key.toDouble(),
+              (e.value['income'] as num).toDouble(),
+            ))
+                .toList(),
+            isCurved: true,
+            color: Colors.green,
+            barWidth: 3.0,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: Colors.green,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: Colors.green.withOpacity(0.1),
+            ),
+          ),
+          LineChartBarData(
+            spots: timeSeriesData
+                .asMap()
+                .entries
+                .map((e) => FlSpot(
+              e.key.toDouble(),
+              (e.value['expense'] as num).toDouble(),
+            ))
+                .toList(),
+            isCurved: true,
+            color: Colors.red,
+            barWidth: 3.0,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: Colors.red,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: Colors.red.withOpacity(0.1),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: context.fontSize(12),
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ],
     );
   }
 
@@ -664,7 +700,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ),
           SizedBox(height: context.spacing()),
-          
+
           if (categoryExpenses.isEmpty)
             Text(
               'No category data available',
@@ -677,17 +713,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Column(
               children: [
                 _buildInsightItem(
-                  'Highest Spending',
-                  categoryExpenses.entries.first.key,
-                  Iconsax.arrow_up_2,
-                  Colors.red
+                    'Highest Spending',
+                    categoryExpenses.entries.first.key,
+                    Iconsax.arrow_up_2,
+                    Colors.red
                 ),
                 const SizedBox(height: 12),
                 _buildInsightItem(
-                  'Total Categories',
-                  '${categoryExpenses.length}',
-                  Iconsax.category,
-                  Colors.blue
+                    'Total Categories',
+                    '${categoryExpenses.length}',
+                    Iconsax.category,
+                    Colors.blue
                 ),
               ],
             ),
@@ -710,7 +746,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ),
           SizedBox(height: context.spacing()),
-          
+
           if (timeSeriesData.isEmpty)
             Text(
               'No trend data available',
@@ -723,17 +759,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Column(
               children: [
                 _buildInsightItem(
-                  'Data Points',
-                  '${timeSeriesData.length}',
-                  Iconsax.chart_1,
-                  Colors.green
+                    'Data Points',
+                    '${timeSeriesData.length}',
+                    Iconsax.chart_1,
+                    Colors.green
                 ),
                 const SizedBox(height: 12),
                 _buildInsightItem(
-                  'Period Range',
-                  _getDateRangeString(),
-                  Iconsax.calendar,
-                  Colors.purple
+                    'Period Range',
+                    _getDateRangeString(),
+                    Iconsax.calendar,
+                    Colors.purple
                 ),
               ],
             ),
@@ -743,11 +779,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildInsightItem(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+      String title,
+      String value,
+      IconData icon,
+      Color color,
+      ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -798,7 +834,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Color _resolveCategoryColor(String categoryName) {
-    return context.read<CategoryProvider>().getCategoryByName(categoryName, isIncome: false).color;
+    final provider = context.read<CategoryProvider>();
+    final cat = provider.getCategoryByName(categoryName, isIncome: false);
+    return _stableCategoryColor(categoryName, cat.color);
+  }
+
+  Color _stableCategoryColor(String name, Color fallback) {
+    try {
+      const palette = CategoryUtil.categoryColors;
+      if (palette.isEmpty) return fallback;
+      final hash = name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
+      return palette[hash % palette.length];
+    } catch (_) {
+      return fallback;
+    }
   }
 
   void _openCategoryHistory(String categoryName) {
@@ -806,6 +855,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       context,
       MaterialPageRoute(
         builder: (_) => TransactionHistoryScreen(
+          initialType: TransactionType.expense,
           initialCategory: categoryName,
           initialRange: _selectedDateRange,
           ephemeralFilters: true,
@@ -814,14 +864,342 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
+  double _getMaxValue(List<Map<String, dynamic>> data) {
+    double max = 0;
+    for (var item in data) {
+      if (item['income'] > max) max = item['income'];
+      if (item['expense'] > max) max = item['expense'];
+    }
+    return max;
+  }
+
+  double _getMinValue(List<Map<String, dynamic>> data) {
+    double min = double.infinity;
+    for (var item in data) {
+      final income = (item['income'] as num).toDouble();
+      final expense = (item['expense'] as num).toDouble();
+      if (income < min) min = income;
+      if (expense < min) min = expense;
+    }
+    return min == double.infinity ? 0 : min;
+  }
+
   List<Map<String, dynamic>> _getTimeSeriesData(TransactionProvider provider) {
-    // Simplified time series data generation
-    return [];
+    if (_selectedDateRange == null) return [];
+
+    final transactions = provider.all;
+    final startDate = _selectedDateRange!.start;
+    final endDate = _selectedDateRange!.end;
+    final daysDifference = endDate.difference(startDate).inDays + 1;
+
+    List<Map<String, dynamic>> data = [];
+
+    if (daysDifference <= 7) {
+      // Daily view
+      for (int i = 0; i < daysDifference; i++) {
+        final date = startDate.add(Duration(days: i));
+        final dayTransactions = transactions
+            .where((t) =>
+        t.date.year == date.year &&
+            t.date.month == date.month &&
+            t.date.day == date.day)
+            .toList();
+
+        final income = dayTransactions
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
+        final expense = dayTransactions
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
+
+        data.add({
+          'label': DateFormat('MMM d').format(date),
+          'income': income,
+          'expense': expense,
+        });
+      }
+    } else if (daysDifference <= 35) {
+      // Weekly view
+      final weekStart = startDate.subtract(Duration(days: startDate.weekday - 1));
+      final weeks = ((endDate.difference(weekStart).inDays) / 7).ceil();
+
+      for (int i = 0; i < weeks; i++) {
+        final weekStartDate = weekStart.add(Duration(days: i * 7));
+        final weekEndDate = weekStartDate.add(const Duration(days: 6));
+
+        // Only include weeks that overlap with the selected range
+        if (weekEndDate.isBefore(startDate) || weekStartDate.isAfter(endDate)) {
+          continue;
+        }
+
+        final weekTransactions = transactions
+            .where((t) =>
+        t.date.isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
+            t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
+            .toList();
+
+        final income = weekTransactions
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
+        final expense = weekTransactions
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
+
+        data.add({
+          'label': 'W${i + 1}',
+          'income': income,
+          'expense': expense,
+        });
+      }
+    } else {
+      // Monthly view
+      final monthStart = DateTime(startDate.year, startDate.month, 1);
+      final monthEnd = DateTime(endDate.year, endDate.month + 1, 0);
+      final months = (monthEnd.year - monthStart.year) * 12 +
+          (monthEnd.month - monthStart.month) + 1;
+
+      for (int i = 0; i < months; i++) {
+        final month = DateTime(monthStart.year, monthStart.month + i, 1);
+        final monthTransactions = transactions
+            .where((t) => t.date.year == month.year && t.date.month == month.month)
+            .toList();
+
+        final income = monthTransactions
+            .where((t) => t.type == TransactionType.income)
+            .fold(0.0, (total, t) => total + t.amount);
+        final expense = monthTransactions
+            .where((t) => t.type == TransactionType.expense)
+            .fold(0.0, (total, t) => total + t.amount);
+
+        data.add({
+          'label': DateFormat('MMM').format(month),
+          'income': income,
+          'expense': expense,
+        });
+      }
+    }
+
+    return data;
+  }
+
+  Future<void> _showDateRangeOptions() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildDateRangeBottomSheet(),
+    );
+
+    if (result != null) {
+      if (result == 'custom') {
+        await _selectCustomDateRange();
+      } else {
+        _setQuickDateRange(result);
+      }
+    }
+  }
+
+  Widget _buildDateRangeBottomSheet() {
+    final quickOptions = _quickDateRanges.entries.map((entry) {
+      final icon = _getIconForDateRange(entry.key);
+      return _buildDateOption(entry.key, icon, entry.key);
+    }).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Iconsax.calendar, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Select Time Period',
+                style: TextStyle(
+                  fontSize: context.fontSize(18),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          if (_selectedDateRange != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _formatFullRange(_selectedDateRange!),
+              style: TextStyle(
+                fontSize: context.fontSize(12),
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+
+          ...quickOptions,
+
+          const Divider(height: 30),
+
+          _buildDateOption('Custom Range', Iconsax.calendar_edit, 'custom'),
+        ],
+      ),
+    );
+  }
+
+  IconData _getIconForDateRange(String rangeName) {
+    switch (rangeName) {
+      case 'This Month':
+        return Iconsax.calendar;
+      case 'Last Month':
+        return Iconsax.calendar_tick;
+      case 'This Year':
+        return Iconsax.calendar_search;
+      default:
+        return Iconsax.calendar;
+    }
+  }
+
+  Widget _buildDateOption(String title, IconData icon, String value) {
+    final isSelected = _isCurrentSelection(value);
+
+    return InkWell(
+      onTap: () => Navigator.pop(context, value),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+          borderRadius: BorderRadius.circular(8),
+          border: isSelected
+              ? Border.all(color: AppColors.primary.withOpacity(0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : Colors.grey[600],
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: context.fontSize(14),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? AppColors.primary : Colors.black87,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Iconsax.tick_circle, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isCurrentSelection(String value) {
+    if (_selectedDateRange == null) return false;
+
+    final ranges = _quickDateRanges;
+    final selectedRange = ranges[value];
+
+    if (selectedRange != null) {
+      return _datesEqual(_selectedDateRange!.start, selectedRange.start) &&
+          _datesEqual(_selectedDateRange!.end, selectedRange.end);
+    }
+
+    // Custom range check
+    if (value == 'custom') {
+      return !ranges.values.any((range) =>
+      _datesEqual(_selectedDateRange!.start, range.start) &&
+          _datesEqual(_selectedDateRange!.end, range.end)
+      );
+    }
+
+    return false;
+  }
+
+  Future<void> _selectCustomDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _selectedDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDateRange) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+    }
+  }
+
+  void _setQuickDateRange(String type) {
+    final newRange = _quickDateRanges[type];
+    if (newRange != null) {
+      setState(() {
+        _selectedDateRange = newRange;
+      });
+    }
+  }
+
+  String _getDateRangeLabel() {
+    if (_selectedDateRange == null) return 'Select Period';
+
+    // Check for common ranges
+    for (final entry in _quickDateRanges.entries) {
+      if (_datesEqual(_selectedDateRange!.start, entry.value.start) &&
+          _datesEqual(_selectedDateRange!.end, entry.value.end)) {
+        return entry.key;
+      }
+    }
+
+    // Custom range format
+    final formatter = DateFormat('MMM d');
+    return '${formatter.format(_selectedDateRange!.start)} - ${formatter.format(_selectedDateRange!.end)}';
   }
 
   String _getDateRangeString() {
     if (_selectedDateRange == null) return 'All Time';
     return '${DateFormat('MMM dd').format(_selectedDateRange!.start)} - ${DateFormat('MMM dd').format(_selectedDateRange!.end)}';
+  }
+
+  bool _datesEqual(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String _formatFullRange(DateTimeRange range) {
+    final s = range.start;
+    final e = range.end;
+    final sameYear = s.year == e.year;
+    final sameMonth = sameYear && s.month == e.month;
+
+    if (sameMonth) {
+      final month = DateFormat('MMM').format(s);
+      return '$month ${s.day}–${e.day}, ${s.year}';
+    }
+    if (sameYear) {
+      return '${DateFormat('MMM d').format(s)} – ${DateFormat('MMM d, y').format(e)}';
+    }
+    return '${DateFormat('MMM d, y').format(s)} – ${DateFormat('MMM d, y').format(e)}';
   }
 }
 
@@ -876,7 +1254,7 @@ class _DateRangeSelector extends StatelessWidget {
 
   String _getRangeLabel(DateTimeRange? range) {
     if (range == null) return 'This Month';
-    
+
     final ranges = _getDateRanges();
     for (final entry in ranges.entries) {
       if (entry.value.start.isAtSameMomentAs(range.start) &&
@@ -895,18 +1273,9 @@ class _DateRangeSelector extends StatelessWidget {
     final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
 
     return {
-      'This Month': DateTimeRange(
-        start: startOfMonth,
-        end: now,
-      ),
-      'Last Month': DateTimeRange(
-        start: lastMonthStart,
-        end: lastMonthEnd,
-      ),
-      'This Year': DateTimeRange(
-        start: startOfYear,
-        end: now,
-      ),
+      'This Month': DateTimeRange(start: startOfMonth, end: now),
+      'Last Month': DateTimeRange(start: lastMonthStart, end: lastMonthEnd),
+      'This Year': DateTimeRange(start: startOfYear, end: now),
     };
   }
 }

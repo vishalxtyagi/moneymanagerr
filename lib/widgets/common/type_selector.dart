@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/styles.dart';
 
 class AppTypeSelector<T> extends StatelessWidget {
@@ -23,14 +24,15 @@ class AppTypeSelector<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: values
             .map((value) => Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.all(2),
                     child: _TypeButton<T>(
                       value: value,
                       label: labelBuilder(value),
@@ -66,36 +68,53 @@ class _TypeButton<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = color ?? Colors.blue;
+    final activeColor = color ?? AppColors.primary;
+    final textColor = isSelected ? Colors.white : AppColors.textSecondary;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppStyles.fastAnimation,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? activeColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null)
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected ? Colors.white : Colors.black54,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+        hoverColor: isSelected 
+            ? activeColor.withOpacity(0.1)
+            : activeColor.withOpacity(0.05),
+        splashColor: activeColor.withOpacity(0.2),
+        highlightColor: activeColor.withOpacity(0.1),
+        child: AnimatedContainer(
+          duration: AppStyles.fastAnimation,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: activeColor.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            if (icon != null) const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black54,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+            ] : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null)
+                Icon(
+                  icon,
+                  size: 18,
+                  color: textColor,
+                ),
+              if (icon != null) const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/constants/enums.dart';
-import 'package:moneymanager/core/constants/styles.dart';
 import 'package:moneymanager/core/models/category_model.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
-import 'package:moneymanager/screens/add_transaction_screen.dart';
+import 'package:moneymanager/core/services/navigation_service.dart';
 import 'package:moneymanager/widgets/items/transaction_item.dart';
+import 'package:moneymanager/widgets/common/text_field.dart';
+import 'package:moneymanager/widgets/common/button.dart';
+import 'package:moneymanager/widgets/common/filter_chip.dart';
 import 'package:provider/provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -176,45 +179,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       body: Column(
         children: [
           // Search Bar
-          Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AppTextField(
+              label: 'Search',
+              hint: 'Search transactions...',
               controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search transactions...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                          });
-                          context.read<TransactionProvider>().setQuery('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppStyles.borderRadius),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              showClearButton: true,
               onChanged: (value) {
                 context.read<TransactionProvider>().setQuery(value);
               },
@@ -264,14 +236,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                         transaction: transaction,
                         category: category,
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddTransactionScreen(
-                                transaction: transaction,
-                              ),
-                            ),
-                          );
+                          NavigationService.goToEditTransaction(context, transaction);
                         },
                       ),
                     );
@@ -335,17 +300,12 @@ class _EmptyState extends StatelessWidget {
           ),
           if (hasActiveFilters) ...[
             const SizedBox(height: 16),
-            ElevatedButton(
+            AppButton(
+              text: 'Clear Filters',
+              type: ButtonType.outlined,
               onPressed: () {
                 context.read<TransactionProvider>().clearAllFilters();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-              ),
-              child: const Text(
-                'Clear Filters',
-                style: TextStyle(color: Colors.white),
-              ),
             ),
           ],
         ],
@@ -418,26 +378,11 @@ class _FilterBottomSheet extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Close Button
-                SizedBox(
+                AppButton(
+                  text: 'Close',
+                  type: ButtonType.primary,
+                  onPressed: () => NavigationService.goBack(context),
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 ),
               ],
             );
@@ -471,29 +416,29 @@ class _TypeFilterSection extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _FilterChip(
+              child: AppFilterChip(
                 label: 'All',
                 isSelected: provider.filterType == TransactionType.all,
                 onTap: () => provider.setTypeFilter(TransactionType.all),
-                color: Colors.grey,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _FilterChip(
+              child: AppFilterChip(
                 label: 'Income',
                 isSelected: provider.filterType == TransactionType.income,
                 onTap: () => provider.setTypeFilter(TransactionType.income),
-                color: Colors.green,
+                color: AppColors.success,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _FilterChip(
+              child: AppFilterChip(
                 label: 'Expense',
                 isSelected: provider.filterType == TransactionType.expense,
                 onTap: () => provider.setTypeFilter(TransactionType.expense),
-                color: Colors.red,
+                color: AppColors.error,
               ),
             ),
           ],
@@ -617,23 +562,14 @@ class _DateRangeSection extends StatelessWidget {
           const SizedBox(height: 12),
         ],
 
-        SizedBox(
+        AppButton(
+          text: provider.filterRange == null
+              ? 'Select Date Range'
+              : 'Change Date Range',
+          icon: Icons.date_range,
+          type: ButtonType.outlined,
+          onPressed: () => _selectDateRange(context, provider),
           width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _selectDateRange(context, provider),
-            icon: const Icon(Icons.date_range, size: 20),
-            label: Text(provider.filterRange == null
-                ? 'Select Date Range'
-                : 'Change Date Range'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey[100],
-              foregroundColor: Colors.grey[700],
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
         ),
       ],
     );
@@ -650,47 +586,5 @@ class _DateRangeSection extends StatelessWidget {
     if (picked != null) {
       provider.setRangeFilter(picked);
     }
-  }
-}
-
-// Filter Chip Component
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.color,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey[700],
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

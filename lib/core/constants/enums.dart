@@ -1,4 +1,4 @@
-enum ButtonType { primary, secondary, success, error, warning, outlined, text }
+enum ButtonType { primary, secondary, success, error, warning, outlined, text, google }
 
 enum LogoType { light, dark }
 

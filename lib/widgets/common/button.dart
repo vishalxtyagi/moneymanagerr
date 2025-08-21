@@ -28,22 +28,63 @@ class AppButton extends StatelessWidget {
     // Pre-calculate values to avoid lookups in build
     final dim = _buttonDimensions[size]!;
     final color = _buttonColors[type]!;
-    final showBorder = type == ButtonType.outlined;
+    final showBorder = type == ButtonType.outlined || type == ButtonType.google;
+    final borderColor = type == ButtonType.google 
+        ? Colors.grey.shade300 
+        : AppColors.primary;
+    final baseElevation = type == ButtonType.google ? 2.0 : (showBorder ? 0.0 : 2.0);
     
-    // Pre-create button style to avoid recreation
-    final buttonStyle = ElevatedButton.styleFrom(
-      backgroundColor: color.bg,
-      foregroundColor: color.fg,
-      elevation: showBorder ? 0 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-        side: showBorder
-            ? const BorderSide(color: AppColors.primary)
-            : BorderSide.none,
+    // Pre-create button style with hover effects
+    final buttonStyle = ButtonStyle(
+      backgroundColor: WidgetStateProperty.resolveWith<Color>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.hovered)) {
+            if (type == ButtonType.outlined || type == ButtonType.google) {
+              return color.bg == Colors.transparent 
+                  ? AppColors.primary.withOpacity(0.05)
+                  : color.bg;
+            }
+            // Darken the background color slightly on hover
+            return Color.lerp(color.bg, Colors.black, 0.1) ?? color.bg;
+          }
+          return color.bg;
+        },
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: dim.horizontalPadding,
-        vertical: dim.verticalPadding,
+      foregroundColor: WidgetStateProperty.all<Color>(color.fg),
+      elevation: WidgetStateProperty.resolveWith<double>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.hovered)) {
+            return baseElevation + 2.0;
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return baseElevation + 1.0;
+          }
+          return baseElevation;
+        },
+      ),
+      shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+          side: showBorder
+              ? BorderSide(color: borderColor)
+              : BorderSide.none,
+        ),
+      ),
+      padding: WidgetStateProperty.all<EdgeInsets>(
+        EdgeInsets.symmetric(
+          horizontal: dim.horizontalPadding,
+          vertical: dim.verticalPadding,
+        ),
+      ),
+      overlayColor: WidgetStateProperty.resolveWith<Color?>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.pressed)) {
+            return type == ButtonType.outlined || type == ButtonType.google
+                ? AppColors.primary.withOpacity(0.1)
+                : Colors.white.withOpacity(0.2);
+          }
+          return null;
+        },
       ),
     );
 
@@ -196,5 +237,9 @@ const _buttonColors = {
   ButtonType.text: _ButtonColors(
     bg: Colors.transparent,
     fg: AppColors.primary,
+  ),
+  ButtonType.google: _ButtonColors(
+    bg: Colors.white,
+    fg: Colors.black87,
   ),
 };

@@ -22,6 +22,7 @@ class AppTextField extends StatelessWidget {
     this.onTap,
     this.initialValue,
     this.inputFormatters,
+    this.showClearButton = false,
   });
 
   final String label;
@@ -40,6 +41,7 @@ class AppTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final String? initialValue;
   final List<TextInputFormatter>? inputFormatters;
+  final bool showClearButton;
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +49,30 @@ class AppTextField extends StatelessWidget {
     final borderRadius = BorderRadius.circular(AppStyles.borderRadius);
     final fillColor = enabled ? AppColors.surface : AppColors.scaffoldBackground;
     
+    // Determine the suffix icon - either clear button or custom suffixIcon
+    Widget? effectiveSuffixIcon = suffixIcon;
+    if (showClearButton && controller != null) {
+      effectiveSuffixIcon = ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller!,
+        builder: (context, value, child) {
+          return value.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.grey),
+                  onPressed: () {
+                    controller!.clear();
+                    onChanged?.call('');
+                  },
+                )
+              : const SizedBox.shrink();
+        },
+      );
+    }
+    
     // Pre-create input decoration to avoid recreation
     final inputDecoration = InputDecoration(
       hintText: hint,
       prefixIcon: prefixIcon,
-      suffixIcon: suffixIcon,
+      suffixIcon: effectiveSuffixIcon,
       contentPadding: const EdgeInsets.symmetric(
         vertical: AppStyles.sm,
         horizontal: AppStyles.sm,

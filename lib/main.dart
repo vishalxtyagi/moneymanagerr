@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'core/constants/themes.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
@@ -8,9 +7,8 @@ import 'core/providers/category_provider.dart';
 import 'core/providers/transaction_provider.dart';
 import 'core/providers/analytics_provider.dart';
 import 'firebase_options.dart';
-import 'screens/auth_screen.dart';
-import 'screens/main_navigation_screen.dart';
 import 'core/services/notification_service.dart';
+import 'core/router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +20,6 @@ void main() async {
     final notificationService = NotificationService();
     await notificationService.initialize();
 
-    debugRepaintRainbowEnabled = true;
     runApp(const MoneyManagerApp());
   } catch (e) {
     debugPrint('App initialization failed: $e');
@@ -46,31 +43,17 @@ class MoneyManagerApp extends StatelessWidget {
             return transaction ?? TransactionProvider();
           },
         ),
-        // Add Analytics Provider
         ChangeNotifierProxyProvider<TransactionProvider, AnalyticsProvider>(
           create: (context) => AnalyticsProvider(context.read<TransactionProvider>()),
           update: (_, transaction, analytics) => analytics ?? AnalyticsProvider(transaction),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Money Manager',
         debugShowCheckedModeBanner: false,
         theme: AppThemes.lightTheme,
-        home: const _AuthChecker(),
+        routerConfig: AppRouter.createRouter(),
       ),
-    );
-  }
-}
-
-class _AuthChecker extends StatelessWidget {
-  const _AuthChecker();
-
-  @override
-  Widget build(BuildContext context) {
-    return Selector<AuthProvider, bool>(
-      selector: (_, auth) => auth.isSignedIn,
-      builder: (_, isSignedIn, __) =>
-          isSignedIn ? const MainNavigationScreen() : const AuthScreen(),
     );
   }
 }

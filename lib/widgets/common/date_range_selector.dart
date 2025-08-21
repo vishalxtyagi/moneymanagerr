@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moneymanager/core/utils/context_util.dart';
+import 'package:moneymanager/core/services/navigation_service.dart';
 
 /// Optimized date range selector widget - extracted from analytics screen
 class AppDateRangeSelector extends StatelessWidget {
@@ -122,7 +123,7 @@ class _DateRangeBottomSheet extends StatelessWidget {
             title: Text(entry.key),
             onTap: () {
               onRangeSelected(entry.value);
-              Navigator.pop(context);
+              NavigationService.goBack(context);
             },
           )),
           
@@ -131,7 +132,7 @@ class _DateRangeBottomSheet extends StatelessWidget {
             title: const Text('Custom Range'),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
-              Navigator.pop(context);
+              NavigationService.goBack(context);
               final range = await showDateRangePicker(
                 context: context,
                 firstDate: DateTime(2020),

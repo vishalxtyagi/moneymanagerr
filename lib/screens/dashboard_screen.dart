@@ -7,9 +7,9 @@ import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/providers/category_provider.dart';
 import 'package:moneymanager/core/providers/transaction_provider.dart';
 import 'package:moneymanager/core/utils/context_util.dart';
-import 'package:moneymanager/screens/add_transaction_screen.dart';
-import 'package:moneymanager/screens/transaction_history_screen.dart';
+import 'package:moneymanager/core/services/navigation_service.dart';
 import 'package:moneymanager/widgets/common/card.dart';
+import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/items/balance_card.dart';
 import 'package:moneymanager/widgets/items/statistic_item.dart';
 import 'package:moneymanager/widgets/header/section_header.dart';
@@ -52,25 +52,20 @@ class _NavigationHelper {
     DateTimeRange? range,
     String? category,
   }) {
-    Navigator.push(
+    NavigationService.goToTransactionHistory(
       context,
-      MaterialPageRoute(
-        builder: (_) => TransactionHistoryScreen(
-          initialRange: range,
-          initialCategory: category,
-          ephemeralFilters: true,
-        ),
-      ),
+      initialRange: range,
+      initialCategory: category,
+      ephemeralFilters: true,
     );
   }
   
   static void navigateToAddTransaction(BuildContext context, [dynamic transaction]) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddTransactionScreen(transaction: transaction),
-      ),
-    );
+    if (transaction != null) {
+      NavigationService.goToEditTransaction(context, transaction);
+    } else {
+      NavigationService.goToAddTransaction(context);
+    }
   }
 }
 
@@ -328,7 +323,7 @@ class _QuickStatsGrid extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: context.spacing(),
           crossAxisSpacing: context.spacing(),
-          childAspectRatio: 1.4,
+          childAspectRatio: 1.35,
           children: [
             StatisticCard(
               title: 'Today',
@@ -387,17 +382,12 @@ class _RecentTransactionsSection extends StatelessWidget {
         children: [
           AppSectionHeader(
             title: 'Recent Transactions',
-            action: TextButton.icon(
+            action: AppButton(
+              text: 'View All',
+              icon: Iconsax.arrow_right_3,
+              type: ButtonType.outlined,
+              size: ButtonSize.sm,
               onPressed: () => _NavigationHelper.navigateToHistory(context),
-              icon: const Icon(Iconsax.arrow_right_3, size: 16),
-              label: const Text('View All'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                textStyle: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: context.fontSize(14),
-                ),
-              ),
             ),
           ),
           
@@ -489,7 +479,7 @@ class _InsightsCard extends StatelessWidget {
         icon: Iconsax.flash_1,
         title: 'Active Day',
         description: 'You have ${data.todayCount} transactions today',
-        color: Colors.green,
+        color: AppColors.success,
       ));
     }
     
@@ -498,7 +488,7 @@ class _InsightsCard extends StatelessWidget {
         icon: Iconsax.medal_star,
         title: 'Great Balance',
         description: 'Your balance looks healthy!',
-        color: Colors.blue,
+        color: AppColors.primary,
       ));
     } else {
       insights.add(
@@ -506,7 +496,7 @@ class _InsightsCard extends StatelessWidget {
           icon: Iconsax.medal_star,
           title: 'Low Balance',
           description: 'Your balance is below average.',
-          color: Colors.red,
+          color: AppColors.error,
         ),
       );
     }
@@ -516,7 +506,7 @@ class _InsightsCard extends StatelessWidget {
         icon: Iconsax.category_2,
         title: 'Top Spending',
         description: 'Most spent on ${data.topCategories.first.key}',
-        color: Colors.orange,
+        color: AppColors.warning,
       ));
     }
     
@@ -525,7 +515,7 @@ class _InsightsCard extends StatelessWidget {
         icon: Iconsax.info_circle,
         title: 'Getting Started',
         description: 'Add transactions to see insights',
-        color: Colors.grey,
+        color: AppColors.textSecondary,
       ));
     }
     
@@ -772,16 +762,11 @@ class _RecentTransactionsMobile extends StatelessWidget {
         children: [
           AppSectionHeader(
             title: 'Recent Transactions',
-            action: TextButton(
+            action: AppButton(
+              text: 'View All',
+              type: ButtonType.outlined,
+              size: ButtonSize.sm,
               onPressed: () => _NavigationHelper.navigateToHistory(context),
-              child: Text(
-                'View All',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: context.fontSize(14),
-                ),
-              ),
             ),
           ),
           

@@ -4,13 +4,14 @@ import 'package:moneymanager/core/constants/styles.dart';
 enum DeviceType { mobile, tablet, desktop }
 
 extension ResponsiveContext on BuildContext {
-  // Cached width
-  double get _width => MediaQuery.sizeOf(this).width;
+  // Cache MediaQuery result to avoid repeated calls
+  Size get _screenSize => MediaQuery.sizeOf(this);
 
-  // Device type
+  // Device type with cached width
   DeviceType get deviceType {
-    if (_width < AppStyles.mobile) return DeviceType.mobile;
-    if (_width < AppStyles.tablet) return DeviceType.tablet;
+    final width = _screenSize.width;
+    if (width < AppStyles.mobile) return DeviceType.mobile;
+    if (width < AppStyles.tablet) return DeviceType.tablet;
     return DeviceType.desktop;
   }
 

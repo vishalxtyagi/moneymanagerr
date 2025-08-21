@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:moneymanager/core/constants/colors.dart';
 import 'package:moneymanager/core/models/category_model.dart';
+import 'package:moneymanager/core/services/navigation_service.dart';
 import 'package:moneymanager/widgets/states/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:moneymanager/core/utils/category_util.dart';
@@ -182,7 +183,7 @@ class _CategoryTile extends StatelessWidget {
             Text('Delete "${category.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationService.goBack(context),
             child: const Text('Cancel'),
           ),
           TextButton(
@@ -202,14 +203,14 @@ class _CategoryTile extends StatelessWidget {
     try {
       await context.read<CategoryProvider>().remove(userId, category);
       if (context.mounted) {
-        Navigator.pop(context);
+        NavigationService.goBack(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Category deleted')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.pop(context);
+        NavigationService.goBack(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -349,7 +350,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _loading ? null : () => Navigator.pop(context),
+                  onPressed: _loading ? null : () => NavigationService.goBack(context),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 8),
@@ -415,7 +416,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
           ));
 
       if (!mounted) return;
-      Navigator.pop(context);
+      NavigationService.goBack(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(

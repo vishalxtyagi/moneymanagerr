@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:moneymanager/core/constants/enums.dart';
 import 'package:moneymanager/core/providers/auth_provider.dart';
 import 'package:moneymanager/core/utils/notifier_utils.dart';
-import 'package:moneymanager/screens/settings/category_manager_screen.dart';
-import 'package:moneymanager/screens/settings/notification_manager_screen.dart';
+import 'package:moneymanager/core/services/navigation_service.dart';
+import 'package:moneymanager/widgets/common/button.dart';
+import 'package:moneymanager/widgets/common/card.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -128,7 +130,7 @@ class _SettingsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Card(
+        AppCard(
           child: Column(children: children),
         ),
       ],
@@ -176,12 +178,12 @@ class _LowThresholdTile extends StatelessWidget {
             'Alert when balance goes below ₹${threshold.toStringAsFixed(0)}',
           ),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const NotificationManagerScreen(),
-            ),
-          ),
+          onTap: () {
+            // TODO: Implement notification manager with named routes
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Notification settings coming soon!')),
+            );
+          },
         ),
       ],
     );
@@ -196,12 +198,7 @@ class _CategoryManagementTile extends StatelessWidget {
       title: const Text('Manage Categories'),
       subtitle: const Text('Add, edit, or remove transaction categories'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const CategoryManagerScreen(),
-        ),
-      ),
+      onTap: () => NavigationService.goToCategoryManager(context),
     );
   }
 }
@@ -269,13 +266,23 @@ class _SignOutTile extends StatelessWidget {
             title: const Text('Sign Out'),
             content: const Text('Are you sure you want to sign out?'),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Sign Out'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  AppButton(
+                    text: 'Cancel',
+                    type: ButtonType.outlined,
+                    size: ButtonSize.sm,
+                    onPressed: () => Navigator.pop(context, false),
+                  ),
+                  const SizedBox(width: 8),
+                  AppButton(
+                    text: 'Sign Out',
+                    type: ButtonType.error,
+                    size: ButtonSize.sm,
+                    onPressed: () => Navigator.pop(context, true),
+                  ),
+                ],
               ),
             ],
           ),
