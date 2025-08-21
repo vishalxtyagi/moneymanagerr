@@ -321,9 +321,9 @@ class _CalendarWidget extends StatelessWidget {
         onPageChanged: onPageChanged,
         calendarStyle: const CalendarStyle(
           outsideDaysVisible: false,
-          weekendTextstyle:
+          weekendTextStyle:
               TextStyle(overflow: TextOverflow.ellipsis, color: Colors.red),
-          holidayTextstyle:
+          holidayTextStyle:
               TextStyle(overflow: TextOverflow.ellipsis, color: Colors.red),
           selectedDecoration: BoxDecoration(
             color: Color(0xFF4CAF50),
@@ -348,7 +348,7 @@ class _CalendarWidget extends StatelessWidget {
             color: Color(0xFF4CAF50),
             borderRadius: BorderRadius.all(Radius.circular(12.0)),
           ),
-          formatButtonTextstyle:
+          formatButtonTextStyle:
               TextStyle(overflow: TextOverflow.ellipsis, color: Colors.white),
         ),
       ),

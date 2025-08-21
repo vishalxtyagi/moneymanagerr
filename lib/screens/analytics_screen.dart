@@ -338,7 +338,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title:
                 '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
             radius: radius,
-            titlestyle: TextStyle(
+            titleStyle: TextStyle(
               overflow: TextOverflow.ellipsis,
               fontSize: context.fontSize(10),
               fontWeight: FontWeight.bold,
