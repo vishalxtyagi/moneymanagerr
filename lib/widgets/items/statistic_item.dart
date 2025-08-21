@@ -21,16 +21,15 @@ class StatisticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     // Pre-calculate values to avoid computation in build
     final iconSize = context.fontSize(16);
     final spacing = context.spacing(0.5);
     final valueFontSize = context.fontSize(16);
     final titleFontSize = context.fontSize(12);
-    
+
     // Pre-calculate colors
     final iconBgColor = color.withOpacity(0.1);
-    
+
     // Build optimized content with cached values
     final content = _StatisticContent(
       title: title,
@@ -94,6 +93,7 @@ class _StatisticContent extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: valueFontSize,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -103,6 +103,7 @@ class _StatisticContent extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: titleFontSize,
             color: AppColors.textSecondary,
           ),

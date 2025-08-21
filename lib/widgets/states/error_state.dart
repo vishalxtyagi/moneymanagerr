@@ -29,6 +29,7 @@ class AppErrorState extends StatelessWidget {
             const Text(
               'Something went wrong',
               style: TextStyle(
+                overflow: TextOverflow.ellipsis,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,

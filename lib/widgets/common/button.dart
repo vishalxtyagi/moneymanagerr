@@ -29,18 +29,18 @@ class AppButton extends StatelessWidget {
     final dim = _buttonDimensions[size]!;
     final color = _buttonColors[type]!;
     final showBorder = type == ButtonType.outlined || type == ButtonType.google;
-    final borderColor = type == ButtonType.google 
-        ? Colors.grey.shade300 
-        : AppColors.primary;
-    final baseElevation = type == ButtonType.google ? 2.0 : (showBorder ? 0.0 : 2.0);
-    
+    final borderColor =
+        type == ButtonType.google ? Colors.grey.shade300 : AppColors.primary;
+    final baseElevation =
+        type == ButtonType.google ? 2.0 : (showBorder ? 0.0 : 2.0);
+
     // Pre-create button style with hover effects
     final buttonStyle = ButtonStyle(
       backgroundColor: WidgetStateProperty.resolveWith<Color>(
         (Set<WidgetState> states) {
           if (states.contains(WidgetState.hovered)) {
             if (type == ButtonType.outlined || type == ButtonType.google) {
-              return color.bg == Colors.transparent 
+              return color.bg == Colors.transparent
                   ? AppColors.primary.withOpacity(0.05)
                   : color.bg;
             }
@@ -65,9 +65,7 @@ class AppButton extends StatelessWidget {
       shape: WidgetStateProperty.all<RoundedRectangleBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-          side: showBorder
-              ? BorderSide(color: borderColor)
-              : BorderSide.none,
+          side: showBorder ? BorderSide(color: borderColor) : BorderSide.none,
         ),
       ),
       padding: WidgetStateProperty.all<EdgeInsets>(
@@ -94,7 +92,7 @@ class AppButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: isLoading 
+        child: isLoading
             ? _LoadingIndicator(color: color.fg)
             : _ButtonContent(
                 text: text,
@@ -110,7 +108,7 @@ class AppButton extends StatelessWidget {
 // Optimized loading indicator component
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator({required this.color});
-  
+
   final Color color;
 
   @override
@@ -153,6 +151,7 @@ class _ButtonContent extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: dim.fontSize,
             fontWeight: FontWeight.w600,
             color: color.fg,

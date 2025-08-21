@@ -20,7 +20,7 @@ class TransactionHistoryScreen extends StatefulWidget {
   final DateTimeRange? initialRange;
   final String? initialQuery;
   final bool ephemeralFilters; // Restore previous filters on dispose
-  
+
   const TransactionHistoryScreen({
     super.key,
     this.initialType,
@@ -58,18 +58,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   void _applyInitialFilters() {
     final provider = context.read<TransactionProvider>();
-    
+
     // Store previous state if using ephemeral filters
     if (widget.ephemeralFilters) {
       _previousType = provider.filterType;
       _previousCategory = provider.filterCategory;
       _previousRange = provider.filterRange;
       _previousQuery = provider.searchQuery;
-      
+
       // Clear existing filters before applying new ones
       provider.clearAllFilters();
     }
-    
+
     // Apply initial filters
     if (widget.initialType != null) {
       provider.setTypeFilter(widget.initialType!);
@@ -85,12 +85,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    
+
     final position = _scrollController.position;
     if (position.maxScrollExtent - position.pixels < 400) {
       final uid = context.read<AuthProvider>().user?.uid;
       final provider = context.read<TransactionProvider>();
-      
+
       if (uid != null && provider.hasMore) {
         provider.loadMore(uid);
       }
@@ -103,7 +103,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     if (widget.ephemeralFilters) {
       final provider = context.read<TransactionProvider>();
       provider.clearAllFilters();
-      
+
       if (_previousType != null) {
         provider.setTypeFilter(_previousType!);
       }
@@ -117,7 +117,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         provider.setQuery(_previousQuery!);
       }
     }
-    
+
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -225,7 +225,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                             text: 'Clear Filters',
                             type: ButtonType.outlined,
                             onPressed: () {
-                              context.read<TransactionProvider>().clearAllFilters();
+                              context
+                                  .read<TransactionProvider>()
+                                  .clearAllFilters();
                             },
                           )
                         : null,
@@ -235,7 +237,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 return ListView.builder(
                   controller: _scrollController,
                   padding: EdgeInsets.symmetric(horizontal: isWeb ? 24 : 16),
-                  itemCount: transactions.length + (transactionProvider.hasMore ? 1 : 0),
+                  itemCount: transactions.length +
+                      (transactionProvider.hasMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index >= transactions.length) {
                       return const Padding(
@@ -243,7 +246,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
-                    
+
                     final transaction = transactions[index];
                     return Selector<CategoryProvider, CategoryModel>(
                       selector: (_, provider) => provider.getCategoryByName(
@@ -254,7 +257,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                         transaction: transaction,
                         category: category,
                         onTap: () {
-                          NavigationService.goToEditTransaction(context, transaction);
+                          NavigationService.goToEditTransaction(
+                              context, transaction);
                         },
                       ),
                     );
@@ -278,7 +282,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 }
 
-// Simplified Filter Bottom Sheet Component  
+// Simplified Filter Bottom Sheet Component
 class _FilterBottomSheet extends StatelessWidget {
   const _FilterBottomSheet();
 
@@ -322,6 +326,7 @@ class _FilterBottomSheet extends StatelessWidget {
                 const Text(
                   'Filter Transactions',
                   style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -360,7 +365,7 @@ class _FilterBottomSheet extends StatelessWidget {
 // Type Filter Section Component
 class _TypeFilterSection extends StatelessWidget {
   const _TypeFilterSection({required this.provider});
-  
+
   final TransactionProvider provider;
 
   @override
@@ -371,6 +376,7 @@ class _TypeFilterSection extends StatelessWidget {
         const Text(
           'Transaction Type',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
@@ -415,7 +421,7 @@ class _TypeFilterSection extends StatelessWidget {
 // Category Filter Section Component
 class _CategoryFilterSection extends StatelessWidget {
   const _CategoryFilterSection({required this.provider});
-  
+
   final TransactionProvider provider;
 
   @override
@@ -426,6 +432,7 @@ class _CategoryFilterSection extends StatelessWidget {
         const Text(
           'Category',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
@@ -438,7 +445,7 @@ class _CategoryFilterSection extends StatelessWidget {
             final categories = isIncome
                 ? catProvider.incomeCategories
                 : catProvider.expenseCategories;
-            
+
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
@@ -475,7 +482,7 @@ class _CategoryFilterSection extends StatelessWidget {
 // Date Range Section Component
 class _DateRangeSection extends StatelessWidget {
   const _DateRangeSection({required this.provider});
-  
+
   final TransactionProvider provider;
 
   @override
@@ -486,13 +493,13 @@ class _DateRangeSection extends StatelessWidget {
         const Text(
           'Date Range',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
         const SizedBox(height: 12),
-        
         if (provider.filterRange != null) ...[
           Container(
             padding: const EdgeInsets.all(12),
@@ -505,7 +512,8 @@ class _DateRangeSection extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.date_range, color: Color(0xFF4CAF50), size: 20),
+                const Icon(Icons.date_range,
+                    color: Color(0xFF4CAF50), size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -517,7 +525,8 @@ class _DateRangeSection extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.clear, color: Color(0xFF4CAF50), size: 20),
+                  icon: const Icon(Icons.clear,
+                      color: Color(0xFF4CAF50), size: 20),
                   onPressed: () => provider.setRangeFilter(null),
                 ),
               ],
@@ -525,7 +534,6 @@ class _DateRangeSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-
         AppButton(
           text: provider.filterRange == null
               ? 'Select Date Range'
@@ -539,14 +547,15 @@ class _DateRangeSection extends StatelessWidget {
     );
   }
 
-  Future<void> _selectDateRange(BuildContext context, TransactionProvider provider) async {
+  Future<void> _selectDateRange(
+      BuildContext context, TransactionProvider provider) async {
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       initialDateRange: provider.filterRange,
     );
-    
+
     if (picked != null) {
       provider.setRangeFilter(picked);
     }

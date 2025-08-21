@@ -49,7 +49,7 @@ final class _NavigationConfig {
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
-  
+
   const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
@@ -141,8 +141,8 @@ class _NavigationItem {
     required this.label,
     String? title,
     String? subtitle,
-  }) : title = title ?? label,
-       subtitle = subtitle ?? 'Manage your finances efficiently';
+  })  : title = title ?? label,
+        subtitle = subtitle ?? 'Manage your finances efficiently';
 }
 
 class _DesktopLayout extends StatelessWidget {
@@ -302,13 +302,10 @@ class _LogoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-            bottom: BorderSide(color: AppColors.border),
-          right: BorderSide(color: AppColors.border)
-        )
-
-      ),
+          color: Colors.white,
+          border: Border(
+              bottom: BorderSide(color: AppColors.border),
+              right: BorderSide(color: AppColors.border))),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: context.spacing()),
         child: const Row(
@@ -317,11 +314,11 @@ class _LogoSection extends StatelessWidget {
             Text(
               'Money Manager',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-                height: 1
-              ),
+                  overflow: TextOverflow.ellipsis,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                  height: 1),
             ),
           ],
         ),
@@ -347,7 +344,10 @@ class _AddTransactionButton extends StatelessWidget {
         vertical: 4,
       ),
       child: _NavigationItemWidget(
-        item: _NavigationItem(icon: Iconsax.add_copy, selectedIcon: Iconsax.add_copy, label: 'Add Transaction'),
+        item: _NavigationItem(
+            icon: Iconsax.add_copy,
+            selectedIcon: Iconsax.add_copy,
+            label: 'Add Transaction'),
         isSelected: isOpen,
         onTap: onPressed,
       ),
@@ -405,7 +405,8 @@ class _NavigationItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+      color:
+          isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -423,9 +424,11 @@ class _NavigationItemWidget extends StatelessWidget {
               Text(
                 item.label,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -522,6 +525,7 @@ class _DesktopAppBar extends StatelessWidget {
                   Text(
                     currentScreenData.title,
                     style: TextStyle(
+                      overflow: TextOverflow.ellipsis,
                       fontSize: context.fontSize(24),
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,

@@ -30,7 +30,7 @@ class AppDateRangeSelector extends StatelessWidget {
 
   String _getDateRangeLabel() {
     if (selectedRange == null) return 'Select Range';
-    
+
     final ranges = _buildDateRanges();
     for (final entry in ranges.entries) {
       if (entry.value.start.isAtSameMomentAs(selectedRange!.start) &&
@@ -38,13 +38,13 @@ class AppDateRangeSelector extends StatelessWidget {
         return entry.key;
       }
     }
-    
+
     return 'Custom Range';
   }
 
   void _showDateRangeOptions(BuildContext context) {
     final ranges = _buildDateRanges();
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -78,6 +78,7 @@ class AppDateRangeSelector extends StatelessWidget {
               Text(
                 _getDateRangeLabel(),
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: context.fontSize(12),
                   fontWeight: FontWeight.w500,
                 ),
@@ -112,21 +113,22 @@ class _DateRangeBottomSheet extends StatelessWidget {
           Text(
             'Select Date Range',
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: context.spacing()),
-          
+
           // Pre-built quick date options
           ...ranges.entries.map((entry) => ListTile(
-            title: Text(entry.key),
-            onTap: () {
-              onRangeSelected(entry.value);
-              NavigationService.goBack(context);
-            },
-          )),
-          
+                title: Text(entry.key),
+                onTap: () {
+                  onRangeSelected(entry.value);
+                  NavigationService.goBack(context);
+                },
+              )),
+
           // Custom date picker option
           ListTile(
             title: const Text('Custom Range'),

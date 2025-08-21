@@ -1,17 +1,15 @@
-
 import 'package:flutter/material.dart';
 import 'package:moneymanager/constants/colors.dart';
 import 'package:moneymanager/utils/context_util.dart';
 
 class InsightCard extends StatelessWidget {
-  const InsightCard({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.color,
-    required this.icon
-});
-  
+  const InsightCard(
+      {super.key,
+      required this.title,
+      required this.description,
+      required this.color,
+      required this.icon});
+
   final String title;
   final String description;
   final Color color;
@@ -50,6 +48,7 @@ class InsightCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
+                        overflow: TextOverflow.ellipsis,
                         fontSize: context.fontSize(14),
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -59,6 +58,7 @@ class InsightCard extends StatelessWidget {
                     Text(
                       description,
                       style: TextStyle(
+                        overflow: TextOverflow.ellipsis,
                         fontSize: context.fontSize(12),
                         color: AppColors.textSecondary,
                       ),

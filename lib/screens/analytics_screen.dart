@@ -69,71 +69,77 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: context.isDesktop ? null : AppBar(
-        title: Text(
-          'Analytics',
-          style: TextStyle(
-            fontSize: context.fontSize(20),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: context.spacing()),
-            child: Material(
-              borderRadius: BorderRadius.circular(8),
-              child: Ink(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
+      appBar: context.isDesktop
+          ? null
+          : AppBar(
+              title: Text(
+                'Analytics',
+                style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
+                  fontSize: context.fontSize(20),
+                  fontWeight: FontWeight.bold,
                 ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: _showDateRangeOptions,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Iconsax.calendar, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 6),
-                        Text(
-                          _getDateRangeLabel(),
-                          style: TextStyle(
-                            fontSize: context.fontSize(12),
-                            fontWeight: FontWeight.w500,
+              ),
+              elevation: 0,
+              actions: [
+                Padding(
+                  padding: EdgeInsets.only(right: context.spacing()),
+                  child: Material(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white,
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: _showDateRangeOptions,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Iconsax.calendar,
+                                  size: 16, color: Colors.grey.shade600),
+                              const SizedBox(width: 6),
+                              Text(
+                                _getDateRangeLabel(),
+                                style: TextStyle(
+                                  overflow: TextOverflow.ellipsis,
+                                  fontSize: context.fontSize(12),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Iconsax.arrow_down_2,
+                                  size: 14, color: Colors.grey.shade600),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(Iconsax.arrow_down_2, size: 14, color: Colors.grey.shade600),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
           final range = _selectedDateRange;
           final balance = transactionProvider.getBalance(range: range);
           final income = transactionProvider.getTotalIncome(range: range);
           final expense = transactionProvider.getTotalExpense(range: range);
-          final categoryExpenses = transactionProvider.getExpensesByCategory(range: range);
+          final categoryExpenses =
+              transactionProvider.getExpensesByCategory(range: range);
           final timeSeriesData = _getTimeSeriesData(transactionProvider);
 
           if (context.isDesktop) {
             return _buildDesktopLayout(
-                balance, income, expense, categoryExpenses, timeSeriesData
-            );
+                balance, income, expense, categoryExpenses, timeSeriesData);
           } else {
             return _buildMobileLayout(
-                balance, income, expense, categoryExpenses, timeSeriesData
-            );
+                balance, income, expense, categoryExpenses, timeSeriesData);
           }
         },
       ),
@@ -141,12 +147,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildDesktopLayout(
-      double balance,
-      double income,
-      double expense,
-      Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData,
-      ) {
+    double balance,
+    double income,
+    double expense,
+    Map<String, double> categoryExpenses,
+    List<Map<String, dynamic>> timeSeriesData,
+  ) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(context.spacing(1.5)),
       child: context.constrain(
@@ -211,12 +217,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildMobileLayout(
-      double balance,
-      double income,
-      double expense,
-      Map<String, double> categoryExpenses,
-      List<Map<String, dynamic>> timeSeriesData,
-      ) {
+    double balance,
+    double income,
+    double expense,
+    Map<String, double> categoryExpenses,
+    List<Map<String, dynamic>> timeSeriesData,
+  ) {
     return SingleChildScrollView(
       padding: context.screenPadding,
       child: Column(
@@ -252,40 +258,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: 'Expense Breakdown',
             fontSize: context.fontSize(18),
           ),
-
           categoryExpenses.isEmpty
               ? AppEmptyState(
                   icon: Iconsax.chart_21,
                   title: 'No expense data available',
                 )
               : LayoutBuilder(
-            builder: (context, constraints) {
-              if (context.isDesktop) {
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 250,
-                      child: _buildPieChart(categoryExpenses),
-                    ),
-                    SizedBox(height: context.spacing()),
-                    _buildLegendList(categoryExpenses),
-                  ],
-                );
-              } else {
-                return Column(
-                  children: [
-                    SizedBox(
-                      width: 180,
-                      height: 180,
-                      child: _buildPieChart(categoryExpenses),
-                    ),
-                    SizedBox(height: context.spacing()),
-                    _buildLegendList(categoryExpenses),
-                  ],
-                );
-              }
-            },
-          )
+                  builder: (context, constraints) {
+                    if (context.isDesktop) {
+                      return Column(
+                        children: [
+                          SizedBox(
+                            height: 250,
+                            child: _buildPieChart(categoryExpenses),
+                          ),
+                          SizedBox(height: context.spacing()),
+                          _buildLegendList(categoryExpenses),
+                        ],
+                      );
+                    } else {
+                      return Column(
+                        children: [
+                          SizedBox(
+                            width: 180,
+                            height: 180,
+                            child: _buildPieChart(categoryExpenses),
+                          ),
+                          SizedBox(height: context.spacing()),
+                          _buildLegendList(categoryExpenses),
+                        ],
+                      );
+                    }
+                  },
+                )
         ],
       ),
     );
@@ -294,7 +299,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Widget _buildPieChart(Map<String, double> categoryExpenses) {
     if (categoryExpenses.isEmpty) return const SizedBox.shrink();
 
-    final total = categoryExpenses.values.fold(0.0, (sum, value) => sum + value);
+    final total =
+        categoryExpenses.values.fold(0.0, (sum, value) => sum + value);
     final entries = categoryExpenses.entries.toList();
 
     return PieChart(
@@ -308,26 +314,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 _touchedIndex = -1;
                 return;
               }
-              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+              _touchedIndex =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
             });
           },
         ),
         sectionsSpace: 2,
-        centerSpaceRadius: context.responsiveValue(mobile: 40, tablet: 50, desktop: 60),
+        centerSpaceRadius:
+            context.responsiveValue(mobile: 40, tablet: 50, desktop: 60),
         sections: entries.asMap().entries.map((entry) {
           final index = entry.key;
           final categoryEntry = entry.value;
           final isTouched = index == _touchedIndex;
           final radius = isTouched
-              ? context.responsiveValue(mobile: 65.0, tablet: 75.0, desktop: 85.0)
-              : context.responsiveValue(mobile: 55.0, tablet: 65.0, desktop: 75.0);
+              ? context.responsiveValue(
+                  mobile: 65.0, tablet: 75.0, desktop: 85.0)
+              : context.responsiveValue(
+                  mobile: 55.0, tablet: 65.0, desktop: 75.0);
 
           return PieChartSectionData(
             color: _resolveCategoryColor(categoryEntry.key),
             value: categoryEntry.value,
-            title: '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
+            title:
+                '${((categoryEntry.value / total) * 100).toStringAsFixed(1)}%',
             radius: radius,
-            titleStyle: TextStyle(
+            titlestyle: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: context.fontSize(10),
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -343,7 +355,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final entries = categoryExpenses.entries.toList();
     const maxInitialItems = 3;
     final hasMoreItems = entries.length > maxInitialItems;
-    final itemsToShow = _showAllCategories ? entries : entries.take(maxInitialItems).toList();
+    final itemsToShow =
+        _showAllCategories ? entries : entries.take(maxInitialItems).toList();
 
     return Column(
       children: [
@@ -358,7 +371,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => _openCategoryHistory(categoryEntry.key),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.grey.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
@@ -379,6 +393,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         child: Text(
                           categoryEntry.key,
                           style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
                             fontSize: context.fontSize(14),
                             fontWeight: FontWeight.w500,
                           ),
@@ -388,6 +403,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       Text(
                         CurrencyUtil.formatCompact(categoryEntry.value),
                         style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
                           fontWeight: FontWeight.w600,
                           fontSize: context.fontSize(14),
                           color: Colors.black87,
@@ -406,7 +422,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           );
         }),
-
         if (hasMoreItems) ...[
           const SizedBox(height: 8),
           InkWell(
@@ -429,6 +444,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   Text(
                     _showAllCategories ? 'Show Less' : 'Show More',
                     style: TextStyle(
+                      overflow: TextOverflow.ellipsis,
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: context.fontSize(14),
@@ -436,7 +452,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    _showAllCategories ? Iconsax.arrow_up_2 : Iconsax.arrow_down_2,
+                    _showAllCategories
+                        ? Iconsax.arrow_up_2
+                        : Iconsax.arrow_down_2,
                     color: AppColors.primary,
                     size: 16,
                   ),
@@ -458,9 +476,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: 'Spending Trend',
             fontSize: context.fontSize(18),
           ),
-
           SizedBox(
-            height: context.responsiveValue(mobile: 250.0, tablet: 300.0, desktop: 350.0),
+            height: context.responsiveValue(
+                mobile: 250.0, tablet: 300.0, desktop: 350.0),
             child: timeSeriesData.isEmpty
                 ? AppEmptyState(
                     icon: Iconsax.chart_1,
@@ -536,6 +554,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     child: Text(
                       timeSeriesData[idx]['label'],
                       style: TextStyle(
+                        overflow: TextOverflow.ellipsis,
                         fontSize: context.fontSize(10),
                         color: Colors.grey.shade600,
                       ),
@@ -553,14 +572,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               getTitlesWidget: (value, meta) => Text(
                 CurrencyUtil.formatCompact(value),
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: context.fontSize(10),
                   color: Colors.grey.shade600,
                 ),
               ),
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -569,9 +591,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 .asMap()
                 .entries
                 .map((e) => FlSpot(
-              e.key.toDouble(),
-              (e.value['income'] as num).toDouble(),
-            ))
+                      e.key.toDouble(),
+                      (e.value['income'] as num).toDouble(),
+                    ))
                 .toList(),
             isCurved: true,
             color: Colors.green,
@@ -597,9 +619,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 .asMap()
                 .entries
                 .map((e) => FlSpot(
-              e.key.toDouble(),
-              (e.value['expense'] as num).toDouble(),
-            ))
+                      e.key.toDouble(),
+                      (e.value['expense'] as num).toDouble(),
+                    ))
                 .toList(),
             isCurved: true,
             color: Colors.red,
@@ -640,6 +662,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         Text(
           label,
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: context.fontSize(12),
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade700,
@@ -658,11 +681,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: 'Category Insights',
             fontSize: context.fontSize(16),
           ),
-
           if (categoryExpenses.isEmpty)
             Text(
               'No category data available',
               style: TextStyle(
+                overflow: TextOverflow.ellipsis,
                 color: Colors.grey.shade600,
                 fontSize: context.fontSize(14),
               ),
@@ -699,11 +722,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             title: 'Trend Insights',
             fontSize: context.fontSize(16),
           ),
-
           if (timeSeriesData.isEmpty)
             Text(
               'No trend data available',
               style: TextStyle(
+                overflow: TextOverflow.ellipsis,
                 color: Colors.grey.shade600,
                 fontSize: context.fontSize(14),
               ),
@@ -745,7 +768,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     try {
       const palette = CategoryUtil.categoryColors;
       if (palette.isEmpty) return fallback;
-      final hash = name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
+      final hash =
+          name.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
       return palette[hash % palette.length];
     } catch (_) {
       return fallback;
@@ -802,9 +826,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         final date = startDate.add(Duration(days: i));
         final dayTransactions = transactions
             .where((t) =>
-        t.date.year == date.year &&
-            t.date.month == date.month &&
-            t.date.day == date.day)
+                t.date.year == date.year &&
+                t.date.month == date.month &&
+                t.date.day == date.day)
             .toList();
 
         final income = dayTransactions
@@ -822,7 +846,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       }
     } else if (daysDifference <= 35) {
       // Weekly view
-      final weekStart = startDate.subtract(Duration(days: startDate.weekday - 1));
+      final weekStart =
+          startDate.subtract(Duration(days: startDate.weekday - 1));
       final weeks = ((endDate.difference(weekStart).inDays) / 7).ceil();
 
       for (int i = 0; i < weeks; i++) {
@@ -836,8 +861,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
         final weekTransactions = transactions
             .where((t) =>
-        t.date.isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
-            t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
+                t.date
+                    .isAfter(weekStartDate.subtract(const Duration(days: 1))) &&
+                t.date.isBefore(weekEndDate.add(const Duration(days: 1))))
             .toList();
 
         final income = weekTransactions
@@ -858,12 +884,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       final monthStart = DateTime(startDate.year, startDate.month, 1);
       final monthEnd = DateTime(endDate.year, endDate.month + 1, 0);
       final months = (monthEnd.year - monthStart.year) * 12 +
-          (monthEnd.month - monthStart.month) + 1;
+          (monthEnd.month - monthStart.month) +
+          1;
 
       for (int i = 0; i < months; i++) {
         final month = DateTime(monthStart.year, monthStart.month + i, 1);
         final monthTransactions = transactions
-            .where((t) => t.date.year == month.year && t.date.month == month.month)
+            .where(
+                (t) => t.date.year == month.year && t.date.month == month.month)
             .toList();
 
         final income = monthTransactions
@@ -921,6 +949,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               Text(
                 'Select Time Period',
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: context.fontSize(18),
                   fontWeight: FontWeight.bold,
                 ),
@@ -932,6 +961,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Text(
               _formatFullRange(_selectedDateRange!),
               style: TextStyle(
+                overflow: TextOverflow.ellipsis,
                 fontSize: context.fontSize(12),
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
@@ -939,11 +969,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ],
           const SizedBox(height: 20),
-
           ...quickOptions,
-
           const Divider(height: 30),
-
           _buildDateOption('Custom Range', Iconsax.calendar_edit, 'custom'),
         ],
       ),
@@ -991,6 +1018,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               child: Text(
                 title,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: context.fontSize(14),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected ? AppColors.primary : Colors.black87,
@@ -1019,9 +1047,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     // Custom range check
     if (value == 'custom') {
       return !ranges.values.any((range) =>
-      _datesEqual(_selectedDateRange!.start, range.start) &&
-          _datesEqual(_selectedDateRange!.end, range.end)
-      );
+          _datesEqual(_selectedDateRange!.start, range.start) &&
+          _datesEqual(_selectedDateRange!.end, range.end));
     }
 
     return false;
@@ -1037,8 +1064,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.primary,
-            ),
+                  primary: AppColors.primary,
+                ),
           ),
           child: child!,
         );
@@ -1109,16 +1136,14 @@ class _DateRangeSelector extends StatelessWidget {
   final DateTimeRange? selectedRange;
   final Function(DateTimeRange?) onRangeSelected;
 
-  const _DateRangeSelector({
-    required this.selectedRange,
-    required this.onRangeSelected
-  });
+  const _DateRangeSelector(
+      {required this.selectedRange, required this.onRangeSelected});
 
   @override
   Widget build(BuildContext context) {
     final ranges = _getDateRanges();
     final selectedLabel = _getRangeLabel(selectedRange);
-    
+
     return Wrap(
       spacing: 8,
       children: [
@@ -1155,7 +1180,7 @@ class _DateRangeSelector extends StatelessWidget {
         );
       },
     );
-    
+
     if (picked != null) {
       onRangeSelected(picked);
     }

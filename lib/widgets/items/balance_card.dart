@@ -11,13 +11,12 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     // Pre-calculate values to avoid computation in build
     final padding = context.spacing(1.5);
     final radius = context.spacing(1.25);
     final balanceFontSize = context.fontSize(36);
     final iconSize = context.fontSize(16);
-    
+
     // Pre-format currency strings
     final balanceText = CurrencyUtil.format(analytics.balance);
     final expenseText = CurrencyUtil.format(analytics.expense);
@@ -46,6 +45,7 @@ class BalanceCard extends StatelessWidget {
               Text(
                 balanceText,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   color: Colors.white,
                   fontSize: balanceFontSize,
                   fontWeight: FontWeight.bold,
@@ -84,6 +84,7 @@ class _BalanceHeader extends StatelessWidget {
         const Text(
           'Total Balance',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             color: Colors.white70,
             fontSize: 16,
           ),
@@ -137,7 +138,10 @@ class _IncomeExpenseRow extends StatelessWidget {
                     size: iconSize,
                   ),
                   SizedBox(width: context.spacing(0.25)),
-                  const Text('Expense', style: TextStyle(color: Colors.white70)),
+                  const Text('Expense',
+                      style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
+                          color: Colors.white70)),
                 ],
               ),
               const SizedBox(height: 4),
@@ -165,7 +169,10 @@ class _IncomeExpenseRow extends StatelessWidget {
                     size: iconSize,
                   ),
                   SizedBox(width: context.spacing(0.25)),
-                  const Text('Income', style: TextStyle(color: Colors.white70)),
+                  const Text('Income',
+                      style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
+                          color: Colors.white70)),
                 ],
               ),
               const SizedBox(height: 4),

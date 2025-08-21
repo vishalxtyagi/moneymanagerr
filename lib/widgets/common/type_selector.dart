@@ -76,7 +76,7 @@ class _TypeButton<T> extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-        hoverColor: isSelected 
+        hoverColor: isSelected
             ? activeColor.withOpacity(0.1)
             : activeColor.withOpacity(0.05),
         splashColor: activeColor.withOpacity(0.2),
@@ -87,13 +87,15 @@ class _TypeButton<T> extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? activeColor : Colors.transparent,
             borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: activeColor.withOpacity(0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeColor.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -108,6 +110,7 @@ class _TypeButton<T> extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   color: textColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

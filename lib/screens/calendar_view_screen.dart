@@ -45,11 +45,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
     if (_transactionCache.containsKey(key)) {
       return _transactionCache[key]!;
     }
-    
+
     final dayTransactions = transactions.where((transaction) {
       return isSameDay(transaction.date, day);
     }).toList();
-    
+
     _transactionCache[key] = dayTransactions;
     return dayTransactions;
   }
@@ -59,7 +59,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
     if (_totalCache.containsKey(key)) {
       return _totalCache[key]!;
     }
-    
+
     final dayTransactions = _getTransactionsForDay(day, transactions);
     final total = dayTransactions.fold(0.0, (total, transaction) {
       if (transaction.type == TransactionType.expense) {
@@ -68,7 +68,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
         return total + transaction.amount;
       }
     });
-    
+
     _totalCache[key] = total;
     return total;
   }
@@ -80,12 +80,14 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // for keep alive    
+    super.build(context); // for keep alive
     return Scaffold(
       backgroundColor: context.isDesktop ? Colors.grey.shade50 : null,
-      appBar: context.isDesktop ? null : AppBar(
-        title: const Text('Calendar View'),
-      ),
+      appBar: context.isDesktop
+          ? null
+          : AppBar(
+              title: const Text('Calendar View'),
+            ),
       body: Consumer<TransactionProvider>(
         builder: (context, transactionProvider, child) {
           final transactions = transactionProvider.all;
@@ -155,21 +157,22 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
                         isDesktop: true,
                       ),
                       SizedBox(height: context.spacing()),
-                      
+
                       // Day Summary Card
                       if (_selectedDay != null)
                         _DayInfoHeader(
                           selectedDay: _selectedDay!,
-                          totalForDay: _getTotalForDay(_selectedDay!, transactions),
+                          totalForDay:
+                              _getTotalForDay(_selectedDay!, transactions),
                           transactionCount: selectedDayTransactions.length,
                           isDesktop: true,
                         ),
                     ],
                   ),
                 ),
-                
+
                 SizedBox(width: context.spacing(1.5)),
-                
+
                 // Right column - Transaction list
                 Expanded(
                   flex: 3,
@@ -181,17 +184,18 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
                         children: [
                           // Section header
                           Text(
-                            _selectedDay != null 
+                            _selectedDay != null
                                 ? 'Transactions for ${DateFormat('MMM d, y').format(_selectedDay!)}'
                                 : 'Select a date to view transactions',
                             style: TextStyle(
+                              overflow: TextOverflow.ellipsis,
                               fontSize: context.fontSize(20),
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
                           ),
                           SizedBox(height: context.spacing()),
-                          
+
                           // Transaction list
                           Expanded(
                             child: selectedDayTransactions.isEmpty
@@ -285,7 +289,8 @@ class _CalendarWidget extends StatelessWidget {
   final Function(DateTime, DateTime) onDaySelected;
   final Function(CalendarFormat) onFormatChanged;
   final Function(DateTime) onPageChanged;
-  final List<TransactionModel> Function(DateTime, List<TransactionModel>) getTransactionsForDay;
+  final List<TransactionModel> Function(DateTime, List<TransactionModel>)
+      getTransactionsForDay;
   final bool isDesktop;
 
   @override
@@ -316,8 +321,10 @@ class _CalendarWidget extends StatelessWidget {
         onPageChanged: onPageChanged,
         calendarStyle: const CalendarStyle(
           outsideDaysVisible: false,
-          weekendTextStyle: TextStyle(color: Colors.red),
-          holidayTextStyle: TextStyle(color: Colors.red),
+          weekendTextstyle:
+              TextStyle(overflow: TextOverflow.ellipsis, color: Colors.red),
+          holidayTextstyle:
+              TextStyle(overflow: TextOverflow.ellipsis, color: Colors.red),
           selectedDecoration: BoxDecoration(
             color: Color(0xFF4CAF50),
             shape: BoxShape.circle,
@@ -341,7 +348,8 @@ class _CalendarWidget extends StatelessWidget {
             color: Color(0xFF4CAF50),
             borderRadius: BorderRadius.all(Radius.circular(12.0)),
           ),
-          formatButtonTextStyle: TextStyle(color: Colors.white),
+          formatButtonTextstyle:
+              TextStyle(overflow: TextOverflow.ellipsis, color: Colors.white),
         ),
       ),
     );
@@ -376,7 +384,7 @@ class _SelectedDaySection extends StatelessWidget {
           totalForDay: getTotalForDay(selectedDay!, allTransactions),
           transactionCount: transactions.length,
         ),
-        
+
         // Transactions List
         Expanded(
           child: transactions.isEmpty
@@ -424,10 +432,11 @@ class _DayInfoHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isDesktop 
+            isDesktop
                 ? DateFormat('EEEE, MMMM d, y').format(selectedDay)
                 : DateFormat('EEEE, MMMM d, y').format(selectedDay),
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: isDesktop ? 20 : 18,
               fontWeight: FontWeight.bold,
             ),
@@ -439,6 +448,7 @@ class _DayInfoHeader extends StatelessWidget {
               Text(
                 'Total for day:',
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: 16,
                   color: Colors.grey[600],
                 ),
@@ -446,9 +456,11 @@ class _DayInfoHeader extends StatelessWidget {
               Text(
                 CurrencyUtil.format(totalForDay),
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: totalForDay >= 0 ? const Color(0xFF4CAF50) : Colors.red,
+                  color:
+                      totalForDay >= 0 ? const Color(0xFF4CAF50) : Colors.red,
                 ),
               ),
             ],
@@ -457,6 +469,7 @@ class _DayInfoHeader extends StatelessWidget {
           Text(
             '$transactionCount transaction${transactionCount != 1 ? 's' : ''}',
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: 14,
               color: Colors.grey[600],
             ),
@@ -490,6 +503,7 @@ class _EmptyDayState extends StatelessWidget {
             Text(
               'No transactions for this day',
               style: TextStyle(
+                overflow: TextOverflow.ellipsis,
                 fontSize: 16,
                 color: Colors.grey[600],
               ),
@@ -514,18 +528,20 @@ class _TransactionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: isDesktop ? BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ) : null,
+      decoration: isDesktop
+          ? BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            )
+          : null,
       child: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: isDesktop ? 16 : 16),
         itemCount: transactions.length,

@@ -8,20 +8,20 @@ mixin NotifierMixin on ChangeNotifier {
   /// Batches multiple updates into a single notification
   void batchUpdate(VoidCallback updates) {
     if (_isNotifying) return;
-    
+
     _isNotifying = true;
     try {
       updates();
     } finally {
       _isNotifying = false;
     }
-    
+
     _scheduleNotification();
   }
 
   void _scheduleNotification() {
     if (_hasScheduledNotification) return;
-    
+
     _hasScheduledNotification = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _hasScheduledNotification = false;

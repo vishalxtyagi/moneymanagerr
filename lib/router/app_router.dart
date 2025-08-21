@@ -19,7 +19,7 @@ class AppRouter {
   static const String editTransaction = '/edit-transaction';
   static const String transactionHistory = '/history';
   static const String categoryManager = '/settings/categories';
-  
+
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: dashboard,
@@ -56,17 +56,20 @@ class AppRouter {
         GoRoute(
           path: analytics,
           name: 'analytics',
-          builder: (context, state) => const MainNavigationScreen(initialIndex: 1),
+          builder: (context, state) =>
+              const MainNavigationScreen(initialIndex: 1),
         ),
         GoRoute(
           path: calendar,
           name: 'calendar',
-          builder: (context, state) => const MainNavigationScreen(initialIndex: 2),
+          builder: (context, state) =>
+              const MainNavigationScreen(initialIndex: 2),
         ),
         GoRoute(
           path: settings,
           name: 'settings',
-          builder: (context, state) => const MainNavigationScreen(initialIndex: 3),
+          builder: (context, state) =>
+              const MainNavigationScreen(initialIndex: 3),
         ),
         // Modal/overlay routes
         GoRoute(

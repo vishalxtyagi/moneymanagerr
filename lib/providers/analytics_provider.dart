@@ -6,10 +6,10 @@ import 'package:moneymanager/utils/notifier_utils.dart';
 /// Centralized analytics computations to avoid expensive calculations in build methods
 class AnalyticsProvider extends ChangeNotifier with NotifierMixin {
   final TransactionProvider _transactionProvider;
-  
+
   AnalyticsModel? _analytics;
   DateTimeRange? _currentRange;
-  
+
   AnalyticsProvider(this._transactionProvider) {
     _transactionProvider.addListener(_onTransactionsChanged);
   }

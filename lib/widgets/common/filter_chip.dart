@@ -28,7 +28,7 @@ class AppFilterChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppStyles.borderRadius),
-        hoverColor: isSelected 
+        hoverColor: isSelected
             ? themeColor.withOpacity(0.1)
             : themeColor.withOpacity(0.05),
         splashColor: themeColor.withOpacity(0.2),
@@ -40,18 +40,21 @@ class AppFilterChip extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(AppStyles.borderRadius),
             border: Border.all(color: borderColor),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: themeColor.withOpacity(0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: themeColor.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               color: textColor,
               fontWeight: FontWeight.w600,
               fontSize: 14,

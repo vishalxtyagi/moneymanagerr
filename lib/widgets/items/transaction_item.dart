@@ -25,17 +25,18 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     // Cache frequently used values to avoid repeated computation
     final icon = CategoryUtil.getIconByIndex(category.iconIdx);
-    final padding = context.responsiveValue(mobile: 16.0, tablet: 20.0, desktop: 24.0);
+    final padding =
+        context.responsiveValue(mobile: 16.0, tablet: 20.0, desktop: 24.0);
     final primaryFontSize = context.fontSize(16);
     final secondaryFontSize = context.fontSize(12);
-    
+
     // Pre-format date and amount strings
     final dateText = _dateFormatter.format(transaction.date);
-    final amountText = CurrencyUtil.formatSigned(transaction.amount, transaction.type);
-    
+    final amountText =
+        CurrencyUtil.formatSigned(transaction.amount, transaction.type);
+
     // Pre-determine colors
     final amountColor = transaction.type == TransactionType.expense
         ? AppColors.error
@@ -55,7 +56,7 @@ class TransactionItem extends StatelessWidget {
               child: Icon(icon, color: category.color, size: 20),
             ),
             SizedBox(width: context.spacing()),
-            
+
             // Transaction Details
             Expanded(
               child: Column(
@@ -64,6 +65,7 @@ class TransactionItem extends StatelessWidget {
                   Text(
                     transaction.title,
                     style: TextStyle(
+                      overflow: TextOverflow.ellipsis,
                       fontSize: primaryFontSize,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -72,25 +74,29 @@ class TransactionItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: context.spacing(0.25)),
-                  
+
                   // Date and Category row with optimized layout
                   Row(
                     children: [
                       Text(
                         dateText,
                         style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
                           color: AppColors.textSecondary,
                           fontSize: secondaryFontSize,
                         ),
                       ),
                       const Text(
                         ' • ',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
+                            color: AppColors.textSecondary),
                       ),
                       Flexible(
                         child: Text(
                           transaction.category,
                           style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
                             color: AppColors.textSecondary,
                             fontSize: secondaryFontSize,
                             fontWeight: FontWeight.w500,
@@ -105,7 +111,7 @@ class TransactionItem extends StatelessWidget {
               ),
             ),
             SizedBox(width: context.spacing()),
-            
+
             // Amount and Note with const conditions
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -113,6 +119,7 @@ class TransactionItem extends StatelessWidget {
                 Text(
                   amountText,
                   style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
                     fontSize: primaryFontSize,
                     fontWeight: FontWeight.bold,
                     color: amountColor,

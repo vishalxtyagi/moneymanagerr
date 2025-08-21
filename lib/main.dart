@@ -44,8 +44,10 @@ class MoneyManagerApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProxyProvider<TransactionProvider, AnalyticsProvider>(
-          create: (context) => AnalyticsProvider(context.read<TransactionProvider>()),
-          update: (_, transaction, analytics) => analytics ?? AnalyticsProvider(transaction),
+          create: (context) =>
+              AnalyticsProvider(context.read<TransactionProvider>()),
+          update: (_, transaction, analytics) =>
+              analytics ?? AnalyticsProvider(transaction),
         ),
       ],
       child: MaterialApp.router(

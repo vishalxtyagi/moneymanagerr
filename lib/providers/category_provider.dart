@@ -6,8 +6,10 @@ class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _userId;
 
-  List<CategoryModel> _expenseCategories = List.from(CategoryModel.defaultExpenseCategories);
-  List<CategoryModel> _incomeCategories = List.from(CategoryModel.defaultIncomeCategories);
+  List<CategoryModel> _expenseCategories =
+      List.from(CategoryModel.defaultExpenseCategories);
+  List<CategoryModel> _incomeCategories =
+      List.from(CategoryModel.defaultIncomeCategories);
 
   List<CategoryModel> get expenseCategories => _expenseCategories;
   List<CategoryModel> get incomeCategories => _incomeCategories;
@@ -15,7 +17,8 @@ class CategoryProvider with ChangeNotifier {
   Future<void> load(String userId) async {
     _userId = userId;
     try {
-      final settingsRef = _firestore.collection('users').doc(userId).collection('settings');
+      final settingsRef =
+          _firestore.collection('users').doc(userId).collection('settings');
 
       final [expenseSnap, incomeSnap] = await Future.wait([
         settingsRef.doc('expense_categories').get(),
@@ -23,11 +26,15 @@ class CategoryProvider with ChangeNotifier {
       ]);
 
       _expenseCategories = expenseSnap.exists
-          ? (expenseSnap.data()!['categories'] as List).map((e) => CategoryModel.fromMap(e)).toList()
+          ? (expenseSnap.data()!['categories'] as List)
+              .map((e) => CategoryModel.fromMap(e))
+              .toList()
           : List.from(CategoryModel.defaultExpenseCategories);
 
       _incomeCategories = incomeSnap.exists
-          ? (incomeSnap.data()!['categories'] as List).map((e) => CategoryModel.fromMap(e)).toList()
+          ? (incomeSnap.data()!['categories'] as List)
+              .map((e) => CategoryModel.fromMap(e))
+              .toList()
           : List.from(CategoryModel.defaultIncomeCategories);
 
       notifyListeners();
@@ -55,10 +62,9 @@ class CategoryProvider with ChangeNotifier {
   CategoryModel getCategoryByName(String name, {required bool isIncome}) {
     final list = isIncome ? _incomeCategories : _expenseCategories;
 
-    var category = list.cast<CategoryModel?>().firstWhere(
-            (c) => c?.name == name,
-        orElse: () => null
-    );
+    var category = list
+        .cast<CategoryModel?>()
+        .firstWhere((c) => c?.name == name, orElse: () => null);
 
     if (category == null) {
       category = CategoryModel.withFallback(name: name, isIncome: isIncome);
@@ -81,7 +87,7 @@ class CategoryProvider with ChangeNotifier {
         .doc(_userId!)
         .collection('settings')
         .doc(doc)
-        .set({'categories': list.map((e) => e.toMap()).toList()})
-        .catchError((e) => debugPrint('Save error: $e'));
+        .set({'categories': list.map((e) => e.toMap()).toList()}).catchError(
+            (e) => debugPrint('Save error: $e'));
   }
 }

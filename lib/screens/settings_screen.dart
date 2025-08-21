@@ -15,7 +15,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> 
+class _SettingsScreenState extends State<SettingsScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -23,7 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   // Use CachedValueNotifiers for efficient rebuilds
   late final CachedValueNotifier<bool> _notificationsEnabled;
   late final CachedValueNotifier<bool> _autoCategorize;
-  
+
   // Constants to avoid repeated computations
   static const double _lowThresholdAmount = 100.0;
 
@@ -68,7 +68,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ValueListenableBuilder<bool>(
                     valueListenable: _notificationsEnabled,
                     builder: (context, enabled, _) => enabled
-                        ? const _LowThresholdTile(threshold: _lowThresholdAmount)
+                        ? const _LowThresholdTile(
+                            threshold: _lowThresholdAmount)
                         : const SizedBox.shrink(),
                   ),
                 ],
@@ -85,7 +86,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const Divider(height: 1),
                   ValueListenableBuilder<bool>(
                     valueListenable: _autoCategorize,
-                    builder: (context, autoCategorize, _) => _AutoCategorizeTile(
+                    builder: (context, autoCategorize, _) =>
+                        _AutoCategorizeTile(
                       enabled: autoCategorize,
                       onChanged: (value) => _autoCategorize.value = value,
                     ),
@@ -157,7 +159,8 @@ class _LowThresholdTile extends StatelessWidget {
           onTap: () {
             // TODO: Implement notification manager with named routes
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Notification settings coming soon!')),
+              const SnackBar(
+                  content: Text('Notification settings coming soon!')),
             );
           },
         ),
@@ -224,7 +227,8 @@ class _SignOutTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.logout, color: Colors.red),
-      title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+      title: const Text('Sign Out',
+          style: TextStyle(overflow: TextOverflow.ellipsis, color: Colors.red)),
       onTap: () async {
         final authProvider = context.read<AuthProvider>();
         final confirmed = await _showSignOutDialog(context);

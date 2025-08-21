@@ -23,7 +23,7 @@ class AppSummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final consumptionRate = income > 0 ? (expense / income) * 100 : 0;
-    
+
     final summaryCards = [
       _SummaryCard(
         title: 'Balance',
@@ -54,9 +54,7 @@ class AppSummaryCards extends StatelessWidget {
 
     if (isDesktop || context.isDesktop) {
       return Row(
-        children: summaryCards
-            .map((card) => Expanded(child: card))
-            .toList(),
+        children: summaryCards.map((card) => Expanded(child: card)).toList(),
       );
     } else {
       return GridView.count(
@@ -100,6 +98,7 @@ class _SummaryCard extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   fontSize: context.fontSize(14),
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -127,6 +126,7 @@ class _SummaryCard extends StatelessWidget {
                 ? '${value.toStringAsFixed(1)}%'
                 : CurrencyUtil.formatCompact(value),
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: context.fontSize(24),
               fontWeight: FontWeight.bold,
               color: color,

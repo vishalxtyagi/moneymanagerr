@@ -65,6 +65,7 @@ class _TitleSection extends StatelessWidget {
         Text(
           'Money Manager',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: 30,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -74,6 +75,7 @@ class _TitleSection extends StatelessWidget {
         Text(
           'Track your daily expenses and savings',
           style: TextStyle(
+            overflow: TextOverflow.ellipsis,
             fontSize: 15,
             color: Colors.white70,
           ),

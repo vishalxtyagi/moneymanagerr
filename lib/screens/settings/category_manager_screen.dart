@@ -43,7 +43,10 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Categories',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                overflow: TextOverflow.ellipsis,
+                color: Colors.white,
+                fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.primary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -188,8 +191,9 @@ class _CategoryTile extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => _deleteCategory(context),
-            child:
-                const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: const Text('Delete',
+                style: TextStyle(
+                    overflow: TextOverflow.ellipsis, color: AppColors.error)),
           ),
         ],
       ),
@@ -287,7 +291,10 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Color:', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text('Color:',
+                style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             SizedBox(
               height: 40,
@@ -315,7 +322,10 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Icon:', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text('Icon:',
+                style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             SizedBox(
               height: 150,
@@ -350,7 +360,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _loading ? null : () => NavigationService.goBack(context),
+                  onPressed:
+                      _loading ? null : () => NavigationService.goBack(context),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 8),

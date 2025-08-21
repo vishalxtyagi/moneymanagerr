@@ -12,12 +12,11 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
   final _firestore = FirebaseFirestore.instance;
 
   // Typed collection reference with converter
-  CollectionReference<TransactionModel> get _txCol => _firestore
-      .collection('transactions')
-      .withConverter<TransactionModel>(
-        fromFirestore: (snap, _) => TransactionModel.fromFirestore(snap),
-        toFirestore: (txn, _) => txn.toMap(),
-      );
+  CollectionReference<TransactionModel> get _txCol =>
+      _firestore.collection('transactions').withConverter<TransactionModel>(
+            fromFirestore: (snap, _) => TransactionModel.fromFirestore(snap),
+            toFirestore: (txn, _) => txn.toMap(),
+          );
 
   final List<TransactionModel> _all = [];
   final List<TransactionModel> _filtered = [];
@@ -43,8 +42,7 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
   final Map<String, String> _searchBlobCache = {};
 
   // Getters
-  UnmodifiableListView<TransactionModel> get all =>
-      UnmodifiableListView(_all);
+  UnmodifiableListView<TransactionModel> get all => UnmodifiableListView(_all);
   UnmodifiableListView<TransactionModel> get filtered =>
       UnmodifiableListView(_filtered);
   TransactionType get filterType => _typeFilter;
@@ -58,7 +56,7 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
   bool get hasActiveFilters =>
       _typeFilter != TransactionType.all ||
       _rangeFilter != null ||
-  _categoryFilter != null;
+      _categoryFilter != null;
 
   /// Helpers for date checks
   bool _isToday(DateTime d) {
@@ -153,7 +151,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
       _monthCount++;
     }
     _searchBlobCache[optimistic.id] =
-        '${optimistic.title} ${optimistic.category} ${optimistic.note ?? ''}'.toLowerCase();
+        '${optimistic.title} ${optimistic.category} ${optimistic.note ?? ''}'
+            .toLowerCase();
   }
 
   void _onTxnRemoved(TransactionModel removed) {
@@ -204,7 +203,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
               _all[idx] = model;
             }
             _searchBlobCache[model.id] =
-                '${model.title} ${model.category} ${model.note ?? ''}'.toLowerCase();
+                '${model.title} ${model.category} ${model.note ?? ''}'
+                    .toLowerCase();
             break;
           case DocumentChangeType.removed:
             if (idx != -1) {
@@ -214,7 +214,7 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
             break;
         }
       }
-      
+
       // Batch all updates to reduce rebuilds
       batchUpdate(() {
         _sortAll();
@@ -407,7 +407,7 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     _typeFilter = TransactionType.all;
     _rangeFilter = null;
     _query = '';
-  _categoryFilter = null;
+    _categoryFilter = null;
     _applyFilters();
     notifyListeners();
   }
@@ -436,8 +436,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
       }
     }
     if (_query.isNotEmpty) {
-      final blob = _searchBlobCache[txn.id] ??= (
-          '${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase());
+      final blob = _searchBlobCache[txn.id] ??=
+          ('${txn.title} ${txn.category} ${txn.note ?? ''}'.toLowerCase());
       if (!blob.contains(_query)) return false;
     }
     if (_categoryFilter != null && txn.category != _categoryFilter) {
@@ -450,7 +450,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     if (range == null) return _all;
     final end = _endOfDay(range.end);
     return _all
-        .where((txn) => !txn.date.isBefore(range.start) && !txn.date.isAfter(end))
+        .where(
+            (txn) => !txn.date.isBefore(range.start) && !txn.date.isAfter(end))
         .toList();
   }
 
@@ -507,7 +508,7 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
     _typeFilter = TransactionType.all;
     _rangeFilter = null;
     _query = '';
-  _categoryFilter = null;
+    _categoryFilter = null;
     _totalIncome = 0.0;
     _totalExpense = 0.0;
     _todayCount = 0;
@@ -537,7 +538,8 @@ class TransactionProvider with ChangeNotifier, NotifierMixin {
 
     // Adjust counters
     if (_isToday(old.date)) _todayCount = (_todayCount - 1).clamp(0, 1 << 31);
-    if (_isThisMonth(old.date)) _monthCount = (_monthCount - 1).clamp(0, 1 << 31);
+    if (_isThisMonth(old.date))
+      _monthCount = (_monthCount - 1).clamp(0, 1 << 31);
     if (_isToday(updatedTxn.date)) _todayCount++;
     if (_isThisMonth(updatedTxn.date)) _monthCount++;
 

@@ -185,6 +185,7 @@ class _NotificationManagerScreenState extends State<NotificationManagerScreen> {
                 child: const Text(
                   'Save Settings',
                   style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,

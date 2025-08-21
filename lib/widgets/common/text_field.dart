@@ -47,8 +47,9 @@ class AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     // Pre-calculate values to avoid computation in build
     final borderRadius = BorderRadius.circular(AppStyles.borderRadius);
-    final fillColor = enabled ? AppColors.surface : AppColors.scaffoldBackground;
-    
+    final fillColor =
+        enabled ? AppColors.surface : AppColors.scaffoldBackground;
+
     // Determine the suffix icon - either clear button or custom suffixIcon
     Widget? effectiveSuffixIcon = suffixIcon;
     if (showClearButton && controller != null) {
@@ -67,7 +68,7 @@ class AppTextField extends StatelessWidget {
         },
       );
     }
-    
+
     // Pre-create input decoration to avoid recreation
     final inputDecoration = InputDecoration(
       hintText: hint,
@@ -114,7 +115,7 @@ class AppTextField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        
+
         // Optimized text form field
         _CustomTextFormField(
           controller: controller,

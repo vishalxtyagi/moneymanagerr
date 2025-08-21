@@ -23,21 +23,22 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 class _DashboardConstants {
   static final DateTime _now = DateTime.now();
   static final String greeting = _getGreetingForHour(_now.hour);
-  static final String formattedDate = DateFormat('EEEE, MMMM dd, yyyy').format(_now);
-  static final String shortFormattedDate = DateFormat('EEEE, MMM d').format(_now);
-  
+  static final String formattedDate =
+      DateFormat('EEEE, MMMM dd, yyyy').format(_now);
+  static final String shortFormattedDate =
+      DateFormat('EEEE, MMM d').format(_now);
+
   static String _getGreetingForHour(int hour) {
     if (hour < 12) return 'morning';
     if (hour < 17) return 'afternoon';
     return 'evening';
   }
-  
+
   static DateTimeRange get todayRange => DateTimeRange(
-    start: DateTime(_now.year, _now.month, _now.day),
-    end: DateTime(_now.year, _now.month, _now.day, 23, 59, 59),
-  );
-  
-  
+        start: DateTime(_now.year, _now.month, _now.day),
+        end: DateTime(_now.year, _now.month, _now.day, 23, 59, 59),
+      );
+
   static DateTimeRange get weekRange {
     final startOfWeek = _now.subtract(Duration(days: _now.weekday - 1));
     return DateTimeRange(
@@ -49,7 +50,8 @@ class _DashboardConstants {
 
 // Navigation helper to reduce code duplication
 class _NavigationHelper {
-  static void navigateToHistory(BuildContext context, {
+  static void navigateToHistory(
+    BuildContext context, {
     DateTimeRange? range,
     String? category,
   }) {
@@ -60,8 +62,9 @@ class _NavigationHelper {
       ephemeralFilters: true,
     );
   }
-  
-  static void navigateToAddTransaction(BuildContext context, [dynamic transaction]) {
+
+  static void navigateToAddTransaction(BuildContext context,
+      [dynamic transaction]) {
     if (transaction != null) {
       NavigationService.goToEditTransaction(context, transaction);
     } else {
@@ -90,10 +93,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _loadCategories() async {
     if (!mounted) return;
-    
+
     final categoryProvider = context.read<CategoryProvider>();
     final userId = context.read<AuthProvider>().user?.uid;
-    
+
     if (userId != null) {
       await categoryProvider.load(userId);
     }
@@ -102,10 +105,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
-    return context.isDesktop 
-        ? const _DesktopLayout()
-        : const _MobileLayout();
+
+    return context.isDesktop ? const _DesktopLayout() : const _MobileLayout();
   }
 }
 
@@ -124,7 +125,6 @@ class _DesktopLayout extends StatelessWidget {
             children: [
               const _WelcomeSection(),
               SizedBox(height: context.spacing(1.5)),
-              
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -185,7 +185,7 @@ class _WelcomeSection extends StatelessWidget {
       selector: (_, provider) => provider.user?.displayName,
       builder: (context, displayName, _) {
         final firstName = displayName?.split(' ').first ?? 'User';
-        
+
         return DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -206,6 +206,7 @@ class _WelcomeSection extends StatelessWidget {
                       Text(
                         'Good ${_DashboardConstants.greeting}!',
                         style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
                           color: Colors.white.withOpacity(0.9),
                           fontSize: context.fontSize(16),
                           fontWeight: FontWeight.w500,
@@ -215,6 +216,7 @@ class _WelcomeSection extends StatelessWidget {
                       Text(
                         'Welcome back, $firstName',
                         style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
                           color: Colors.white,
                           fontSize: context.fontSize(28),
                           fontWeight: FontWeight.bold,
@@ -224,6 +226,7 @@ class _WelcomeSection extends StatelessWidget {
                       Text(
                         _DashboardConstants.formattedDate,
                         style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
                           color: Colors.white.withOpacity(0.8),
                           fontSize: context.fontSize(14),
                         ),
@@ -247,35 +250,34 @@ class _UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<AuthProvider, String?>(
-      selector: (_, provider) => provider.user?.photoURL,
-      builder: (context, photoURL, _) => DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.2),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 2,
-          ),
-        ),
-        child: SizedBox(
-          width: 80,
-          height: 80,
-          child: photoURL != null ? ClipOval(
-            child: Image.network(
-              photoURL,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-            ),
-          ) :
-          Icon(
-          Iconsax.user,
-          color: Colors.grey.shade600,
-          size: 20,
-        )
-      ),
-    )
-    );
+        selector: (_, provider) => provider.user?.photoURL,
+        builder: (context, photoURL, _) => DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.2),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: photoURL != null
+                      ? ClipOval(
+                          child: Image.network(
+                            photoURL,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          Iconsax.user,
+                          color: Colors.grey.shade600,
+                          size: 20,
+                        )),
+            ));
   }
 }
 
@@ -307,11 +309,12 @@ class _QuickStatsGrid extends StatelessWidget {
         final balance = provider.getBalance();
         final weekCount = _getWeekCount(provider);
         final expenseRatio = _getExpenseRatio(provider);
-        
+
         return _StatisticsData(
           todayCount: provider.todayCount,
           monthCount: provider.monthCount,
-          topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
+          topCategoryName:
+              topCategories.isNotEmpty ? topCategories.first.key : 'None',
           balance: balance,
           weekCount: weekCount,
           expenseRatio: expenseRatio,
@@ -332,7 +335,7 @@ class _QuickStatsGrid extends StatelessWidget {
               icon: Iconsax.calendar_1,
               color: Colors.blue,
               onTap: () => _NavigationHelper.navigateToHistory(
-                context, 
+                context,
                 range: _DashboardConstants.todayRange,
               ),
             ),
@@ -342,7 +345,7 @@ class _QuickStatsGrid extends StatelessWidget {
               icon: Iconsax.calendar_tick,
               color: Colors.green,
               onTap: () => _NavigationHelper.navigateToHistory(
-                context, 
+                context,
                 range: _DashboardConstants.weekRange,
               ),
             ),
@@ -359,11 +362,12 @@ class _QuickStatsGrid extends StatelessWidget {
       start: DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day),
       end: now,
     );
-    
-    return provider.all.where((txn) => 
-      !txn.date.isBefore(weekRange.start) && 
-      !txn.date.isAfter(weekRange.end)
-    ).length;
+
+    return provider.all
+        .where((txn) =>
+            !txn.date.isBefore(weekRange.start) &&
+            !txn.date.isAfter(weekRange.end))
+        .length;
   }
 
   double _getExpenseRatio(TransactionProvider provider) {
@@ -391,7 +395,6 @@ class _RecentTransactionsSection extends StatelessWidget {
               onPressed: () => _NavigationHelper.navigateToHistory(context),
             ),
           ),
-          
           Selector<TransactionProvider, List<dynamic>>(
             selector: (_, provider) => provider.all.take(7).toList(),
             builder: (context, recentTransactions, _) {
@@ -405,24 +408,27 @@ class _RecentTransactionsSection extends StatelessWidget {
                   ),
                 );
               }
-              
+
               return Column(
-                children: recentTransactions.map((transaction) => 
-                  Selector<CategoryProvider, dynamic>(
-                    selector: (_, provider) => provider.getCategoryByName(
-                      transaction.category,
-                      isIncome: transaction.type == TransactionType.income,
-                    ),
-                    builder: (_, category, __) => TransactionItem(
-                      transaction: transaction,
-                      category: category,
-                      onTap: () => _NavigationHelper.navigateToAddTransaction(
-                        context, 
-                        transaction,
+                children: recentTransactions
+                    .map(
+                      (transaction) => Selector<CategoryProvider, dynamic>(
+                        selector: (_, provider) => provider.getCategoryByName(
+                          transaction.category,
+                          isIncome: transaction.type == TransactionType.income,
+                        ),
+                        builder: (_, category, __) => TransactionItem(
+                          transaction: transaction,
+                          category: category,
+                          onTap: () =>
+                              _NavigationHelper.navigateToAddTransaction(
+                            context,
+                            transaction,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ).toList(),
+                    )
+                    .toList(),
               );
             },
           ),
@@ -444,13 +450,13 @@ class _InsightsCard extends StatelessWidget {
           Text(
             'Insights',
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: context.fontSize(18),
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
           SizedBox(height: context.spacing()),
-          
           Selector<TransactionProvider, _InsightData>(
             selector: (_, provider) => _InsightData(
               todayCount: provider.todayCount,
@@ -459,17 +465,19 @@ class _InsightsCard extends StatelessWidget {
             ),
             builder: (context, data, _) {
               final insights = _generateInsights(data);
-              
+
               return Column(
-                children: insights.map((insight) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: InsightCard(
-                    title: insight.title,
-                    description: insight.description,
-                    icon: insight.icon,
-                    color: insight.color,
-                  ),
-                )).toList(),
+                children: insights
+                    .map((insight) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: InsightCard(
+                            title: insight.title,
+                            description: insight.description,
+                            icon: insight.icon,
+                            color: insight.color,
+                          ),
+                        ))
+                    .toList(),
               );
             },
           ),
@@ -480,7 +488,7 @@ class _InsightsCard extends StatelessWidget {
 
   List<_Insight> _generateInsights(_InsightData data) {
     final insights = <_Insight>[];
-    
+
     if (data.todayCount > 0) {
       insights.add(_Insight(
         icon: Iconsax.flash_1,
@@ -489,7 +497,7 @@ class _InsightsCard extends StatelessWidget {
         color: AppColors.success,
       ));
     }
-    
+
     if (data.balance > 10000) {
       insights.add(const _Insight(
         icon: Iconsax.medal_star,
@@ -507,7 +515,7 @@ class _InsightsCard extends StatelessWidget {
         ),
       );
     }
-    
+
     if (data.topCategories.isNotEmpty) {
       insights.add(_Insight(
         icon: Iconsax.category_2,
@@ -516,7 +524,7 @@ class _InsightsCard extends StatelessWidget {
         color: AppColors.warning,
       ));
     }
-    
+
     if (insights.isEmpty) {
       insights.add(const _Insight(
         icon: Iconsax.info_circle,
@@ -525,7 +533,7 @@ class _InsightsCard extends StatelessWidget {
         color: AppColors.textSecondary,
       ));
     }
-    
+
     return insights;
   }
 }
@@ -546,7 +554,7 @@ class _HeaderSection extends StatelessWidget {
               selector: (_, provider) => provider.user?.displayName,
               builder: (context, displayName, _) {
                 final firstName = displayName?.split(' ').first ?? 'User';
-                
+
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -556,6 +564,7 @@ class _HeaderSection extends StatelessWidget {
                         Text(
                           _DashboardConstants.shortFormattedDate,
                           style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
                             color: Colors.black54,
                             fontSize: context.fontSize(16),
                           ),
@@ -564,6 +573,7 @@ class _HeaderSection extends StatelessWidget {
                         Text(
                           'Hello, $firstName!',
                           style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
                             color: Colors.black87,
                             fontSize: context.fontSize(28),
                             fontWeight: FontWeight.bold,
@@ -574,10 +584,12 @@ class _HeaderSection extends StatelessWidget {
                     Selector<AuthProvider, String?>(
                       selector: (_, provider) => provider.user?.photoURL,
                       builder: (context, photoURL, _) => CircleAvatar(
-                        radius: context.responsiveValue(mobile: 20.0, tablet: 24.0, desktop: 28.0),
-                        backgroundImage: photoURL != null ? NetworkImage(photoURL) : null,
-                        child: photoURL == null 
-                            ? const Icon(Icons.person, color: Colors.white) 
+                        radius: context.responsiveValue(
+                            mobile: 20.0, tablet: 24.0, desktop: 28.0),
+                        backgroundImage:
+                            photoURL != null ? NetworkImage(photoURL) : null,
+                        child: photoURL == null
+                            ? const Icon(Icons.person, color: Colors.white)
                             : null,
                       ),
                     ),
@@ -627,11 +639,12 @@ class _StatisticsRow extends StatelessWidget {
         final balance = provider.getBalance();
         final weekCount = _getWeekCount(provider);
         final expenseRatio = _getExpenseRatio(provider);
-        
+
         return _StatisticsData(
           todayCount: provider.todayCount,
           monthCount: provider.monthCount,
-          topCategoryName: topCategories.isNotEmpty ? topCategories.first.key : 'None',
+          topCategoryName:
+              topCategories.isNotEmpty ? topCategories.first.key : 'None',
           balance: balance,
           weekCount: weekCount,
           expenseRatio: expenseRatio,
@@ -639,7 +652,7 @@ class _StatisticsRow extends StatelessWidget {
       },
       builder: (context, stats, _) {
         const spacing = SizedBox(width: 12);
-        
+
         final cards = [
           StatisticCard(
             title: 'Today',
@@ -647,7 +660,7 @@ class _StatisticsRow extends StatelessWidget {
             icon: Icons.today,
             color: AppColors.primary,
             onTap: () => _NavigationHelper.navigateToHistory(
-              context, 
+              context,
               range: _DashboardConstants.todayRange,
             ),
           ),
@@ -657,12 +670,12 @@ class _StatisticsRow extends StatelessWidget {
             icon: Icons.calendar_view_week,
             color: AppColors.primary,
             onTap: () => _NavigationHelper.navigateToHistory(
-              context, 
+              context,
               range: _DashboardConstants.weekRange,
             ),
           ),
         ];
-        
+
         return Row(
           children: [
             Expanded(child: cards[0]),
@@ -681,11 +694,12 @@ class _StatisticsRow extends StatelessWidget {
       start: DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day),
       end: now,
     );
-    
-    return provider.all.where((txn) => 
-      !txn.date.isBefore(weekRange.start) && 
-      !txn.date.isAfter(weekRange.end)
-    ).length;
+
+    return provider.all
+        .where((txn) =>
+            !txn.date.isBefore(weekRange.start) &&
+            !txn.date.isAfter(weekRange.end))
+        .length;
   }
 
   double _getExpenseRatio(TransactionProvider provider) {
@@ -712,7 +726,6 @@ class _RecentTransactionsMobile extends StatelessWidget {
               onPressed: () => _NavigationHelper.navigateToHistory(context),
             ),
           ),
-          
           Selector<TransactionProvider, List<dynamic>>(
             selector: (_, provider) => provider.all.take(5).toList(),
             builder: (context, transactions, _) {
@@ -723,24 +736,27 @@ class _RecentTransactionsMobile extends StatelessWidget {
                   subtitle: 'Start by adding your first transaction',
                 );
               }
-              
+
               return Column(
-                children: transactions.map((transaction) => 
-                  Selector<CategoryProvider, dynamic>(
-                    selector: (_, provider) => provider.getCategoryByName(
-                      transaction.category,
-                      isIncome: transaction.type == TransactionType.income,
-                    ),
-                    builder: (_, category, __) => TransactionItem(
-                      transaction: transaction,
-                      category: category,
-                      onTap: () => _NavigationHelper.navigateToAddTransaction(
-                        context, 
-                        transaction,
+                children: transactions
+                    .map(
+                      (transaction) => Selector<CategoryProvider, dynamic>(
+                        selector: (_, provider) => provider.getCategoryByName(
+                          transaction.category,
+                          isIncome: transaction.type == TransactionType.income,
+                        ),
+                        builder: (_, category, __) => TransactionItem(
+                          transaction: transaction,
+                          category: category,
+                          onTap: () =>
+                              _NavigationHelper.navigateToAddTransaction(
+                            context,
+                            transaction,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ).toList(),
+                    )
+                    .toList(),
               );
             },
           ),
@@ -760,7 +776,7 @@ class _StatisticsData {
     required this.weekCount,
     required this.expenseRatio,
   });
-  
+
   final int todayCount;
   final int monthCount;
   final String topCategoryName;
@@ -775,7 +791,7 @@ class _InsightData {
     required this.balance,
     required this.topCategories,
   });
-  
+
   final int todayCount;
   final double balance;
   final List<MapEntry<String, double>> topCategories;
@@ -788,7 +804,7 @@ class _Insight {
     required this.description,
     required this.color,
   });
-  
+
   final IconData icon;
   final String title;
   final String description;

@@ -55,8 +55,9 @@ extension ResponsiveContext on BuildContext {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth:
-                contentMaxWidth == double.infinity ? double.maxFinite : contentMaxWidth,
+            maxWidth: contentMaxWidth == double.infinity
+                ? double.maxFinite
+                : contentMaxWidth,
           ),
           child: child,
         ),

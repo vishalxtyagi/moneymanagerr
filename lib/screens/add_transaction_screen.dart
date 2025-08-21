@@ -75,7 +75,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Future<void> _loadCategories() async {
     final categoryProvider = context.read<CategoryProvider>();
     final userId = context.read<AuthProvider>().user?.uid;
-    
+
     if (userId != null) {
       await categoryProvider.load(userId);
     }
@@ -157,7 +157,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (mounted) {
         // Clear form after successful submission
         _clearForm();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.transaction == null
@@ -207,7 +207,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.9;
-    
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: maxWidth,
@@ -223,7 +223,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               isEditing: widget.transaction != null,
               onClose: _close,
             ),
-            
+
             // Form content
             Expanded(
               child: SingleChildScrollView(
@@ -245,16 +245,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           });
                         },
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Amount
                       const _SectionLabel(text: 'Amount'),
                       const SizedBox(height: 8),
                       _AmountField(controller: _amountController),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Title
                       const _SectionLabel(text: 'Description'),
                       const SizedBox(height: 8),
@@ -262,9 +262,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         controller: _titleController,
                         transactionType: _type,
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Category
                       const _SectionLabel(text: 'Category'),
                       const SizedBox(height: 8),
@@ -278,9 +278,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           _categoryNotifier.value = category;
                         },
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Date
                       const _SectionLabel(text: 'Date'),
                       const SizedBox(height: 8),
@@ -288,9 +288,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         selectedDate: _date,
                         onDateSelected: () => _selectDate(context),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Note
                       const _SectionLabel(text: 'Note (Optional)'),
                       const SizedBox(height: 8),
@@ -300,7 +300,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
               ),
             ),
-            
+
             // Action buttons - Isolated to prevent rebuilds on type change
             _IsolatedActionButtons(
               isEditing: widget.transaction != null,
@@ -374,6 +374,7 @@ class _HeaderSection extends StatelessWidget {
                   Text(
                     'Quick and easy transaction entry',
                     style: TextStyle(
+                      overflow: TextOverflow.ellipsis,
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 12,
                     ),
@@ -495,6 +496,7 @@ class _TypeButton extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
+                  overflow: TextOverflow.ellipsis,
                   color: isSelected ? color : Colors.grey.shade600,
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -525,6 +527,7 @@ class _AmountField extends StatelessWidget {
           child: Text(
             '₹',
             style: TextStyle(
+              overflow: TextOverflow.ellipsis,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -548,7 +551,8 @@ class _AmountField extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
       ),
       inputFormatters: [
-        FilteringTextInputFormatter.allow(_AddTransactionScreenState._amountInputFormatter),
+        FilteringTextInputFormatter.allow(
+            _AddTransactionScreenState._amountInputFormatter),
       ],
       validator: (value) {
         if (value == null || value.isEmpty) return 'Please enter an amount';
@@ -575,8 +579,8 @@ class _DescriptionField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        hintText: transactionType == TransactionType.expense 
-            ? 'What did you spend on?' 
+        hintText: transactionType == TransactionType.expense
+            ? 'What did you spend on?'
             : 'What did you earn?',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -594,8 +598,8 @@ class _DescriptionField extends StatelessWidget {
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.all(16),
       ),
-      validator: (value) => (value == null || value.isEmpty) 
-          ? 'Please enter a description' 
+      validator: (value) => (value == null || value.isEmpty)
+          ? 'Please enter a description'
           : null,
     );
   }
@@ -615,9 +619,10 @@ class _CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<CategoryProvider, List<dynamic>>(
-      selector: (context, provider) => transactionType == TransactionType.expense
-          ? provider.expenseCategories
-          : provider.incomeCategories,
+      selector: (context, provider) =>
+          transactionType == TransactionType.expense
+              ? provider.expenseCategories
+              : provider.incomeCategories,
       builder: (context, categories, child) {
         if (categories.isEmpty) {
           return DecoratedBox(
@@ -632,14 +637,15 @@ class _CategorySelector extends StatelessWidget {
             ),
           );
         }
-        
+
         // Auto-select first category if none selected
-        if (selectedCategory == null || !categories.any((c) => c.name == selectedCategory)) {
+        if (selectedCategory == null ||
+            !categories.any((c) => c.name == selectedCategory)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             onCategoryChanged(categories.first.name);
           });
         }
-        
+
         return DropdownButtonFormField<String>(
           value: selectedCategory,
           decoration: InputDecoration(
@@ -666,8 +672,8 @@ class _CategorySelector extends StatelessWidget {
             );
           }).toList(),
           onChanged: onCategoryChanged,
-          validator: (value) => (value == null || value.isEmpty) 
-              ? 'Please select a category' 
+          validator: (value) => (value == null || value.isEmpty)
+              ? 'Please select a category'
               : null,
         );
       },
@@ -706,7 +712,8 @@ class _DateSelector extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _AddTransactionScreenState._dateFormatter.format(selectedDate),
+                  _AddTransactionScreenState._dateFormatter
+                      .format(selectedDate),
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textPrimary,
@@ -777,7 +784,7 @@ class _IsolatedActionButtons extends StatelessWidget {
       valueListenable: categoryNotifier,
       builder: (context, category, child) {
         final canSubmit = category != null;
-        
+
         return Material(
           color: Colors.grey.shade50,
           child: DecoratedBox(
@@ -821,6 +828,7 @@ class _IsolatedActionButtons extends StatelessWidget {
                         child: Text(
                           'Clear Form',
                           style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
                             color: Colors.grey.shade600,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
