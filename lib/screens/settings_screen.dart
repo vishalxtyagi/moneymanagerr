@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/providers/auth_provider.dart';
-import 'package:moneymanager/router/app_router.dart';
+import 'package:moneymanager/constants/router.dart';
 import 'package:moneymanager/utils/notifier_utils.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/card.dart';
@@ -178,7 +178,7 @@ class _CategoryManagementTile extends StatelessWidget {
       title: const Text('Manage Categories'),
       subtitle: const Text('Add, edit, or remove transaction categories'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => context.go(AppRouter.categoryManager),
+      onTap: () => context.push(AppRouter.categoryManager),
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:moneymanager/screens/dashboard_screen.dart';
 import 'package:moneymanager/screens/settings_screen.dart';
 import 'package:moneymanager/widgets/common/logo.dart';
 import 'package:moneymanager/widgets/transaction_drawer.dart';
-import 'package:moneymanager/router/app_router.dart';
+import 'package:moneymanager/constants/router.dart';
 
 final class _NavigationConfig {
   static const items = [

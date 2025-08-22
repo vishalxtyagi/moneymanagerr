@@ -51,12 +51,6 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
         backgroundColor: AppColors.primary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            onPressed: () => _showAddDialog(),
-            icon: const Icon(Iconsax.add_copy),
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -73,13 +67,6 @@ class _CategoryManagerScreenState extends State<CategoryManagerScreen>
           : _MobileLayout(tabController: _tabController),
     );
   }
-
-  void _showAddDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => _CategoryDialog(isIncome: _tabController.index == 1),
-    );
-  }
 }
 
 class _DesktopLayout extends StatelessWidget {
@@ -89,14 +76,13 @@ class _DesktopLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 1200),
-      margin: const EdgeInsets.symmetric(horizontal: 32),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
       child: TabBarView(
         controller: tabController,
-        children: const [
-          _CategoryGridView(isIncome: false),
-          _CategoryGridView(isIncome: true),
+        children: [
+          _CategoryGridView(isIncome: false, tabController: tabController),
+          _CategoryGridView(isIncome: true, tabController: tabController),
         ],
       ),
     );
@@ -112,9 +98,9 @@ class _MobileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return TabBarView(
       controller: tabController,
-      children: const [
-        _CategoryList(isIncome: false),
-        _CategoryList(isIncome: true),
+      children: [
+        _CategoryList(isIncome: false, tabController: tabController),
+        _CategoryList(isIncome: true, tabController: tabController),
       ],
     );
   }
@@ -122,8 +108,9 @@ class _MobileLayout extends StatelessWidget {
 
 class _CategoryGridView extends StatelessWidget {
   final bool isIncome;
+  final TabController tabController;
 
-  const _CategoryGridView({required this.isIncome});
+  const _CategoryGridView({required this.isIncome, required this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -131,27 +118,48 @@ class _CategoryGridView extends StatelessWidget {
       selector: (_, provider) =>
           isIncome ? provider.incomeCategories : provider.expenseCategories,
       builder: (context, categories, _) {
-        if (categories.isEmpty) {
-          return const AppEmptyState(
-            icon: Iconsax.category,
-            title: 'No categories',
-            subtitle: 'Tap + to add categories',
-          );
-        }
-
-        return GridView.builder(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 2.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculate number of columns based on available width
+              double availableWidth = constraints.maxWidth;
+              int columns = (availableWidth / 200).floor().clamp(1, 4);
+              double cardWidth = (availableWidth - (columns - 1) * 16) / columns;
+              
+              return Column(
+                children: [
+                  if (categories.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: AppEmptyState(
+                        icon: Iconsax.category,
+                        title: 'No categories',
+                        subtitle: 'Add your first category below',
+                      ),
+                    ),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      // Add category card - always show
+                      SizedBox(
+                        width: cardWidth,
+                        child: _AddCategoryCard(isIncome: isIncome),
+                      ),
+                      // Existing categories
+                      ...categories.map((category) {
+                        return SizedBox(
+                          width: cardWidth,
+                          child: _CategoryCard(category: category),
+                        );
+                      }),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
-          itemCount: categories.length,
-          itemBuilder: (context, i) {
-            final category = categories[i];
-            return _CategoryCard(category: category);
-          },
         );
       },
     );
@@ -161,87 +169,90 @@ class _CategoryGridView extends StatelessWidget {
 class _CategoryCard extends StatelessWidget {
   final CategoryModel category;
 
-  const _CategoryCard({super.key, required this.category});
+  const _CategoryCard({required this.category});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showEditDialog(context),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: category.color,
-                child: Icon(
-                  CategoryUtil.getIconByIndex(category.iconIdx),
-                  color: Colors.white,
-                  size: 18,
+    return SizedBox(
+      height: 80,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showEditDialog(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: category.color,
+                  child: Icon(
+                    CategoryUtil.getIconByIndex(category.iconIdx),
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      category.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        category.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Text(
+                        category.isIncome ? 'Income' : 'Expense',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditDialog(context);
+                    } else if (value == 'delete') {
+                      _showDeleteDialog(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Iconsax.edit_2, size: 16),
+                          SizedBox(width: 8),
+                          Text('Edit'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      category.isIncome ? 'Income' : 'Expense',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Iconsax.trash, size: 16, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    _showEditDialog(context);
-                  } else if (value == 'delete') {
-                    _showDeleteDialog(context);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.edit_2, size: 16),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.trash, size: 16, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -304,8 +315,9 @@ class _CategoryCard extends StatelessWidget {
 
 class _CategoryList extends StatelessWidget {
   final bool isIncome;
+  final TabController tabController;
 
-  const _CategoryList({required this.isIncome});
+  const _CategoryList({required this.isIncome, required this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -313,27 +325,45 @@ class _CategoryList extends StatelessWidget {
       selector: (_, provider) =>
           isIncome ? provider.incomeCategories : provider.expenseCategories,
       builder: (context, categories, _) {
-        if (categories.isEmpty) {
-          return const AppEmptyState(
-            icon: Iconsax.category,
-            title: 'No categories',
-            subtitle: 'Tap + to add categories',
-          );
-        }
-
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: categories.length,
+          itemCount: categories.length + 2, // +1 for add button, +1 for empty state if needed
           itemBuilder: (context, i) {
-            final category = categories[i];
-            return Padding(
-              padding:
-                  EdgeInsets.only(bottom: i == categories.length - 1 ? 0 : 12),
-              child: _CategoryTile(
-                key: ValueKey(category.name),
-                category: category,
-              ),
-            );
+            if (i == 0) {
+              // Add category tile at the top
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _AddCategoryTile(isIncome: isIncome),
+              );
+            }
+            
+            if (categories.isEmpty && i == 1) {
+              // Show empty state message after add button when no categories
+              return const Padding(
+                padding: EdgeInsets.all(32),
+                child: AppEmptyState(
+                  icon: Iconsax.category,
+                  title: 'No categories yet',
+                  subtitle: 'Use the card above to add your first category',
+                ),
+              );
+            }
+            
+            if (categories.isNotEmpty) {
+              final categoryIndex = i - 1; // -1 because first item is add button
+              if (categoryIndex < categories.length) {
+                final category = categories[categoryIndex];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: categoryIndex == categories.length - 1 ? 0 : 12),
+                  child: _CategoryTile(
+                    key: ValueKey(category.name),
+                    category: category,
+                  ),
+                );
+              }
+            }
+            
+            return const SizedBox.shrink(); // Return empty widget for extra items
           },
         );
       },
@@ -440,6 +470,122 @@ class _CategoryTile extends StatelessWidget {
   }
 }
 
+class _AddCategoryCard extends StatelessWidget {
+  final bool isIncome;
+
+  const _AddCategoryCard({required this.isIncome});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 80,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showAddDialog(context),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+                width: 2,
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Iconsax.add_circle,
+                  color: AppColors.primary,
+                  size: 32,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Add Category',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => _CategoryDialog(isIncome: isIncome),
+    );
+  }
+}
+
+class _AddCategoryTile extends StatelessWidget {
+  final bool isIncome;
+
+  const _AddCategoryTile({required this.isIncome});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 2,
+      child: InkWell(
+        onTap: () => _showAddDialog(context),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.3),
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: const ListTile(
+            leading: CircleAvatar(
+              backgroundColor: AppColors.primary,
+              child: Icon(
+                Iconsax.add,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              'Add New Category',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+            subtitle: Text(
+              'Tap to create a new category',
+              style: TextStyle(color: AppColors.primary),
+            ),
+            trailing: Icon(
+              Iconsax.arrow_right_3,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => _CategoryDialog(isIncome: isIncome),
+    );
+  }
+}
+
 class _CategoryDialog extends StatefulWidget {
   final bool isIncome;
   final CategoryModel? editingCategory;
@@ -488,112 +634,201 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+    final dialogWidth = isDesktop ? 500.0 : screenWidth * 0.9;
+    
     return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${widget.editingCategory != null ? 'Edit' : 'Add'} Category',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Color:',
-                style: TextStyle(
-                    overflow: TextOverflow.ellipsis,
-                    fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _colors.length,
-                itemBuilder: (context, i) {
-                  final color = _colors[i];
-                  return Padding(
-                    padding:
-                        EdgeInsets.only(right: i == _colors.length - 1 ? 0 : 8),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedColor = color),
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: color,
-                        child: _selectedColor == color
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 16)
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Icon:',
-                style: TextStyle(
-                    overflow: TextOverflow.ellipsis,
-                    fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 150,
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                ),
-                itemCount: CategoryUtil.availableIcons.length,
-                itemBuilder: (context, i) {
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedIcon = i),
-                    child: CircleAvatar(
-                      backgroundColor: _selectedIcon == i
-                          ? _selectedColor
-                          : Colors.grey[200],
-                      child: Icon(
-                        CategoryUtil.availableIcons[i],
-                        color: _selectedIcon == i
-                            ? Colors.white
-                            : Colors.grey[600],
-                        size: 18,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextButton(
-                  onPressed: _loading ? null : () => context.pop(),
-                  child: const Text('Cancel'),
+                Text(
+                  '${widget.editingCategory != null ? 'Edit' : 'Add'} Category',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _loading ? null : _save,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(widget.editingCategory != null ? 'Update' : 'Add'),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Category Name',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.label_outline),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Color:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 60,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableWidth = constraints.maxWidth;
+                      final colorSize = 50.0;
+                      final spacing = 12.0;
+                      final colorsPerRow = ((availableWidth + spacing) / (colorSize + spacing)).floor();
+                      
+                      if (colorsPerRow >= _colors.length) {
+                        // All colors fit in one row - use Row
+                        return Row(
+                          children: _colors.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final color = entry.value;
+                            final isSelected = _selectedColor == color;
+                            return Padding(
+                              padding: EdgeInsets.only(right: i == _colors.length - 1 ? 0 : spacing),
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedColor = color),
+                                child: Container(
+                                  width: colorSize,
+                                  height: colorSize,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: isSelected 
+                                      ? Border.all(color: Colors.grey[800]!, width: 3)
+                                      : Border.all(color: Colors.grey[300]!, width: 2),
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(Icons.check, color: Colors.white, size: 24)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      } else {
+                        // Colors don't fit in one row - use scrollable ListView
+                        return ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _colors.length,
+                          itemBuilder: (context, i) {
+                            final color = _colors[i];
+                            final isSelected = _selectedColor == color;
+                            return Padding(
+                              padding: EdgeInsets.only(right: i == _colors.length - 1 ? 0 : spacing),
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedColor = color),
+                                child: Container(
+                                  width: colorSize,
+                                  height: colorSize,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: isSelected 
+                                      ? Border.all(color: Colors.grey[800]!, width: 3)
+                                      : Border.all(color: Colors.grey[300]!, width: 2),
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(Icons.check, color: Colors.white, size: 24)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Icon:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = isDesktop ? 10 : 6;
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 1,
+                        ),
+                        itemCount: CategoryUtil.availableIcons.length,
+                        itemBuilder: (context, i) {
+                          final isSelected = _selectedIcon == i;
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedIcon = i),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? _selectedColor : Colors.grey[100],
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? _selectedColor : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                CategoryUtil.availableIcons[i],
+                                color: isSelected ? Colors.white : Colors.grey[600],
+                                size: isDesktop ? 24 : 20,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _loading ? null : () => context.pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _loading ? null : _save,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(widget.editingCategory != null ? 'Update' : 'Add'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

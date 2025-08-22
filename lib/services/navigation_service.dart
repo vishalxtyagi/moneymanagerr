@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/enums.dart';
-import '../router/app_router.dart';
+import '../constants/router.dart';
 import '../models/transaction_model.dart';
 import '../widgets/transaction_drawer.dart';
+import '../utils/context_util.dart';
 
 class NavigationService {
   static void goToAddTransaction(BuildContext context,
@@ -50,14 +51,21 @@ class NavigationService {
     BuildContext context,
     TransactionModel transaction,
   ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => TransactionDrawer(
-        transaction: transaction,
-        onClose: () => Navigator.of(context).pop(),
-      ),
+    final transactionDrawer = TransactionDrawer(
+      transaction: transaction,
+      onClose: () => Navigator.of(context).pop(),
     );
+
+    if (context.isDesktop) {
+      showDialog(
+        context: context,
+        builder: (context) => transactionDrawer,
+      );
+    } else {
+      showAdaptiveDialog(
+        context: context,
+        builder: (context) => transactionDrawer,
+      );
+    }
   }
 }

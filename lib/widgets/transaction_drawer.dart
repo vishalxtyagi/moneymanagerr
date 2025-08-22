@@ -8,6 +8,7 @@ import 'package:moneymanager/providers/auth_provider.dart';
 import 'package:moneymanager/providers/category_provider.dart';
 import 'package:moneymanager/providers/transaction_provider.dart';
 import 'package:moneymanager/utils/category_util.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -255,6 +256,170 @@ class _TransactionDrawerState extends State<TransactionDrawer> {
   Widget build(BuildContext context) {
     final isEditing = widget.transaction != null;
 
+    final content = Column(
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: _close,
+                icon: const Icon(Iconsax.arrow_left_copy),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isEditing ? 'Edit Transaction' : 'Add Transaction',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Form Content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Transaction Type Toggle
+                  _TransactionTypeToggle(
+                    type: _type,
+                    onChanged: (type) {
+                      setState(() {
+                        _type = type;
+                        _category = null;
+                        _categoryNotifier.value = null;
+                      });
+                      _checkForChanges();
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Title Field
+                  _buildTextField(
+                    controller: _titleController,
+                    label: 'Title',
+                    hint: 'Enter transaction title',
+                    icon: Iconsax.edit,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a title';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Amount Field
+                  _buildTextField(
+                    controller: _amountController,
+                    label: 'Amount',
+                    hint: '0.00',
+                    icon: Iconsax.money,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          _amountInputFormatter),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter an amount';
+                      }
+                      final amount = double.tryParse(value);
+                      if (amount == null || amount <= 0) {
+                        return 'Please enter a valid amount';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Category Selection
+                  _CategorySelector(
+                    type: _type,
+                    selectedCategory: _category,
+                    categoryNotifier: _categoryNotifier,
+                    onCategorySelected: (category) {
+                      setState(() {
+                        _category = category;
+                        _categoryNotifier.value = category;
+                      });
+                      _checkForChanges();
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Date Selection
+                  _buildDateSelector(context),
+
+                  const SizedBox(height: 16),
+
+                  // Note Field
+                  _buildTextField(
+                    controller: _noteController,
+                    label: 'Note (Optional)',
+                    hint: 'Add a note...',
+                    icon: Iconsax.note,
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Action Buttons
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _close,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitTransaction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(isEditing ? 'Update' : 'Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -265,187 +430,26 @@ class _TransactionDrawerState extends State<TransactionDrawer> {
           }
         }
       },
-      child: Drawer(
-        width: MediaQuery.of(context).size.width > 600 ? 400 : null,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isEditing ? Iconsax.edit : Iconsax.add_circle,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        isEditing ? 'Edit Transaction' : 'Add Transaction',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _close,
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
-                ),
+      child: isEditing && context.isDesktop
+          ? Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-
-              // Form Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Transaction Type Toggle
-                        _TransactionTypeToggle(
-                          type: _type,
-                          onChanged: (type) {
-                            setState(() {
-                              _type = type;
-                              _category = null;
-                              _categoryNotifier.value = null;
-                            });
-                            _checkForChanges();
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Title Field
-                        _buildTextField(
-                          controller: _titleController,
-                          label: 'Title',
-                          hint: 'Enter transaction title',
-                          icon: Iconsax.edit,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter a title';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Amount Field
-                        _buildTextField(
-                          controller: _amountController,
-                          label: 'Amount',
-                          hint: '0.00',
-                          icon: Iconsax.money,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                _amountInputFormatter),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter an amount';
-                            }
-                            final amount = double.tryParse(value);
-                            if (amount == null || amount <= 0) {
-                              return 'Please enter a valid amount';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Category Selection
-                        _CategorySelector(
-                          type: _type,
-                          selectedCategory: _category,
-                          categoryNotifier: _categoryNotifier,
-                          onCategorySelected: (category) {
-                            setState(() {
-                              _category = category;
-                              _categoryNotifier.value = category;
-                            });
-                            _checkForChanges();
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Date Selection
-                        _buildDateSelector(context),
-
-                        const SizedBox(height: 16),
-
-                        // Note Field
-                        _buildTextField(
-                          controller: _noteController,
-                          label: 'Note (Optional)',
-                          hint: 'Add a note...',
-                          icon: Iconsax.note,
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-                  ),
+              child: Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 500,
+                  maxHeight: 700,
                 ),
+                child: content,
               ),
-
-              // Action Buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  border: Border(
-                    top: BorderSide(color: Colors.grey.shade200),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _close,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _submitTransaction,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Text(isEditing ? 'Update' : 'Save'),
-                      ),
-                    ),
-                  ],
-                ),
+            )
+          : Drawer(
+              width: context.isDesktop ? 400 : double.infinity,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-        ),
-      ),
+              child: content,
+            ),
     );
   }
 
@@ -670,8 +674,6 @@ class _CategorySelector extends StatelessWidget {
             return DropdownButtonFormField<String>(
               value: selectedCategory,
               decoration: InputDecoration(
-                prefixIcon:
-                    const Icon(Iconsax.category, color: AppColors.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -707,15 +709,13 @@ class _CategorySelector extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        category.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   );
@@ -740,15 +740,13 @@ class _CategorySelector extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        category.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

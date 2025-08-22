@@ -8,7 +8,7 @@ import 'providers/transaction_provider.dart';
 import 'providers/analytics_provider.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
-import 'router/app_router.dart';
+import 'constants/router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
