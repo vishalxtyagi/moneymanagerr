@@ -19,11 +19,13 @@ class FilterState {
     String? category,
     DateTimeRange? dateRange,
     String? query,
+    bool clearCategory = false,
+    bool clearDateRange = false,
   }) {
     return FilterState(
       type: type ?? this.type,
-      category: category ?? this.category,
-      dateRange: dateRange ?? this.dateRange,
+      category: clearCategory ? null : (category ?? this.category),
+      dateRange: clearDateRange ? null : (dateRange ?? this.dateRange),
       query: query ?? this.query,
     );
   }
@@ -41,6 +43,14 @@ class FilterService {
   static FilterState createDefault() => const FilterState();
 
   static FilterState setType(FilterState current, TransactionType type) {
+    // If changing from a specific type to 'all' or between income/expense,
+    // clear the category since it may not be valid for the new type
+    if (current.type != type &&
+        (type == TransactionType.all ||
+            (current.type != TransactionType.all &&
+                type != TransactionType.all))) {
+      return current.copyWith(type: type, clearCategory: true);
+    }
     return current.copyWith(type: type);
   }
 
@@ -49,6 +59,9 @@ class FilterService {
   }
 
   static FilterState setDateRange(FilterState current, DateTimeRange? range) {
+    if (range == null) {
+      return current.copyWith(clearDateRange: true);
+    }
     return current.copyWith(dateRange: range);
   }
 

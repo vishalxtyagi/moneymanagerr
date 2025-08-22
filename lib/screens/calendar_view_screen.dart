@@ -14,7 +14,14 @@ import 'package:moneymanager/constants/colors.dart';
 import 'package:provider/provider.dart';
 
 class CalendarViewScreen extends StatefulWidget {
-  const CalendarViewScreen({super.key});
+  final String? title;
+  final String? subtitle;
+
+  const CalendarViewScreen({
+    super.key,
+    this.title,
+    this.subtitle,
+  });
 
   @override
   State<CalendarViewScreen> createState() => _CalendarViewScreenState();
@@ -83,27 +90,83 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
     super.build(context); // for keep alive
     return Scaffold(
       backgroundColor: context.isDesktop ? Colors.grey.shade50 : null,
-      appBar: context.isDesktop
-          ? null
-          : AppBar(
-              title: const Text('Calendar View'),
+      appBar: context.isMobile
+          ? AppBar(
+              title: Text(
+                widget.title ?? 'Calendar',
+              ),
+            )
+          : null,
+      body: Column(
+        children: [
+          // Custom App Bar
+          if (context.isDesktop)
+            Container(
+              height: 80,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.title ?? 'Calendar',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle ?? 'View transactions by date',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-      body: Consumer<TransactionProvider>(
-        builder: (context, transactionProvider, child) {
-          final transactions = transactionProvider.all;
-          final selectedDayTransactions = _selectedDay != null
-              ? _getTransactionsForDay(_selectedDay!, transactions)
-              : <TransactionModel>[];
+          // Main Content
+          Expanded(
+            child: Consumer<TransactionProvider>(
+              builder: (context, transactionProvider, child) {
+                final transactions = transactionProvider.all;
+                final selectedDayTransactions = _selectedDay != null
+                    ? _getTransactionsForDay(_selectedDay!, transactions)
+                    : <TransactionModel>[];
 
-          // Clear cache when transactions change
-          if (transactions.isNotEmpty) {
-            _clearCache();
-          }
+                // Clear cache when transactions change
+                if (transactions.isNotEmpty) {
+                  _clearCache();
+                }
 
-          return context.isDesktop
-              ? _buildDesktopLayout(transactions, selectedDayTransactions)
-              : _buildMobileLayout(transactions, selectedDayTransactions);
-        },
+                return context.isDesktop
+                    ? _buildDesktopLayout(transactions, selectedDayTransactions)
+                    : _buildMobileLayoutWithAppBar(
+                        transactions, selectedDayTransactions);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -218,49 +281,96 @@ class _CalendarViewScreenState extends State<CalendarViewScreen>
     );
   }
 
-  Widget _buildMobileLayout(
+  Widget _buildMobileLayoutWithAppBar(
     List<TransactionModel> transactions,
     List<TransactionModel> selectedDayTransactions,
   ) {
     return Column(
       children: [
-        // Optimized Calendar Widget
-        _CalendarWidget(
-          focusedDay: _focusedDay,
-          selectedDay: _selectedDay,
-          calendarFormat: _calendarFormat,
-          transactions: transactions,
-          onDaySelected: (selectedDay, focusedDay) {
-            if (!isSameDay(_selectedDay, selectedDay)) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            }
-          },
-          onFormatChanged: (format) {
-            if (_calendarFormat != format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            }
-          },
-          onPageChanged: (focusedDay) {
-            setState(() {
-              _focusedDay = focusedDay;
-            });
-          },
-          getTransactionsForDay: _getTransactionsForDay,
-          isDesktop: false,
+        // Mobile App Bar
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title ?? 'Calendar',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    widget.subtitle ?? 'View transactions by date',
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-
-        // Optimized Selected Day Section
+        // Calendar Content
         Expanded(
-          child: _SelectedDaySection(
-            selectedDay: _selectedDay,
-            transactions: selectedDayTransactions,
-            allTransactions: transactions,
-            getTotalForDay: _getTotalForDay,
+          child: Column(
+            children: [
+              // Optimized Calendar Widget
+              _CalendarWidget(
+                focusedDay: _focusedDay,
+                selectedDay: _selectedDay,
+                calendarFormat: _calendarFormat,
+                transactions: transactions,
+                onDaySelected: (selectedDay, focusedDay) {
+                  if (!isSameDay(_selectedDay, selectedDay)) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+                  }
+                },
+                onFormatChanged: (format) {
+                  if (_calendarFormat != format) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
+                },
+                onPageChanged: (focusedDay) {
+                  setState(() {
+                    _focusedDay = focusedDay;
+                  });
+                },
+                getTransactionsForDay: _getTransactionsForDay,
+                isDesktop: false,
+              ),
+
+              // Optimized Selected Day Section
+              Expanded(
+                child: _SelectedDaySection(
+                  selectedDay: _selectedDay,
+                  transactions: selectedDayTransactions,
+                  allTransactions: transactions,
+                  getTotalForDay: _getTotalForDay,
+                ),
+              ),
+            ],
           ),
         ),
       ],

@@ -18,30 +18,30 @@ final class _NavigationConfig {
       icon: Iconsax.home_2_copy,
       selectedIcon: Iconsax.home_2,
       label: 'Dashboard',
+      title: 'Dashboard',
       subtitle: 'Overview of your transactions',
     ),
     _NavigationItem(
       icon: Iconsax.chart_2_copy,
       selectedIcon: Iconsax.chart_21,
       label: 'Analytics',
+      title: 'Analytics',
+      subtitle: 'Insights and financial trends',
     ),
     _NavigationItem(
       icon: Iconsax.calendar_2_copy,
       selectedIcon: Iconsax.calendar_2,
       label: 'Calendar',
+      title: 'Calendar',
+      subtitle: 'View transactions by date',
     ),
     _NavigationItem(
       icon: Iconsax.setting_2_copy,
       selectedIcon: Iconsax.setting_2,
       label: 'Settings',
+      title: 'Settings',
+      subtitle: 'Configure your preferences',
     ),
-  ];
-
-  static const screens = [
-    DashboardScreen(key: PageStorageKey('dashboard')),
-    AnalyticsScreen(key: PageStorageKey('analytics')),
-    CalendarViewScreen(key: PageStorageKey('calendar')),
-    SettingsScreen(key: PageStorageKey('settings')),
   ];
 }
 
@@ -182,31 +182,60 @@ class _DesktopLayout extends StatelessWidget {
         Container(
           width: 280,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: Colors.white,
+            border: Border(
+              right: BorderSide(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
                 offset: const Offset(2, 0),
               ),
             ],
           ),
           child: Column(
             children: [
-              // Header
+              // Logo Section
               Container(
-                padding: const EdgeInsets.all(24),
+                height: 80,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                ),
                 child: const Row(
                   children: [
-                    AppLogo(size: 32, type: LogoType.light),
-                    SizedBox(width: 12),
-                    Text(
-                      'Money Manager',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    AppLogo(size: 80, type: LogoType.dark),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Money Manager',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          'Personal Finance Tracker',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -214,46 +243,60 @@ class _DesktopLayout extends StatelessWidget {
 
               // Navigation Items
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: _NavigationConfig.items.length,
-                  itemBuilder: (context, index) {
-                    final item = _NavigationConfig.items[index];
-                    final isSelected = index == currentIndex;
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: _NavigationConfig.items.length,
+                    itemBuilder: (context, index) {
+                      final item = _NavigationConfig.items[index];
+                      final isSelected = index == currentIndex;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: Icon(
-                          isSelected ? item.selectedIcon : item.icon,
-                          color:
-                              isSelected ? AppColors.primary : Colors.white70,
-                        ),
-                        title: Text(
-                          item.label,
-                          style: TextStyle(
-                            color:
-                                isSelected ? AppColors.primary : Colors.white,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                        selected: isSelected,
-                        selectedTileColor: Colors.white,
-                        shape: RoundedRectangleBorder(
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        onTap: () => onNavigationItemSelected(index),
-                      ),
-                    );
-                  },
+                        child: ListTile(
+                          leading: Icon(
+                            isSelected ? item.selectedIcon : item.icon,
+                            color: isSelected ? Colors.white : Colors.black54,
+                          ),
+                          title: Text(
+                            item.label,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          hoverColor: AppColors.primaryVariant.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onTap: () => onNavigationItemSelected(index),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
 
               // Add Transaction Button
               Container(
                 padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -261,9 +304,10 @@ class _DesktopLayout extends StatelessWidget {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Transaction'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -280,7 +324,40 @@ class _DesktopLayout extends StatelessWidget {
           child: RepaintBoundary(
             child: IndexedStack(
               index: currentIndex,
-              children: _NavigationConfig.screens,
+              children: _NavigationConfig.items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+
+                // Create screens with title and subtitle parameters
+                switch (index) {
+                  case 0:
+                    return DashboardScreen(
+                      key: const PageStorageKey('dashboard'),
+                      title: item.title,
+                      subtitle: item.subtitle,
+                    );
+                  case 1:
+                    return AnalyticsScreen(
+                      key: const PageStorageKey('analytics'),
+                      title: item.title,
+                      subtitle: item.subtitle,
+                    );
+                  case 2:
+                    return CalendarViewScreen(
+                      key: const PageStorageKey('calendar'),
+                      title: item.title,
+                      subtitle: item.subtitle,
+                    );
+                  case 3:
+                    return SettingsScreen(
+                      key: const PageStorageKey('settings'),
+                      title: item.title,
+                      subtitle: item.subtitle,
+                    );
+                  default:
+                    return const SizedBox();
+                }
+              }).toList(),
             ),
           ),
         ),
@@ -303,7 +380,36 @@ class _MobileLayout extends StatelessWidget {
     return RepaintBoundary(
       child: IndexedStack(
         index: currentIndex,
-        children: _NavigationConfig.screens,
+        children: _NavigationConfig.items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+
+          // Create screens with title parameters
+          switch (index) {
+            case 0:
+              return DashboardScreen(
+                key: const PageStorageKey('dashboard'),
+                title: item.title,
+              );
+            case 1:
+              return AnalyticsScreen(
+                key: const PageStorageKey('analytics'),
+                title: item.title,
+              );
+            case 2:
+              return CalendarViewScreen(
+                key: const PageStorageKey('calendar'),
+                title: item.title,
+              );
+            case 3:
+              return SettingsScreen(
+                key: const PageStorageKey('settings'),
+                title: item.title,
+              );
+            default:
+              return const SizedBox();
+          }
+        }).toList(),
       ),
     );
   }

@@ -113,34 +113,37 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         title: const Text('Transaction History'),
         elevation: 0,
         actions: [
-          if (_filterState.hasActiveFilters)
-            IconButton(
-              icon: const Icon(Icons.clear_all),
-              onPressed: _clearAllFilters,
-              tooltip: 'Clear all filters',
-            ),
-          Stack(
-            children: [
+          // Only show filter actions for mobile view
+          if (!context.isDesktop) ...[
+            if (_filterState.hasActiveFilters)
               IconButton(
-                icon: const Icon(Icons.filter_alt),
-                onPressed: () => _showFilterDialog(context),
-                tooltip: 'Filter transactions',
+                icon: const Icon(Icons.clear_all),
+                onPressed: _clearAllFilters,
+                tooltip: 'Clear all filters',
               ),
-              if (_filterState.hasActiveFilters)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF44336),
-                      shape: BoxShape.circle,
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.filter_alt),
+                  onPressed: () => _showFilterDialog(context),
+                  tooltip: 'Filter transactions',
+                ),
+                if (_filterState.hasActiveFilters)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF44336),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
       body: context.isDesktop
@@ -194,7 +197,6 @@ class _DesktopTransactionLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 1200),
       margin: const EdgeInsets.symmetric(horizontal: 32),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,119 +314,321 @@ class _FilterSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Filters',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with clear button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Filters',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            if (filterState.hasActiveFilters)
-              TextButton(
-                onPressed: onClearFilters,
-                child: const Text('Clear'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
+              if (filterState.hasActiveFilters)
+                TextButton(
+                  onPressed: onClearFilters,
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                  child: const Text('Clear All'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
 
-        // Type filter
-        const Text(
-          'Type',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        Column(
-          children: [
-            AppFilterChip(
-              label: 'All',
-              isSelected: filterState.type == TransactionType.all,
-              onTap: () => onFilterUpdate(
-                FilterService.setType(filterState, TransactionType.all),
-              ),
-              color: AppColors.textSecondary,
+          // Transaction Type Section
+          _FilterSection(
+            title: 'Transaction Type',
+            child: Column(
+              children: [
+                _FilterOptionRow(
+                  children: [
+                    Expanded(
+                      child: _FilterButton(
+                        label: 'All',
+                        isSelected: filterState.type == TransactionType.all,
+                        onTap: () => onFilterUpdate(
+                          FilterService.setType(
+                              filterState, TransactionType.all),
+                        ),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _FilterButton(
+                        label: 'Income',
+                        isSelected: filterState.type == TransactionType.income,
+                        onTap: () => onFilterUpdate(
+                          FilterService.setType(
+                              filterState, TransactionType.income),
+                        ),
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _FilterButton(
+                  label: 'Expense',
+                  isSelected: filterState.type == TransactionType.expense,
+                  onTap: () => onFilterUpdate(
+                    FilterService.setType(filterState, TransactionType.expense),
+                  ),
+                  color: AppColors.error,
+                  fullWidth: true,
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            AppFilterChip(
-              label: 'Income',
-              isSelected: filterState.type == TransactionType.income,
-              onTap: () => onFilterUpdate(
-                FilterService.setType(filterState, TransactionType.income),
-              ),
-              color: AppColors.success,
-            ),
-            const SizedBox(height: 4),
-            AppFilterChip(
-              label: 'Expense',
-              isSelected: filterState.type == TransactionType.expense,
-              onTap: () => onFilterUpdate(
-                FilterService.setType(filterState, TransactionType.expense),
-              ),
-              color: AppColors.error,
-            ),
-          ],
-        ),
+          ),
 
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-        // Date range
-        const Text(
-          'Date Range',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        Column(
-          children: [
-            AppFilterChip(
-              label: 'All Time',
-              isSelected: filterState.dateRange == null,
-              onTap: () => onFilterUpdate(
-                FilterService.setDateRange(filterState, null),
+          // Category Section - only show when type is not 'all'
+          if (filterState.type != TransactionType.all) ...[
+            _FilterSection(
+              title: 'Category',
+              child: Consumer<CategoryProvider>(
+                builder: (context, catProvider, _) {
+                  final isIncome = filterState.type == TransactionType.income;
+                  final categories = isIncome
+                      ? catProvider.incomeCategories
+                      : catProvider.expenseCategories;
+
+                  // Check if current selected category exists in the new type's categories
+                  final categoryExists = filterState.category == null ||
+                      categories.any((c) => c.name == filterState.category);
+
+                  // If category doesn't exist, we need to display it as "All Categories"
+                  final displayValue =
+                      categoryExists ? filterState.category : null;
+
+                  return Container(
+                    height: 48,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.2),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        value: displayValue,
+                        isExpanded: true,
+                        hint: const Text('All Categories'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All Categories'),
+                          ),
+                          ...categories.map((c) => DropdownMenuItem<String?>(
+                                value: c.name,
+                                child: Text(c.name),
+                              ))
+                        ],
+                        onChanged: (val) => onFilterUpdate(
+                          FilterService.setCategory(filterState, val),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 4),
-            AppFilterChip(
-              label: 'This Week',
-              isSelected: _isCurrentWeek(filterState.dateRange),
-              onTap: () => onFilterUpdate(
-                FilterService.setDateRange(filterState, _getCurrentWeek()),
-              ),
-              color: AppColors.primary,
-            ),
-            const SizedBox(height: 4),
-            AppFilterChip(
-              label: 'This Month',
-              isSelected: _isCurrentMonth(filterState.dateRange),
-              onTap: () => onFilterUpdate(
-                FilterService.setDateRange(filterState, _getCurrentMonth()),
-              ),
-              color: AppColors.primary,
-            ),
+            const SizedBox(height: 24),
           ],
-        ),
-      ],
+
+          // Date Range Section
+          _FilterSection(
+            title: 'Date Range',
+            child: Column(
+              children: [
+                // Quick date options
+                _FilterOptionRow(
+                  children: [
+                    Expanded(
+                      child: _FilterButton(
+                        label: 'All Time',
+                        isSelected: filterState.dateRange == null,
+                        onTap: () => onFilterUpdate(
+                          FilterService.setDateRange(filterState, null),
+                        ),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _FilterButton(
+                        label: 'This Week',
+                        isSelected: _isCurrentWeek(filterState.dateRange),
+                        onTap: () => onFilterUpdate(
+                          FilterService.setDateRange(
+                              filterState, _getCurrentWeek()),
+                        ),
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _FilterButton(
+                  label: 'This Month',
+                  isSelected: _isCurrentMonth(filterState.dateRange),
+                  onTap: () => onFilterUpdate(
+                    FilterService.setDateRange(filterState, _getCurrentMonth()),
+                  ),
+                  color: AppColors.primary,
+                  fullWidth: true,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Custom date range display
+                if (filterState.dateRange != null &&
+                    !_isCurrentWeek(filterState.dateRange) &&
+                    !_isCurrentMonth(filterState.dateRange)) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.date_range,
+                            color: AppColors.primary, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Custom Range',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${DateFormat('MMM dd, yyyy').format(filterState.dateRange!.start)} - ${DateFormat('MMM dd, yyyy').format(filterState.dateRange!.end)}',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.clear,
+                              color: AppColors.primary, size: 18),
+                          onPressed: () => onFilterUpdate(
+                            FilterService.setDateRange(filterState, null),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Custom date range picker button
+                SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDateRange(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      filterState.dateRange == null ||
+                              _isCurrentWeek(filterState.dateRange) ||
+                              _isCurrentMonth(filterState.dateRange)
+                          ? 'Select Custom Range'
+                          : 'Change Date Range',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: filterState.dateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.primary,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      onFilterUpdate(FilterService.setDateRange(filterState, picked));
+    }
   }
 
   bool _isCurrentWeek(DateTimeRange? range) {
     if (range == null) return false;
     final currentWeek = _getCurrentWeek();
-    return range.start.isAtSameMomentAs(currentWeek.start) &&
-        range.end.isAtSameMomentAs(currentWeek.end);
+    return _isSameDateRange(range, currentWeek);
   }
 
   bool _isCurrentMonth(DateTimeRange? range) {
     if (range == null) return false;
     final currentMonth = _getCurrentMonth();
-    return range.start.isAtSameMomentAs(currentMonth.start) &&
-        range.end.isAtSameMomentAs(currentMonth.end);
+    return _isSameDateRange(range, currentMonth);
+  }
+
+  bool _isSameDateRange(DateTimeRange range1, DateTimeRange range2) {
+    return range1.start.year == range2.start.year &&
+        range1.start.month == range2.start.month &&
+        range1.start.day == range2.start.day &&
+        range1.end.year == range2.end.year &&
+        range1.end.month == range2.end.month &&
+        range1.end.day == range2.end.day;
   }
 
   DateTimeRange _getCurrentWeek() {
@@ -442,6 +646,104 @@ class _FilterSidebar extends StatelessWidget {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
     return DateTimeRange(start: monthStart, end: monthEnd);
+  }
+}
+
+// Helper widget for consistent filter sections
+class _FilterSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _FilterSection({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.25,
+          ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
+}
+
+// Helper widget for consistent filter option rows
+class _FilterOptionRow extends StatelessWidget {
+  final List<Widget> children;
+
+  const _FilterOptionRow({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: children);
+  }
+}
+
+// Helper widget for consistent filter buttons
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color color;
+  final bool fullWidth;
+
+  const _FilterButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.color,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: fullWidth ? double.infinity : null,
+      height: 36,
+      child: Material(
+        color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? color
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? color
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -485,42 +787,152 @@ class _TransactionGrid extends StatelessWidget {
           );
         }
 
-        return GridView.builder(
+        return SingleChildScrollView(
           controller: scrollController,
           padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 3.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: filteredTransactions.length +
-              (transactionProvider.hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= filteredTransactions.length) {
-              return const Card(
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculate number of columns based on available width
+              double availableWidth = constraints.maxWidth;
+              int maxColumns = (availableWidth / 300).floor().clamp(1, 3);
 
-            final transaction = filteredTransactions[index];
-            return Selector<CategoryProvider, CategoryModel>(
-              selector: (_, provider) => provider.getCategoryByName(
-                transaction.category,
-                isIncome: transaction.type == TransactionType.income,
-              ),
-              builder: (_, category, __) => TransactionItem(
-                transaction: transaction,
-                category: category,
-                onTap: () {
-                  NavigationService.openEditTransactionDrawer(
-                      context, transaction);
-                },
-              ),
-            );
-          },
+              // Adjust columns based on number of transactions for better visual balance
+              int transactionCount = filteredTransactions.length +
+                  (transactionProvider.hasMore ? 1 : 0);
+              int actualColumns =
+                  _getOptimalColumns(transactionCount, maxColumns);
+
+              double cardWidth =
+                  (availableWidth - (actualColumns - 1) * 16) / actualColumns;
+
+              return Column(
+                children: [
+                  _buildTransactionLayout(
+                    context: context,
+                    transactions: filteredTransactions,
+                    hasMore: transactionProvider.hasMore,
+                    columns: actualColumns,
+                    cardWidth: cardWidth,
+                    availableWidth: availableWidth,
+                  ),
+                ],
+              );
+            },
+          ),
         );
       },
+    );
+  }
+
+  /// Determines optimal number of columns based on transaction count and available space
+  int _getOptimalColumns(int transactionCount, int maxColumns) {
+    if (transactionCount == 0) return 1;
+
+    // For 1-2 transactions, use single column for better visual balance
+    if (transactionCount <= 2) return 1;
+
+    // For 3-4 transactions, use 2 columns max
+    if (transactionCount <= 4) return maxColumns.clamp(1, 2);
+
+    // For more transactions, use available columns
+    return maxColumns;
+  }
+
+  /// Builds the transaction layout with proper spacing and alignment
+  Widget _buildTransactionLayout({
+    required BuildContext context,
+    required List<TransactionModel> transactions,
+    required bool hasMore,
+    required int columns,
+    required double cardWidth,
+    required double availableWidth,
+  }) {
+    final allItems = <Widget>[];
+
+    // Add transaction items
+    for (final transaction in transactions) {
+      allItems.add(
+        SizedBox(
+          width: cardWidth,
+          height: 102,
+          child: Selector<CategoryProvider, CategoryModel>(
+            selector: (_, provider) => provider.getCategoryByName(
+              transaction.category,
+              isIncome: transaction.type == TransactionType.income,
+            ),
+            builder: (_, category, __) => TransactionItem(
+              transaction: transaction,
+              category: category,
+              onTap: () {
+                NavigationService.openEditTransactionDrawer(
+                    context, transaction);
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Add loading indicator if needed
+    if (hasMore) {
+      allItems.add(
+        SizedBox(
+          width: cardWidth,
+          height: 102,
+          child: const Card(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      );
+    }
+
+    // For small numbers of items, use a more structured layout
+    if (allItems.length <= 2) {
+      return Column(
+        children: allItems
+            .map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: item,
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
+
+    // For 3-4 items with 2 columns, use a more balanced approach
+    if (allItems.length <= 4 && columns == 2) {
+      return Column(
+        children: [
+          for (int i = 0; i < allItems.length; i += 2)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(child: allItems[i]),
+                  if (i + 1 < allItems.length) ...[
+                    const SizedBox(width: 16),
+                    Expanded(child: allItems[i + 1]),
+                  ] else ...[
+                    const SizedBox(width: 16),
+                    const Expanded(
+                        child: SizedBox()), // Empty space for visual balance
+                  ],
+                ],
+              ),
+            ),
+        ],
+      );
+    }
+
+    // For larger numbers, use the wrap layout
+    return Wrap(
+      spacing: 16,
+      runSpacing: 12,
+      children: allItems,
     );
   }
 }

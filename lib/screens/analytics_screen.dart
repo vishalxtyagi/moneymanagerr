@@ -16,7 +16,14 @@ import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  final String? title;
+  final String? subtitle;
+  
+  const AnalyticsScreen({
+    super.key,
+    this.title,
+    this.subtitle,
+  });
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -53,50 +60,94 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text(
-          'Analytics',
-          style: TextStyle(
-            fontSize: context.fontSize(20),
-            fontWeight: FontWeight.bold,
+      appBar: context.isMobile ? AppBar(
+        title: Text(widget.title ?? 'Analytics',),
+      ) : null,
+      body: Column(
+        children: [
+          // Custom App Bar (only for desktop)
+          if (context.isDesktop)
+            Container(
+              height: 80,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.title ?? 'Analytics',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle ?? 'Insights and financial trends',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: EdgeInsets.only(right: context.spacing()),
+                      child: _DateRangeSelector(
+                        selectedRange: _selectedDateRange,
+                        quickRanges: _quickRanges,
+                        onRangeSelected: (range) {
+                          setState(() {
+                            _selectedDateRange = range;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ),
-        ),
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: context.spacing()),
-            child: _DateRangeSelector(
-              selectedRange: _selectedDateRange,
-              quickRanges: _quickRanges,
-              onRangeSelected: (range) {
-                setState(() {
-                  _selectedDateRange = range;
-                });
+          // Main Content
+          Expanded(
+            child: Consumer<TransactionProvider>(
+              builder: (context, transactionProvider, child) {
+                final analyticsData = AnalyticsService.calculateAnalytics(
+                  transactionProvider.all,
+            _selectedDateRange,
+          );
+
+                return SingleChildScrollView(
+                  padding: context.screenPadding,
+                  child: Column(
+                    children: [
+                      _buildSummarySection(analyticsData),
+                      SizedBox(height: context.spacing(1.5)),
+                      _buildExpenseBreakdownChart(analyticsData.expensesByCategory),
+                      SizedBox(height: context.spacing(1.5)),
+                      _buildSpendingTrendChart(analyticsData.timeSeriesData),
+                    ],
+                  ),
+                );
               },
             ),
           ),
         ],
-      ),
-      body: Consumer<TransactionProvider>(
-        builder: (context, transactionProvider, child) {
-          final analyticsData = AnalyticsService.calculateAnalytics(
-            transactionProvider.all,
-            _selectedDateRange,
-          );
-
-          return SingleChildScrollView(
-            padding: context.screenPadding,
-            child: Column(
-              children: [
-                _buildSummarySection(analyticsData),
-                SizedBox(height: context.spacing(1.5)),
-                _buildExpenseBreakdownChart(analyticsData.expensesByCategory),
-                SizedBox(height: context.spacing(1.5)),
-                _buildSpendingTrendChart(analyticsData.timeSeriesData),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

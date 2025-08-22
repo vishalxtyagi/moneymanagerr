@@ -72,7 +72,14 @@ class _NavigationHelper {
 }
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final String? title;
+  final String? subtitle;
+
+  const DashboardScreen({
+    super.key,
+    this.title,
+    this.subtitle,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -104,50 +111,107 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return context.isDesktop ? const _DesktopLayout() : const _MobileLayout();
+    return context.isDesktop
+        ? _DesktopLayout(title: widget.title, subtitle: widget.subtitle)
+        : const _MobileLayout();
   }
 }
 
 class _DesktopLayout extends StatelessWidget {
-  const _DesktopLayout();
+  final String? title;
+  final String? subtitle;
+
+  const _DesktopLayout({
+    this.title,
+    this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(context.spacing(1.5)),
-        child: context.constrain(
-          Column(
+      appBar: AppBar(
+        toolbarHeight: 79,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const _WelcomeSection(),
-              SizedBox(height: context.spacing(1.5)),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      children: [
-                        const _BalanceSection(),
-                        SizedBox(height: context.spacing()),
-                        const _QuickStatsGrid(),
-                        SizedBox(height: context.spacing()),
-                        const _InsightsCard()
-                      ],
-                    ),
+              if (title != null)
+                Text(
+                  title!,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
                   ),
-                  SizedBox(width: context.spacing(1.5)),
-                  const Expanded(
-                    flex: 3,
-                    child: _RecentTransactionsSection(),
+                ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
                   ),
-                ],
-              ),
+                ),
             ],
           ),
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: Colors.grey.shade300, // Bottom border color
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(context.spacing(1.5)),
+              child: context.constrain(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _WelcomeSection(),
+                    SizedBox(height: context.spacing(1.5)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              const _BalanceSection(),
+                              SizedBox(height: context.spacing()),
+                              const _QuickStatsGrid(),
+                              SizedBox(height: context.spacing()),
+                              const _InsightsCard()
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: context.spacing(1.5)),
+                        const Expanded(
+                          flex: 3,
+                          child: _RecentTransactionsSection(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -327,11 +327,10 @@ class _TransactionDrawerState extends State<TransactionDrawer> {
                     label: 'Amount',
                     hint: '0.00',
                     icon: Iconsax.money,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          _amountInputFormatter),
+                      FilteringTextInputFormatter.allow(_amountInputFormatter),
                     ],
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {

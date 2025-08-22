@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:moneymanager/constants/enums.dart';
 import 'package:moneymanager/providers/auth_provider.dart';
 import 'package:moneymanager/constants/router.dart';
+import 'package:moneymanager/utils/context_util.dart';
 import 'package:moneymanager/utils/notifier_utils.dart';
 import 'package:moneymanager/widgets/common/button.dart';
 import 'package:moneymanager/widgets/common/card.dart';
@@ -10,7 +11,14 @@ import 'package:moneymanager/widgets/header/section_header.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final String? title;
+  final String? subtitle;
+
+  const SettingsScreen({
+    super.key,
+    this.title,
+    this.subtitle,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -46,71 +54,129 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget build(BuildContext context) {
     super.build(context); // for keep alive
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Notifications Section
-            const AppSectionHeader(title: 'Notifications'),
-            AppCard(
+      appBar: context.isMobile
+          ? AppBar(
+              title: Text(
+                widget.title ?? 'Settings',
+              ),
+            )
+          : null,
+      body: Column(
+        children: [
+          // Custom App Bar (only for desktop)
+          if (context.isDesktop)
+            Container(
+              height: 80,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.title ?? 'Settings',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle ?? 'Configure your preferences',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _notificationsEnabled,
-                    builder: (context, enabled, _) => _NotificationTile(
-                      enabled: enabled,
-                      onChanged: (value) => _notificationsEnabled.value = value,
+                  // Notifications Section
+                  const AppSectionHeader(title: 'Notifications'),
+                  AppCard(
+                    child: Column(
+                      children: [
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _notificationsEnabled,
+                          builder: (context, enabled, _) => _NotificationTile(
+                            enabled: enabled,
+                            onChanged: (value) =>
+                                _notificationsEnabled.value = value,
+                          ),
+                        ),
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _notificationsEnabled,
+                          builder: (context, enabled, _) => enabled
+                              ? const _LowThresholdTile(
+                                  threshold: _lowThresholdAmount)
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
                     ),
                   ),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _notificationsEnabled,
-                    builder: (context, enabled, _) => enabled
-                        ? const _LowThresholdTile(
-                            threshold: _lowThresholdAmount)
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            // Categories Section
-            const AppSectionHeader(title: 'Categories'),
-            AppCard(
-              child: Column(
-                children: [
-                  _CategoryManagementTile(),
-                  const Divider(height: 1),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _autoCategorize,
-                    builder: (context, autoCategorize, _) =>
-                        _AutoCategorizeTile(
-                      enabled: autoCategorize,
-                      onChanged: (value) => _autoCategorize.value = value,
+                  // Categories Section
+                  const AppSectionHeader(title: 'Categories'),
+                  AppCard(
+                    child: Column(
+                      children: [
+                        _CategoryManagementTile(),
+                        const Divider(height: 1),
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _autoCategorize,
+                          builder: (context, autoCategorize, _) =>
+                              _AutoCategorizeTile(
+                            enabled: autoCategorize,
+                            onChanged: (value) => _autoCategorize.value = value,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Other sections...
+                  const AppSectionHeader(title: 'Account'),
+                  AppCard(
+                    child: Column(
+                      children: [
+                        _ExportDataTile(),
+                        const Divider(height: 1),
+                        _SignOutTile(),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Other sections...
-            const AppSectionHeader(title: 'Account'),
-            AppCard(
-              child: Column(
-                children: [
-                  _ExportDataTile(),
-                  const Divider(height: 1),
-                  _SignOutTile(),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -110,7 +110,8 @@ class _CategoryGridView extends StatelessWidget {
   final bool isIncome;
   final TabController tabController;
 
-  const _CategoryGridView({required this.isIncome, required this.tabController});
+  const _CategoryGridView(
+      {required this.isIncome, required this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -125,8 +126,9 @@ class _CategoryGridView extends StatelessWidget {
               // Calculate number of columns based on available width
               double availableWidth = constraints.maxWidth;
               int columns = (availableWidth / 200).floor().clamp(1, 4);
-              double cardWidth = (availableWidth - (columns - 1) * 16) / columns;
-              
+              double cardWidth =
+                  (availableWidth - (columns - 1) * 16) / columns;
+
               return Column(
                 children: [
                   if (categories.isEmpty)
@@ -220,7 +222,8 @@ class _CategoryCard extends StatelessWidget {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
+                  icon:
+                      Icon(Icons.more_vert, size: 18, color: Colors.grey[600]),
                   onSelected: (value) {
                     if (value == 'edit') {
                       _showEditDialog(context);
@@ -327,7 +330,8 @@ class _CategoryList extends StatelessWidget {
       builder: (context, categories, _) {
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: categories.length + 2, // +1 for add button, +1 for empty state if needed
+          itemCount: categories.length +
+              2, // +1 for add button, +1 for empty state if needed
           itemBuilder: (context, i) {
             if (i == 0) {
               // Add category tile at the top
@@ -336,7 +340,7 @@ class _CategoryList extends StatelessWidget {
                 child: _AddCategoryTile(isIncome: isIncome),
               );
             }
-            
+
             if (categories.isEmpty && i == 1) {
               // Show empty state message after add button when no categories
               return const Padding(
@@ -348,13 +352,15 @@ class _CategoryList extends StatelessWidget {
                 ),
               );
             }
-            
+
             if (categories.isNotEmpty) {
-              final categoryIndex = i - 1; // -1 because first item is add button
+              final categoryIndex =
+                  i - 1; // -1 because first item is add button
               if (categoryIndex < categories.length) {
                 final category = categories[categoryIndex];
                 return Padding(
-                  padding: EdgeInsets.only(bottom: categoryIndex == categories.length - 1 ? 0 : 12),
+                  padding: EdgeInsets.only(
+                      bottom: categoryIndex == categories.length - 1 ? 0 : 12),
                   child: _CategoryTile(
                     key: ValueKey(category.name),
                     category: category,
@@ -362,8 +368,9 @@ class _CategoryList extends StatelessWidget {
                 );
               }
             }
-            
-            return const SizedBox.shrink(); // Return empty widget for extra items
+
+            return const SizedBox
+                .shrink(); // Return empty widget for extra items
           },
         );
       },
@@ -637,7 +644,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
     final dialogWidth = isDesktop ? 500.0 : screenWidth * 0.9;
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
@@ -654,7 +661,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               children: [
                 Text(
                   '${widget.editingCategory != null ? 'Edit' : 'Add'} Category',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -679,10 +687,12 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final availableWidth = constraints.maxWidth;
-                      final colorSize = 50.0;
-                      final spacing = 12.0;
-                      final colorsPerRow = ((availableWidth + spacing) / (colorSize + spacing)).floor();
-                      
+                      const colorSize = 50.0;
+                      const spacing = 12.0;
+                      final colorsPerRow =
+                          ((availableWidth + spacing) / (colorSize + spacing))
+                              .floor();
+
                       if (colorsPerRow >= _colors.length) {
                         // All colors fit in one row - use Row
                         return Row(
@@ -691,21 +701,26 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                             final color = entry.value;
                             final isSelected = _selectedColor == color;
                             return Padding(
-                              padding: EdgeInsets.only(right: i == _colors.length - 1 ? 0 : spacing),
+                              padding: EdgeInsets.only(
+                                  right: i == _colors.length - 1 ? 0 : spacing),
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedColor = color),
+                                onTap: () =>
+                                    setState(() => _selectedColor = color),
                                 child: Container(
                                   width: colorSize,
                                   height: colorSize,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
-                                    border: isSelected 
-                                      ? Border.all(color: Colors.grey[800]!, width: 3)
-                                      : Border.all(color: Colors.grey[300]!, width: 2),
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: Colors.grey[800]!, width: 3)
+                                        : Border.all(
+                                            color: Colors.grey[300]!, width: 2),
                                   ),
                                   child: isSelected
-                                      ? const Icon(Icons.check, color: Colors.white, size: 24)
+                                      ? const Icon(Icons.check,
+                                          color: Colors.white, size: 24)
                                       : null,
                                 ),
                               ),
@@ -721,21 +736,26 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                             final color = _colors[i];
                             final isSelected = _selectedColor == color;
                             return Padding(
-                              padding: EdgeInsets.only(right: i == _colors.length - 1 ? 0 : spacing),
+                              padding: EdgeInsets.only(
+                                  right: i == _colors.length - 1 ? 0 : spacing),
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedColor = color),
+                                onTap: () =>
+                                    setState(() => _selectedColor = color),
                                 child: Container(
                                   width: colorSize,
                                   height: colorSize,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
-                                    border: isSelected 
-                                      ? Border.all(color: Colors.grey[800]!, width: 3)
-                                      : Border.all(color: Colors.grey[300]!, width: 2),
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: Colors.grey[800]!, width: 3)
+                                        : Border.all(
+                                            color: Colors.grey[300]!, width: 2),
                                   ),
                                   child: isSelected
-                                      ? const Icon(Icons.check, color: Colors.white, size: 24)
+                                      ? const Icon(Icons.check,
+                                          color: Colors.white, size: 24)
                                       : null,
                                 ),
                               ),
@@ -775,16 +795,22 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                             onTap: () => setState(() => _selectedIcon = i),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: isSelected ? _selectedColor : Colors.grey[100],
+                                color: isSelected
+                                    ? _selectedColor
+                                    : Colors.grey[100],
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? _selectedColor : Colors.grey[300]!,
+                                  color: isSelected
+                                      ? _selectedColor
+                                      : Colors.grey[300]!,
                                   width: 2,
                                 ),
                               ),
                               child: Icon(
                                 CategoryUtil.availableIcons[i],
-                                color: isSelected ? Colors.white : Colors.grey[600],
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey[600],
                                 size: isDesktop ? 24 : 20,
                               ),
                             ),
@@ -801,7 +827,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                     TextButton(
                       onPressed: _loading ? null : () => context.pop(),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -809,7 +836,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                     ElevatedButton(
                       onPressed: _loading ? null : _save,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                       ),
@@ -822,7 +850,9 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                                 color: Colors.white,
                               ),
                             )
-                          : Text(widget.editingCategory != null ? 'Update' : 'Add'),
+                          : Text(widget.editingCategory != null
+                              ? 'Update'
+                              : 'Add'),
                     ),
                   ],
                 ),
